@@ -1,6 +1,7 @@
 package io.scriptor.http;
 
 import io.scriptor.annotation.Endpoint;
+import io.scriptor.annotation.Parameter;
 import io.scriptor.annotation.Resource;
 import io.scriptor.log.Log;
 import io.scriptor.result.ResultBase;
@@ -19,10 +20,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class HTTPServer implements AutoCloseable {
 
@@ -106,7 +104,7 @@ public class HTTPServer implements AutoCloseable {
                     ((SSLSocket) socket).startHandshake();
                 handleRequest(socket);
             } catch (final IOException | InvocationTargetException | IllegalAccessException e) {
-                Log.warning("%s", e.getMessage());
+                Log.trace(e);
             }
         }).start();
     }
@@ -133,7 +131,9 @@ public class HTTPServer implements AutoCloseable {
                 final var args = new Object[parameterCount];
 
                 for (int i = 0; i < parameterCount; ++i) {
-                    final var parameter = parameters[i].getName();
+                    final var parameter = parameters[i].isAnnotationPresent(Parameter.class)
+                                          ? Objects.requireNonNull(parameters[i].getAnnotation(Parameter.class)).value()
+                                          : parameters[i].getName();
                     args[i] = switch (parameter) {
                         case "headers" -> request.headers();
                         case "body" -> request.body();
@@ -146,7 +146,7 @@ public class HTTPServer implements AutoCloseable {
                 final var bytes = result.getBytes();
 
                 final Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "text/plain");
+                headers.put("Content-Type", bundle.result());
                 headers.put("Content-Length", Integer.toString(bytes.length));
                 headers.put("Connection", "Close");
 

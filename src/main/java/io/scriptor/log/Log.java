@@ -1,22 +1,9 @@
 package io.scriptor.log;
 
-import java.util.Date;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Formatter;
-import java.util.logging.LogRecord;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Log {
-
-    private static class CustomFormatter extends Formatter {
-
-        @Override
-        public String format(final LogRecord record) {
-            return "[ %1$tF %1$tT ] %2$-8s | %3$s%n".formatted(new Date(record.getMillis()),
-                                                      record.getLevel(),
-                                                      record.getMessage());
-        }
-    }
 
     private static final Log instance = new Log();
 
@@ -36,15 +23,14 @@ public class Log {
         instance.getLogger().throwing(sourceClass, sourceMethod, thrown);
     }
 
+    public static void trace(final Throwable e) {
+        instance.getLogger().log(Level.SEVERE, e.getMessage(), e);
+    }
+
     private final Logger logger;
 
     private Log() {
-        final var handler = new ConsoleHandler();
-        handler.setFormatter(new CustomFormatter());
-
-        logger = Logger.getGlobal();
-        logger.setUseParentHandlers(false);
-        logger.addHandler(handler);
+        logger = Logger.getLogger("io.scriptor");
     }
 
     private Logger getLogger() {

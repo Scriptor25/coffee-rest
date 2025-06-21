@@ -18,6 +18,7 @@ public record HTTPResponseMessage(
         for (final var entry : headers.entrySet())
             writer.write("%s: %s\r\n".formatted(entry.getKey(), entry.getValue()));
         writer.write("\r\n");
+        writer.flush();
         if (body != null)
             body.transferTo(stream);
         stream.flush();

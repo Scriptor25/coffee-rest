@@ -38,6 +38,9 @@ public class Route {
         final var index = parameters.indexOf(parameter);
         if (index < 0)
             return null;
-        return pattern.matcher(path).group(index);
+        final var matcher = pattern.matcher(path);
+        if (!matcher.matches())
+            return null;
+        return matcher.group(index + 1);
     }
 }
