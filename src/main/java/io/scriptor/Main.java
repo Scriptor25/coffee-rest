@@ -1,119 +1,69 @@
 package io.scriptor;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
-import java.io.ByteArrayOutputStream;
+import io.github.cdimascio.dotenv.Dotenv;
+import io.scriptor.annotation.Endpoint;
+import io.scriptor.annotation.Resource;
+import io.scriptor.http.HTTPServer;
+import io.scriptor.loader.Loader;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.SocketException;
-import java.security.*;
+import java.lang.reflect.InvocationTargetException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class Main {
 
     public static void main(final String[] args)
-            throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException,
-                   UnrecoverableKeyException, KeyManagementException {
+            throws IOException,
+                   KeyStoreException,
+                   CertificateException,
+                   NoSuchAlgorithmException,
+                   UnrecoverableKeyException,
+                   KeyManagementException,
+                   ClassNotFoundException {
 
-        final var passphrase = "12345678".toCharArray();
-        final var keyStore   = KeyStore.getInstance("JKS");
-        keyStore.load(ClassLoader.getSystemResourceAsStream("keystore.jks"), passphrase);
+        final var env = Dotenv.configure().filename(".env.local").load();
 
-        final var keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
-        keyManagerFactory.init(keyStore, passphrase);
+        final var enableTLS          = Integer.parseInt(env.get("ENABLE_TLS", "0")) != 0;
+        final var port               = Integer.parseInt(env.get("PORT", enableTLS ? "443" : "80"));
+        final var keystoreFilename   = env.get("KEYSTORE");
+        final var keystorePassphrase = env.get("KEYSTORE_PASSPHRASE");
 
-        final var sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+        try (final var server = new HTTPServer(port, enableTLS, keystoreFilename, keystorePassphrase)) {
 
-        final var sslServerSocketFactory = sslContext.getServerSocketFactory();
+            final var loader = new Loader("io.scriptor");
+            loader.stream()
+                  .filter(clazz -> clazz.isAnnotationPresent(Endpoint.class))
+                  .forEach(clazz -> {
+                      final Object instance;
+                      try {
+                          instance = clazz.getConstructor().newInstance();
+                      } catch (final InstantiationException |
+                                     IllegalAccessException |
+                                     InvocationTargetException |
+                                     NoSuchMethodException e) {
+                          return;
+                      }
 
-        final var port = 443;
+                      final var endpoint = Objects.requireNonNull(clazz.getAnnotation(Endpoint.class));
 
-        try (final var sslServerSocket = sslServerSocketFactory.createServerSocket(port)) {
-            System.out.printf("HTTPS server listening on port %d%n", port);
+                      Arrays.stream(clazz.getMethods())
+                            .filter(method -> method.isAnnotationPresent(Resource.class))
+                            .forEach(method -> {
+                                final var resource = Objects.requireNonNull(method.getAnnotation(Resource.class));
 
-            while (true) {
-                final var socket = (SSLSocket) sslServerSocket.accept();
-                new Thread(() -> {
-                    try {
-                        socket.startHandshake();
-                        handleRequest(socket);
-                    } catch (final SocketException e) {
-                    } catch (final IOException e) {
-                        e.printStackTrace();
-                    }
-                }).start();
-            }
+                                server.registerRoute(instance, method, endpoint, resource);
+                            });
+                  });
+
+            while (true)
+                server.handleRequest();
         }
-    }
-
-    private static void handleRequest(final SSLSocket socket) throws IOException {
-        try (
-                final var inputStream = socket.getInputStream();
-                final var outputStream = socket.getOutputStream()
-        ) {
-            final var message = HTTPMessage.parse(inputStream);
-
-            switch (message.method()) {
-                case "GET" -> {
-                    switch (message.path()) {
-                        case "/hello" -> sendResponse(outputStream, 200, "text/plain", "Hello World!");
-                        case "/favicon.ico" -> {
-                            try (final var favicon = ClassLoader.getSystemResourceAsStream("favicon.png")) {
-                                assert favicon != null;
-                                sendResponse(outputStream, 200, "image/png", favicon);
-                            }
-                        }
-                    }
-                }
-                default -> sendResponse(outputStream, 404, "text/plain", "Not Found");
-            }
-        }
-    }
-
-    private static void sendResponse(
-            final OutputStream stream,
-            final int status,
-            final String contentType,
-            final String body
-    ) throws IOException {
-        final var bodyBytes = body.getBytes();
-        sendResponse(stream, status, contentType, bodyBytes);
-    }
-
-    private static void sendResponse(
-            final OutputStream stream,
-            final int status,
-            final String contentType,
-            final InputStream body
-    ) throws IOException {
-        final var buffer = new ByteArrayOutputStream();
-        final var data   = new byte[4096];
-        int       bytesRead;
-
-        while ((bytesRead = body.read(data)) != -1)
-            buffer.write(data, 0, bytesRead);
-        buffer.flush();
-
-        final var bodyBytes = buffer.toByteArray();
-        sendResponse(stream, status, contentType, bodyBytes);
-    }
-
-    private static void sendResponse(
-            final OutputStream stream,
-            final int status,
-            final String contentType,
-            final byte[] body
-    ) throws IOException {
-        stream.write("HTTP/1.1 %d OK%n".formatted(status).getBytes());
-        stream.write("Content-Type: %s%n".formatted(contentType).getBytes());
-        stream.write("Content-Length: %s%n".formatted(body.length).getBytes());
-        stream.write("Connection: close%n".formatted().getBytes());
-        stream.write("%n".formatted().getBytes());
-        stream.write(body);
-        stream.flush();
     }
 
     private Main() {
