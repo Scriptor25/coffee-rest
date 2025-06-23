@@ -1,6 +1,6 @@
 package io.scriptor.result;
 
-import java.io.IOException;
+import java.io.InputStream;
 
 public abstract class ResultBase<T> {
 
@@ -44,5 +44,7 @@ public abstract class ResultBase<T> {
         return value;
     }
 
-    public abstract byte[] getBytes() throws IOException;
+    public abstract int getSize();
+
+    public abstract InputStream getStream();
 }

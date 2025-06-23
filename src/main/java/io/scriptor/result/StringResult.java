@@ -1,5 +1,8 @@
 package io.scriptor.result;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
 public class StringResult extends ResultBase<String> {
 
     public StringResult(final int statusCode) {
@@ -15,7 +18,12 @@ public class StringResult extends ResultBase<String> {
     }
 
     @Override
-    public byte[] getBytes() {
-        return getValue().getBytes();
+    public int getSize() {
+        return getValue().getBytes().length;
+    }
+
+    @Override
+    public InputStream getStream() {
+        return new ByteArrayInputStream(getValue().getBytes());
     }
 }

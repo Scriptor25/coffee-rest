@@ -1,6 +1,8 @@
 package io.scriptor.http;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
 
 public record HTTPResponseMessage(
@@ -8,19 +10,41 @@ public record HTTPResponseMessage(
         int statusCode,
         String statusText,
         Map<String, String> headers,
-        InputStream body
+        InputStream body,
+        boolean isChunked
 ) {
 
-    public void write(final OutputStream stream) throws IOException {
-        final var writer = new BufferedWriter(new OutputStreamWriter(stream));
+    private static void writeString(final OutputStream stream, final String value) throws IOException {
+        for (final var b : value.getBytes())
+            stream.write(b);
+    }
 
-        writer.write("%s %s %s\r\n".formatted(protocol, statusCode, statusText));
+    private static void writeInt(final OutputStream stream, final int value) throws IOException {
+        final var string = Integer.toString(value);
+        writeString(stream, string);
+    }
+
+    public void write(final OutputStream stream) throws IOException {
+        writeString(stream, "%s %s %s\r\n".formatted(protocol, statusCode, statusText));
         for (final var entry : headers.entrySet())
-            writer.write("%s: %s\r\n".formatted(entry.getKey(), entry.getValue()));
-        writer.write("\r\n");
-        writer.flush();
-        if (body != null)
-            body.transferTo(stream);
+            writeString(stream, "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()));
+        writeString(stream, "\r\n");
         stream.flush();
+
+        if (body != null) {
+            if (!isChunked) {
+                body.transferTo(stream);
+                stream.flush();
+            } else {
+                for (int n; (n = body.available()) > 0; ) {
+                    writeString(stream, "%x\r\n".formatted(n));
+                    stream.write(body.readNBytes(n));
+                    writeString(stream, "\r\n");
+                    stream.flush();
+                }
+                writeString(stream, "0\r\n\r\n");
+                stream.flush();
+            }
+        }
     }
 }

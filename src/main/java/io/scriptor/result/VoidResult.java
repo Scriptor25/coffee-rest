@@ -1,5 +1,7 @@
 package io.scriptor.result;
 
+import java.io.InputStream;
+
 public class VoidResult extends ResultBase<Void> {
 
     public VoidResult(final int statusCode) {
@@ -11,7 +13,12 @@ public class VoidResult extends ResultBase<Void> {
     }
 
     @Override
-    public byte[] getBytes() {
-        return new byte[0];
+    public int getSize() {
+        return 0;
+    }
+
+    @Override
+    public InputStream getStream() {
+        return null;
     }
 }

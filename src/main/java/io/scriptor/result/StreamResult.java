@@ -1,6 +1,5 @@
 package io.scriptor.result;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 public class StreamResult extends ResultBase<InputStream> {
@@ -18,7 +17,12 @@ public class StreamResult extends ResultBase<InputStream> {
     }
 
     @Override
-    public byte[] getBytes() throws IOException {
-        return getValue().readAllBytes();
+    public int getSize() {
+        return -1;
+    }
+
+    @Override
+    public InputStream getStream() {
+        return getValue();
     }
 }
