@@ -69,7 +69,7 @@ public record HTTPRequestMessage(
                 break;
 
             final var header = line.split(":\\s*");
-            headers.put(header[0], header[1]);
+            headers.put(header[0].toLowerCase(), header[1]);
         }
 
         return new HTTPRequestMessage(method, path, query, protocol, headers, stream);

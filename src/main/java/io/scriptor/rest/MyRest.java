@@ -3,29 +3,31 @@ package io.scriptor.rest;
 import io.scriptor.annotation.*;
 import io.scriptor.http.HTTPMethod;
 import io.scriptor.log.Log;
+import io.scriptor.result.VoidResult;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Objects;
 
 @Endpoint("/")
 public class MyRest {
 
-    @Resource(value = "hello", result = "text/plain")
+    @Resource(path = "hello", result = "text/html")
     public String getHello() {
-        return "Hello World!";
+        return "<html><head><title>Hello</title></head><body><h1>Hello World!</h1></body></html>";
     }
 
-    @Resource(value = "favicon.[ext]", result = "image/svg+xml")
+    @Resource(path = "favicon.[]", result = "image/svg+xml")
     public InputStream getFavicon() {
         return ClassLoader.getSystemResourceAsStream("favicon.svg");
     }
 
-    @Resource(value = "message/[from]/[to]", method = HTTPMethod.POST, accept = "text/plain", result = "text/plain")
-    public void postMessage(
+    @Resource(path = "message/[from]/[to]", method = HTTPMethod.POST, accept = "text/plain", result = "text/plain")
+    public VoidResult postMessage(
             final @Path("from") String from,
             final @Path("to") String to,
             final @Body InputStream body,
@@ -33,9 +35,10 @@ public class MyRest {
     ) throws IOException {
         final var bytes = body.readNBytes(contentLength);
         Log.info("message (from %s to %s): %s", from, to, new String(bytes));
+        return new VoidResult(201, "Message Sent");
     }
 
-    @Resource(value = "lorem", method = HTTPMethod.GET, result = "application/json")
+    @Resource(path = "lorem", method = HTTPMethod.GET, result = "application/json")
     public JSONObject getLorem(final @Query("count") Integer count) throws IOException {
         final var stream = Objects.requireNonNull(ClassLoader.getSystemResourceAsStream("lorem.txt"));
 
@@ -49,14 +52,14 @@ public class MyRest {
         return json;
     }
 
-    @Resource(value = "lorem-stream", method = HTTPMethod.GET, result = "text/plain")
+    @Resource(path = "lorem-stream", method = HTTPMethod.GET, result = "text/plain")
     public InputStream getLoremStream() {
         return Objects.requireNonNull(ClassLoader.getSystemResourceAsStream("lorem.txt"));
     }
 
-    @Resource(value = "random-quote", method = HTTPMethod.GET, result = "application/json")
-    public InputStream getRandomQuote() throws IOException {
-        final var url        = new URL("https://dummyjson.com/quotes/random");
+    @Resource(path = "random-quote", method = HTTPMethod.GET, result = "application/json")
+    public InputStream getRandomQuote() throws IOException, URISyntaxException {
+        final var url        = new URI("https://dummyjson.com/quotes/random").toURL();
         final var connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
 

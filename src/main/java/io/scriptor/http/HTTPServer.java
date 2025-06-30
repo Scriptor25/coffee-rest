@@ -44,6 +44,8 @@ public class HTTPServer implements AutoCloseable {
 
     private final Map<HTTPMethod, List<RouteBundle>> routes = new HashMap<>();
 
+    private final List<Thread> activeThreads = new ArrayList<>();
+
     public HTTPServer(
             final int port,
             final boolean enableTLS,
@@ -93,14 +95,14 @@ public class HTTPServer implements AutoCloseable {
               .add(new RouteBundle(instance,
                                    callee,
                                    new Route(endpoint.value(),
-                                             resource.value()),
+                                             resource.path()),
                                    resource.accept(),
                                    resource.result()));
     }
 
-    public void handleRequest() throws IOException {
+    public boolean handleRequest() throws IOException {
         final var socket = serverSocket.accept();
-        new Thread(() -> {
+        final var thread = new Thread(() -> {
             try {
                 if (enableTLS)
                     ((SSLSocket) socket).startHandshake();
@@ -108,7 +110,16 @@ public class HTTPServer implements AutoCloseable {
             } catch (final IOException e) {
                 Log.trace(e);
             }
-        }).start();
+            activeThreads.remove(Thread.currentThread());
+        });
+        activeThreads.add(thread);
+        thread.start();
+        return true;
+    }
+
+    public void start() throws IOException {
+        while (handleRequest())
+            Log.info("active thread count: %d", activeThreads.size());
     }
 
     private <T> Object convert(final Object object, final Class<T> type) {
@@ -132,17 +143,21 @@ public class HTTPServer implements AutoCloseable {
         throw new IllegalStateException("unsupported conversion from %s to %s".formatted(objectType, type));
     }
 
-    private <T> ResultBase<?> convertResult(final Object object, final Class<T> type) {
-        if (type == Void.class)
-            return new VoidResult(200, "OK");
+    private ResultBase<?> convertResult(final Object object) {
+        if (object == null)
+            throw new IllegalStateException("unsupported conversion from null to %s".formatted(ResultBase.class));
 
-        if (type == String.class || type == JSONObject.class || type == JSONArray.class)
+        if (object instanceof ResultBase<?> cast)
+            return cast;
+
+        if (object instanceof String || object instanceof JSONObject || object instanceof JSONArray)
             return new StringResult(200, "OK", object.toString());
 
-        if (type == InputStream.class)
-            return new StreamResult(200, "OK", (InputStream) object);
+        if (object instanceof InputStream cast)
+            return new StreamResult(200, "OK", cast);
 
-        throw new IllegalStateException("unsupported conversion from %s to %s".formatted(type, ResultBase.class));
+        throw new IllegalStateException("unsupported conversion from %s to %s".formatted(object.getClass(),
+                                                                                         ResultBase.class));
     }
 
     private void handleRequest(final Socket socket) throws IOException {
@@ -176,17 +191,18 @@ public class HTTPServer implements AutoCloseable {
                         value = request.body();
                     } else if (parameter.isAnnotationPresent(Header.class)) {
                         final var name = Objects.requireNonNull(parameter.getAnnotation(Header.class)).value();
-                        value = request.headers().get(name);
+                        value = request.headers().get(name.toLowerCase());
                     } else if (parameter.isAnnotationPresent(Path.class)) {
                         final var name = Objects.requireNonNull(parameter.getAnnotation(Path.class)).value();
                         value = bundle.route().get(request.path(), name);
                     } else if (parameter.isAnnotationPresent(Query.class)) {
                         final var name   = Objects.requireNonNull(parameter.getAnnotation(Query.class)).value();
                         final var values = request.query().computeIfAbsent(name, _ -> new ArrayList<>());
-                        if (parameter.getType().isArray())
-                            value = values.toArray();
-                        else
-                            value = !values.isEmpty() ? values.getFirst() : null;
+                        value = parameter.getType().isArray()
+                                ? values.toArray()
+                                : !values.isEmpty()
+                                  ? values.getFirst()
+                                  : null;
                     } else {
                         value = null;
                     }
@@ -198,12 +214,14 @@ public class HTTPServer implements AutoCloseable {
                 try {
                     final var object = bundle.callee().invoke(bundle.instance(), args);
                     final var type   = bundle.callee().getReturnType();
-                    result = convertResult(object, type);
+                    result = type == Void.class
+                             ? new VoidResult(200, "OK")
+                             : convertResult(object);
                 } catch (final Exception e) {
                     Log.trace(e);
                     new HTTPResponseMessage("HTTP/1.1",
                                             500,
-                                            "Internal Server Error",
+                                            "Internal Server Error - %s".formatted(e.getMessage()),
                                             new HashMap<>(),
                                             null,
                                             false).write(outputStream);

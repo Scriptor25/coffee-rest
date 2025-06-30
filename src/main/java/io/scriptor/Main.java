@@ -5,9 +5,9 @@ import io.scriptor.annotation.Endpoint;
 import io.scriptor.annotation.Resource;
 import io.scriptor.http.HTTPServer;
 import io.scriptor.loader.Loader;
+import io.scriptor.log.Log;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -40,13 +40,17 @@ public class Main {
             loader.stream()
                   .filter(clazz -> clazz.isAnnotationPresent(Endpoint.class))
                   .forEach(clazz -> {
+                      if (Arrays.stream(clazz.getConstructors())
+                                .noneMatch(constructor -> constructor.getParameterCount() == 0)) {
+                          Log.severe("endpoint class '%s' does not have a default constructor", clazz);
+                          return;
+                      }
+
                       final Object instance;
                       try {
                           instance = clazz.getConstructor().newInstance();
-                      } catch (final InstantiationException |
-                                     IllegalAccessException |
-                                     InvocationTargetException |
-                                     NoSuchMethodException e) {
+                      } catch (final Exception e) {
+                          Log.trace(e);
                           return;
                       }
 
@@ -61,8 +65,7 @@ public class Main {
                             });
                   });
 
-            while (true)
-                server.handleRequest();
+            server.start();
         }
     }
 

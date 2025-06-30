@@ -14,14 +14,15 @@ public class Route {
     }
 
     public Route(final String path) {
-        final var parts = path.split("[\\[\\]]");
+        final var parts = path.toLowerCase().split("[\\[\\]]");
 
         final var route = new StringBuilder().append("^");
         for (int i = 0; i < parts.length; ++i) {
             if (i % 2 == 0) {
                 route.append(Pattern.quote(parts[i]));
             } else {
-                parameters.add(parts[i]);
+                if (!parts[i].trim().isEmpty())
+                    parameters.add(parts[i].trim());
                 route.append("([^\\/]+)");
             }
         }
@@ -31,7 +32,7 @@ public class Route {
     }
 
     public boolean matches(final String path) {
-        return pattern.matcher(path).matches();
+        return pattern.matcher(path.toLowerCase()).matches();
     }
 
     public String get(final String path, final String parameter) {
