@@ -1,19 +1,19 @@
-package io.scriptor.result;
+package io.scriptor.http;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-public class StringResult extends ResultBase<String> {
+public class HTTPResultString extends HTTPResultBase<String> {
 
-    public StringResult(final int statusCode) {
+    public HTTPResultString(final int statusCode) {
         super(statusCode);
     }
 
-    public StringResult(final int statusCode, final String statusText) {
+    public HTTPResultString(final int statusCode, final String statusText) {
         super(statusCode, statusText);
     }
 
-    public StringResult(final int statusCode, final String statusText, final String value) {
+    public HTTPResultString(final int statusCode, final String statusText, final String value) {
         super(statusCode, statusText, value);
     }
 

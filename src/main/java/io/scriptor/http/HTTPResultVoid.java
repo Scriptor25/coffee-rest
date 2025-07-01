@@ -1,14 +1,14 @@
-package io.scriptor.result;
+package io.scriptor.http;
 
 import java.io.InputStream;
 
-public class VoidResult extends ResultBase<Void> {
+public class HTTPResultVoid extends HTTPResultBase<Void> {
 
-    public VoidResult(final int statusCode) {
+    public HTTPResultVoid(final int statusCode) {
         super(statusCode);
     }
 
-    public VoidResult(final int statusCode, final String statusText) {
+    public HTTPResultVoid(final int statusCode, final String statusText) {
         super(statusCode, statusText);
     }
 

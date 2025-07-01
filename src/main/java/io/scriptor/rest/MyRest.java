@@ -3,7 +3,7 @@ package io.scriptor.rest;
 import io.scriptor.annotation.*;
 import io.scriptor.http.HTTPMethod;
 import io.scriptor.log.Log;
-import io.scriptor.result.VoidResult;
+import io.scriptor.http.HTTPResultVoid;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class MyRest {
     }
 
     @Resource(path = "message/[from]/[to]", method = HTTPMethod.POST, accept = "text/plain", result = "text/plain")
-    public VoidResult postMessage(
+    public HTTPResultVoid postMessage(
             final @Path("from") String from,
             final @Path("to") String to,
             final @Body InputStream body,
@@ -35,7 +35,7 @@ public class MyRest {
     ) throws IOException {
         final var bytes = body.readNBytes(contentLength);
         Log.info("message (from %s to %s): %s", from, to, new String(bytes));
-        return new VoidResult(201, "Message Sent");
+        return new HTTPResultVoid(201, "Message Sent");
     }
 
     @Resource(path = "lorem", method = HTTPMethod.GET, result = "application/json")

@@ -1,27 +1,27 @@
-package io.scriptor.result;
+package io.scriptor.http;
 
 import java.io.InputStream;
 
-public abstract class ResultBase<T> {
+public abstract class HTTPResultBase<T> {
 
     private final int statusCode;
     private final String statusText;
 
     private final T value;
 
-    public ResultBase(final int statusCode) {
+    public HTTPResultBase(final int statusCode) {
         this.statusCode = statusCode;
         this.statusText = null;
         this.value = null;
     }
 
-    public ResultBase(final int statusCode, final String statusText) {
+    public HTTPResultBase(final int statusCode, final String statusText) {
         this.statusCode = statusCode;
         this.statusText = statusText;
         this.value = null;
     }
 
-    public ResultBase(final int statusCode, final String statusText, final T value) {
+    public HTTPResultBase(final int statusCode, final String statusText, final T value) {
         this.statusCode = statusCode;
         this.statusText = statusText;
         this.value = value;

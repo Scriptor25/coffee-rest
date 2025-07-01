@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class Route {
+public class HTTPRoute {
 
     private final Pattern pattern;
     private final List<String> parameters = new ArrayList<>();
 
-    public Route(final String endpoint, final String resource) {
+    public HTTPRoute(final String endpoint, final String resource) {
         this(endpoint + resource);
     }
 
-    public Route(final String path) {
+    public HTTPRoute(final String path) {
         final var parts = path.toLowerCase().split("[\\[\\]]");
 
         final var route = new StringBuilder().append("^");

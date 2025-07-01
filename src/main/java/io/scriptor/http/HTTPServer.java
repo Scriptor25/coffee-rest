@@ -2,10 +2,6 @@ package io.scriptor.http;
 
 import io.scriptor.annotation.*;
 import io.scriptor.log.Log;
-import io.scriptor.result.ResultBase;
-import io.scriptor.result.StreamResult;
-import io.scriptor.result.StringResult;
-import io.scriptor.result.VoidResult;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -23,13 +19,14 @@ import java.net.Socket;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.*;
+import java.util.concurrent.*;
 
 public class HTTPServer implements AutoCloseable {
 
     private record RouteBundle(
             Object instance,
             Method callee,
-            Route route,
+            HTTPRoute route,
             String accept,
             String result
     ) {
@@ -44,7 +41,12 @@ public class HTTPServer implements AutoCloseable {
 
     private final Map<HTTPMethod, List<RouteBundle>> routes = new HashMap<>();
 
-    private final List<Thread> activeThreads = new ArrayList<>();
+    private final BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(256);
+    private final Executor executor = new ThreadPoolExecutor(10,
+                                                             10,
+                                                             10,
+                                                             TimeUnit.MINUTES,
+                                                             workQueue);
 
     public HTTPServer(
             final int port,
@@ -94,15 +96,15 @@ public class HTTPServer implements AutoCloseable {
         routes.computeIfAbsent(resource.method(), _ -> new ArrayList<>())
               .add(new RouteBundle(instance,
                                    callee,
-                                   new Route(endpoint.value(),
-                                             resource.path()),
+                                   new HTTPRoute(endpoint.value(),
+                                                 resource.path()),
                                    resource.accept(),
                                    resource.result()));
     }
 
-    public boolean handleRequest() throws IOException {
+    public void handleRequest() throws IOException {
         final var socket = serverSocket.accept();
-        final var thread = new Thread(() -> {
+        executor.execute(() -> {
             try {
                 if (enableTLS)
                     ((SSLSocket) socket).startHandshake();
@@ -110,16 +112,12 @@ public class HTTPServer implements AutoCloseable {
             } catch (final IOException e) {
                 Log.trace(e);
             }
-            activeThreads.remove(Thread.currentThread());
         });
-        activeThreads.add(thread);
-        thread.start();
-        return true;
     }
 
     public void start() throws IOException {
-        while (handleRequest())
-            Log.info("active thread count: %d", activeThreads.size());
+        while (true)
+            handleRequest();
     }
 
     private <T> Object convert(final Object object, final Class<T> type) {
@@ -143,21 +141,21 @@ public class HTTPServer implements AutoCloseable {
         throw new IllegalStateException("unsupported conversion from %s to %s".formatted(objectType, type));
     }
 
-    private ResultBase<?> convertResult(final Object object) {
+    private HTTPResultBase<?> convertResult(final Object object) {
         if (object == null)
-            throw new IllegalStateException("unsupported conversion from null to %s".formatted(ResultBase.class));
+            throw new IllegalStateException("unsupported conversion from null to %s".formatted(HTTPResultBase.class));
 
-        if (object instanceof ResultBase<?> cast)
+        if (object instanceof HTTPResultBase<?> cast)
             return cast;
 
         if (object instanceof String || object instanceof JSONObject || object instanceof JSONArray)
-            return new StringResult(200, "OK", object.toString());
+            return new HTTPResultString(200, "OK", object.toString());
 
         if (object instanceof InputStream cast)
-            return new StreamResult(200, "OK", cast);
+            return new HTTPResultStream(200, "OK", cast);
 
         throw new IllegalStateException("unsupported conversion from %s to %s".formatted(object.getClass(),
-                                                                                         ResultBase.class));
+                                                                                         HTTPResultBase.class));
     }
 
     private void handleRequest(final Socket socket) throws IOException {
@@ -210,12 +208,12 @@ public class HTTPServer implements AutoCloseable {
                     args[i] = convert(value, parameter.getType());
                 }
 
-                final ResultBase<?> result;
+                final HTTPResultBase<?> result;
                 try {
                     final var object = bundle.callee().invoke(bundle.instance(), args);
                     final var type   = bundle.callee().getReturnType();
                     result = type == Void.class
-                             ? new VoidResult(200, "OK")
+                             ? new HTTPResultVoid(200, "OK")
                              : convertResult(object);
                 } catch (final Exception e) {
                     Log.trace(e);
