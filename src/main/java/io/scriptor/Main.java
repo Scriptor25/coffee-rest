@@ -16,6 +16,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.StreamSupport;
 
 public class Main {
 
@@ -40,68 +41,71 @@ public class Main {
 
         try (final var server = new HTTPServer(port, enableTLS, keystoreFilename, keystorePassphrase)) {
 
-            final var loader = new Loader("io.scriptor");
-            loader.stream()
-                  .filter(clazz -> clazz.isAnnotationPresent(Endpoint.class))
-                  .forEach(clazz -> {
-                      if (Arrays.stream(clazz.getConstructors())
-                                .noneMatch(constructor -> constructor.getParameterCount() == 0)) {
-                          Log.severe("endpoint class '%s' does not have a default constructor", clazz);
-                          return;
-                      }
+            final var loader = new Loader("");
 
-                      final Object instance;
-                      try {
-                          instance = clazz.getConstructor().newInstance();
-                      } catch (final Exception e) {
-                          Log.trace(e);
-                          return;
-                      }
+            StreamSupport
+                    .stream(loader.spliterator(), false)
+                    .filter(clazz -> clazz.isAnnotationPresent(Endpoint.class))
+                    .forEach(clazz -> {
+                        if (Arrays.stream(clazz.getConstructors())
+                                  .noneMatch(constructor -> constructor.getParameterCount() == 0)) {
+                            Log.severe("endpoint class '%s' does not have a default constructor", clazz);
+                            return;
+                        }
 
-                      final var endpoint = Objects.requireNonNull(clazz.getAnnotation(Endpoint.class));
+                        final Object instance;
+                        try {
+                            instance = clazz.getConstructor().newInstance();
+                        } catch (final Exception e) {
+                            Log.trace(e);
+                            return;
+                        }
 
-                      Arrays.stream(clazz.getMethods())
-                            .filter(method -> method.isAnnotationPresent(Resource.class))
-                            .forEach(method -> {
-                                final var resource = Objects.requireNonNull(method.getAnnotation(Resource.class));
+                        final var endpoint = Objects.requireNonNull(clazz.getAnnotation(Endpoint.class));
 
-                                Log.info("route %s%s %s %s %s",
-                                         endpoint.value(),
-                                         resource.path(),
-                                         resource.method(),
-                                         resource.accept(),
-                                         resource.result());
-                                server.registerRoute(instance, method, endpoint, resource);
-                            });
-                  });
+                        Arrays.stream(clazz.getMethods())
+                              .filter(method -> method.isAnnotationPresent(Resource.class))
+                              .forEach(method -> {
+                                  final var resource = Objects.requireNonNull(method.getAnnotation(Resource.class));
 
-            loader.stream()
-                  .filter(clazz -> Arrays.asList(clazz.getInterfaces()).contains(IConverter.class))
-                  .forEach(clazz -> {
-                      if (Arrays.stream(clazz.getConstructors())
-                                .noneMatch(constructor -> constructor.getParameterCount() == 0)) {
-                          Log.severe("converter class '%s' does not have a default constructor", clazz);
-                          return;
-                      }
+                                  Log.info("route %s%s %s %s %s",
+                                           endpoint.value(),
+                                           resource.path(),
+                                           resource.method(),
+                                           resource.accept(),
+                                           resource.result());
+                                  server.registerRoute(instance, method, endpoint, resource);
+                              });
+                    });
 
-                      final IConverter<?, ?> instance;
-                      try {
-                          instance = (IConverter<?, ?>) clazz.getConstructor().newInstance();
-                      } catch (final Exception e) {
-                          Log.trace(e);
-                          return;
-                      }
+            StreamSupport
+                    .stream(loader.spliterator(), false)
+                    .filter(clazz -> Arrays.asList(clazz.getInterfaces()).contains(IConverter.class))
+                    .forEach(clazz -> {
+                        if (Arrays.stream(clazz.getConstructors())
+                                  .noneMatch(constructor -> constructor.getParameterCount() == 0)) {
+                            Log.severe("converter class '%s' does not have a default constructor", clazz);
+                            return;
+                        }
 
-                      final var interfaceType = (ParameterizedType) clazz.getGenericInterfaces()[
-                              Arrays.stream(clazz.getInterfaces())
-                                    .toList()
-                                    .indexOf(IConverter.class)
-                              ];
-                      final var source      = interfaceType.getActualTypeArguments()[0];
-                      final var destination = interfaceType.getActualTypeArguments()[1];
-                      Log.info("converter [%s -> %s]", interfaceType, source, destination);
-                      server.registerConverter(source, destination, instance);
-                  });
+                        final IConverter<?, ?> instance;
+                        try {
+                            instance = (IConverter<?, ?>) clazz.getConstructor().newInstance();
+                        } catch (final Exception e) {
+                            Log.trace(e);
+                            return;
+                        }
+
+                        final var interfaceType = (ParameterizedType) clazz.getGenericInterfaces()[
+                                Arrays.stream(clazz.getInterfaces())
+                                      .toList()
+                                      .indexOf(IConverter.class)
+                                ];
+                        final var source      = interfaceType.getActualTypeArguments()[0];
+                        final var destination = interfaceType.getActualTypeArguments()[1];
+                        Log.info("converter [%s -> %s]", interfaceType, source, destination);
+                        server.registerConverter(source, destination, instance);
+                    });
 
             server.start();
         }
