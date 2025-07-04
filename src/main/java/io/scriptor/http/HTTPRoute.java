@@ -1,5 +1,8 @@
 package io.scriptor.http;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -9,11 +12,11 @@ public class HTTPRoute {
     private final Pattern pattern;
     private final List<String> parameters = new ArrayList<>();
 
-    public HTTPRoute(final String endpoint, final String resource) {
+    public HTTPRoute(final @NotNull String endpoint, final @NotNull String resource) {
         this(endpoint + resource);
     }
 
-    public HTTPRoute(final String path) {
+    public HTTPRoute(final @NotNull String path) {
         final var lowerPath = path.toLowerCase();
 
         final var matcher = Pattern.compile("\\[(.*?)]").matcher(lowerPath);
@@ -37,11 +40,11 @@ public class HTTPRoute {
         pattern = Pattern.compile(route.toString());
     }
 
-    public boolean matches(final String path) {
+    public boolean matches(final @NotNull String path) {
         return pattern.matcher(path.toLowerCase()).matches();
     }
 
-    public String get(final String path, final String parameter) {
+    public @Nullable String get(final @NotNull String path, final @NotNull String parameter) {
         final var index = parameters.indexOf(parameter);
         if (index < 0)
             return null;

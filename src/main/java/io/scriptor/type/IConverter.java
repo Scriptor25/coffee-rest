@@ -1,10 +1,17 @@
 package io.scriptor.type;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.lang.reflect.*;
 
 public interface IConverter<S, D> {
 
-    static boolean isInBounds(final Type type, final Type[] upper, final Type[] lower) {
+    static boolean isInBounds(
+            final @NotNull Type type,
+            final @NotNull Type @Nullable [] upper,
+            final @NotNull Type @Nullable [] lower
+    ) {
         if (upper != null)
             for (final var u : upper)
                 if (!isAssignable(u, type))
@@ -16,12 +23,9 @@ public interface IConverter<S, D> {
         return true;
     }
 
-    static boolean isAssignable(final Type dst, final Type src) {
+    static boolean isAssignable(final @NotNull Type dst, final @NotNull Type src) {
         if (dst == src)
             return true;
-
-        if (dst == null || src == null)
-            return false;
 
         return switch (dst) {
             case Class<?> dc -> switch (src) {
@@ -119,5 +123,5 @@ public interface IConverter<S, D> {
         };
     }
 
-    D from(final S source);
+    @NotNull D from(final @Nullable S source);
 }

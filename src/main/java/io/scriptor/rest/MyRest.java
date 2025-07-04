@@ -2,7 +2,7 @@ package io.scriptor.rest;
 
 import io.scriptor.annotation.*;
 import io.scriptor.http.HTTPMethod;
-import io.scriptor.http.HTTPResultVoid;
+import io.scriptor.http.result.HTTPResultVoid;
 import io.scriptor.log.Log;
 import org.json.JSONObject;
 

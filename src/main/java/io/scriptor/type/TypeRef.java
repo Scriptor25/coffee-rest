@@ -1,5 +1,7 @@
 package io.scriptor.type;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
@@ -15,7 +17,7 @@ public abstract class TypeRef<T> {
             throw new IllegalStateException();
     }
 
-    public Type getType() {
+    public @NotNull Type getType() {
         return type;
     }
 }

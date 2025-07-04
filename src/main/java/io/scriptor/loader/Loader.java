@@ -1,5 +1,7 @@
 package io.scriptor.loader;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -10,7 +12,10 @@ import java.util.stream.Stream;
 
 public class Loader implements Iterable<Class<?>> {
 
-    private static List<Class<?>> load(final ClassLoader classLoader, final String packageName)
+    private static @NotNull List<Class<?>> load(
+            final @NotNull ClassLoader classLoader,
+            final @NotNull String packageName
+    )
             throws IOException, ClassNotFoundException {
         final List<Class<?>> classes = new ArrayList<>();
 
@@ -37,17 +42,21 @@ public class Loader implements Iterable<Class<?>> {
     private final ClassLoader classLoader;
     private final List<Class<?>> classes;
 
-    public Loader(final String packageName) throws IOException, ClassNotFoundException {
+    public Loader(final @NotNull String packageName) throws IOException, ClassNotFoundException {
         this.classLoader = new ResourceClassLoader(ClassLoader.getSystemClassLoader());
         this.classes = load(this.classLoader, packageName);
     }
 
-    public Stream<Class<?>> stream() {
+    public @NotNull ClassLoader getClassLoader() {
+        return classLoader;
+    }
+
+    public @NotNull Stream<Class<?>> stream() {
         return classes.stream();
     }
 
     @Override
-    public Iterator<Class<?>> iterator() {
+    public @NotNull Iterator<Class<?>> iterator() {
         return classes.iterator();
     }
 }

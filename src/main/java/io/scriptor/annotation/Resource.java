@@ -1,6 +1,7 @@
 package io.scriptor.annotation;
 
 import io.scriptor.http.HTTPMethod;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,11 +12,11 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Resource {
 
-    String path();
+    @NotNull String path();
 
-    HTTPMethod method() default HTTPMethod.GET;
+    @NotNull HTTPMethod method() default HTTPMethod.GET;
 
-    String accept() default "*/*";
+    @NotNull String accept() default "*/*";
 
-    String result() default "*/*";
+    @NotNull String result() default "*/*";
 }

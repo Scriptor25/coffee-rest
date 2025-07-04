@@ -1,9 +1,12 @@
 package io.scriptor.http;
 
 import io.scriptor.annotation.*;
+import io.scriptor.http.result.HTTPResult;
 import io.scriptor.log.Log;
 import io.scriptor.type.IConverter;
 import io.scriptor.type.TypeRef;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.KeyManagerFactory;
@@ -25,11 +28,11 @@ import java.util.concurrent.*;
 public class HTTPServer implements AutoCloseable {
 
     private record RouteBundle(
-            Object instance,
-            Method callee,
-            HTTPRoute route,
-            String accept,
-            String result
+            @NotNull Object instance,
+            @NotNull Method callee,
+            @NotNull HTTPRoute route,
+            @NotNull String accept,
+            @NotNull String result
     ) {
     }
 
@@ -50,8 +53,8 @@ public class HTTPServer implements AutoCloseable {
     public HTTPServer(
             final int port,
             final boolean enableTLS,
-            final String keystoreFilename,
-            final String keystorePassphrase
+            final @Nullable String keystoreFilename,
+            final @Nullable String keystorePassphrase
     )
             throws CertificateException,
                    IOException,
@@ -64,9 +67,9 @@ public class HTTPServer implements AutoCloseable {
 
         final ServerSocketFactory serverSocketFactory;
         if (enableTLS) {
-            final var passphrase = keystorePassphrase.toCharArray();
+            final var passphrase = Objects.requireNonNull(keystorePassphrase).toCharArray();
             final var keystore   = KeyStore.getInstance("JKS");
-            keystore.load(new FileInputStream(keystoreFilename), passphrase);
+            keystore.load(new FileInputStream(Objects.requireNonNull(keystoreFilename)), passphrase);
 
             final var keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
             keyManagerFactory.init(keystore, passphrase);
@@ -84,10 +87,10 @@ public class HTTPServer implements AutoCloseable {
     }
 
     public void registerRoute(
-            final Object instance,
-            final Method callee,
-            final Endpoint endpoint,
-            final Resource resource
+            final @NotNull Object instance,
+            final @NotNull Method callee,
+            final @NotNull Endpoint endpoint,
+            final @NotNull Resource resource
     ) {
         routes.computeIfAbsent(resource.method(), _ -> new ArrayList<>())
               .add(new RouteBundle(instance,
@@ -98,9 +101,9 @@ public class HTTPServer implements AutoCloseable {
     }
 
     public <S, D> void registerConverter(
-            final Type source,
-            final Type destination,
-            final IConverter<S, D> converter
+            final @NotNull Type source,
+            final @NotNull Type destination,
+            final @NotNull IConverter<S, D> converter
     ) {
         converters.computeIfAbsent(source, _ -> new HashMap<>()).put(destination, converter);
     }
@@ -125,7 +128,7 @@ public class HTTPServer implements AutoCloseable {
     }
 
     @SuppressWarnings("unchecked")
-    private <S, D> D convert(final S object, final Type source, final Type destination) {
+    private <S, D> D convert(final @Nullable S object, final @NotNull Type source, final @NotNull Type destination) {
         if (IConverter.isAssignable(destination, source))
             return (D) object;
 
@@ -135,7 +138,7 @@ public class HTTPServer implements AutoCloseable {
         throw new IllegalStateException("unsupported conversion from '%s' to '%s'".formatted(source, destination));
     }
 
-    private void handleRequest(final Socket socket) throws IOException {
+    private void handleRequest(final @NotNull Socket socket) throws IOException {
         try (
                 final var inputStream = socket.getInputStream();
                 final var outputStream = socket.getOutputStream()
@@ -204,12 +207,12 @@ public class HTTPServer implements AutoCloseable {
                     return;
                 }
 
-                final Map<String, String> headers = new HashMap<>();
+                final Map<String, String> headers = new HashMap<>(result.getHeaders());
                 headers.put("Content-Type", bundle.result());
                 headers.put("Connection", "Close");
 
-                final var isChunked = result.getSize() < 0;
-                if (isChunked)
+                final var chunked = result.getSize() < 0;
+                if (chunked)
                     headers.put("Transfer-Encoding", "chunked");
                 else
                     headers.put("Content-Length", Integer.toString(result.getSize()));
@@ -219,7 +222,7 @@ public class HTTPServer implements AutoCloseable {
                                         result.getStatusText(),
                                         headers,
                                         result.getStream(),
-                                        isChunked).write(outputStream);
+                                        chunked).write(outputStream);
                 return;
             }
 
@@ -227,7 +230,7 @@ public class HTTPServer implements AutoCloseable {
         }
     }
 
-    private static HTTPResponseMessage notFound() {
+    private static @NotNull HTTPResponseMessage notFound() {
         final var bytes = "resource not found".getBytes();
 
         final Map<String, String> headers = new HashMap<>();

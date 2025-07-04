@@ -1,30 +1,29 @@
 package io.scriptor.http;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
 public record HTTPResponseMessage(
-        String protocol,
+        @NotNull String protocol,
         int statusCode,
-        String statusText,
-        Map<String, String> headers,
-        InputStream body,
-        boolean isChunked
+        @NotNull String statusText,
+        @NotNull Map<String, String> headers,
+        @Nullable InputStream body,
+        boolean chunked
 ) {
 
-    private static void writeString(final OutputStream stream, final String value) throws IOException {
+    private static void writeString(final @NotNull OutputStream stream, final @NotNull String value)
+            throws IOException {
         for (final var b : value.getBytes())
             stream.write(b);
     }
 
-    private static void writeInt(final OutputStream stream, final int value) throws IOException {
-        final var string = Integer.toString(value);
-        writeString(stream, string);
-    }
-
-    public void write(final OutputStream stream) throws IOException {
+    public void write(final @NotNull OutputStream stream) throws IOException {
         writeString(stream, "%s %s %s\r\n".formatted(protocol, statusCode, statusText));
         for (final var entry : headers.entrySet())
             writeString(stream, "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()));
@@ -32,7 +31,7 @@ public record HTTPResponseMessage(
         stream.flush();
 
         if (body != null) {
-            if (!isChunked) {
+            if (!chunked) {
                 body.transferTo(stream);
                 stream.flush();
             } else {

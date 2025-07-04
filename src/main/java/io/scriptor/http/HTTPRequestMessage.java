@@ -1,5 +1,8 @@
 package io.scriptor.http;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -9,14 +12,14 @@ import java.util.List;
 import java.util.Map;
 
 public record HTTPRequestMessage(
-        HTTPMethod method,
-        String path,
-        Map<String, List<String>> query,
-        String protocol,
-        Map<String, String> headers,
-        InputStream body
+        @NotNull HTTPMethod method,
+        @NotNull String path,
+        @NotNull Map<String, List<String>> query,
+        @NotNull String protocol,
+        @NotNull Map<String, String> headers,
+        @NotNull InputStream body
 ) {
-    private static String readLine(final InputStream stream) throws IOException {
+    private static @Nullable String readLine(final @NotNull InputStream stream) throws IOException {
         final var string = new StringBuilder();
 
         var c = stream.read();
@@ -33,7 +36,7 @@ public record HTTPRequestMessage(
         return string.toString();
     }
 
-    public static HTTPRequestMessage read(final InputStream stream) throws IOException {
+    public static @Nullable HTTPRequestMessage read(final @NotNull InputStream stream) throws IOException {
 
         var line = readLine(stream);
         if (line == null)
