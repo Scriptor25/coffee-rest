@@ -2,7 +2,7 @@ package io.scriptor.http;
 
 import java.io.InputStream;
 
-public class HTTPResultVoid extends HTTPResultBase<Void> {
+public class HTTPResultVoid extends HTTPResult<Void> {
 
     public HTTPResultVoid(final int statusCode) {
         super(statusCode);

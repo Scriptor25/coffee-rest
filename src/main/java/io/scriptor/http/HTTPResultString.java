@@ -3,7 +3,7 @@ package io.scriptor.http;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-public class HTTPResultString extends HTTPResultBase<String> {
+public class HTTPResultString extends HTTPResult<String> {
 
     public HTTPResultString(final int statusCode) {
         super(statusCode);

@@ -2,7 +2,7 @@ package io.scriptor.http;
 
 import java.io.InputStream;
 
-public class HTTPResultStream extends HTTPResultBase<InputStream> {
+public class HTTPResultStream extends HTTPResult<InputStream> {
 
     public HTTPResultStream(final int statusCode) {
         super(statusCode);

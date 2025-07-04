@@ -52,8 +52,10 @@ public record HTTPRequestMessage(
         if (uri.getQuery() != null) {
             final var params = uri.getQuery().split("&+");
             for (final var param : params) {
-                final var pair = param.split("=", 2);
-                query.computeIfAbsent(pair[0], _ -> new ArrayList<>()).add(pair[1]);
+                if (param.contains("=")) {
+                    final var pair = param.split("=", 2);
+                    query.computeIfAbsent(pair[0], _ -> new ArrayList<>()).add(pair[1]);
+                }
             }
         }
 

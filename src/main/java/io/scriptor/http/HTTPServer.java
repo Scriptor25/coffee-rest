@@ -2,8 +2,8 @@ package io.scriptor.http;
 
 import io.scriptor.annotation.*;
 import io.scriptor.log.Log;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import io.scriptor.type.IConverter;
+import io.scriptor.type.TypeRef;
 
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.KeyManagerFactory;
@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
@@ -40,6 +41,7 @@ public class HTTPServer implements AutoCloseable {
     private final ServerSocket serverSocket;
 
     private final Map<HTTPMethod, List<RouteBundle>> routes = new HashMap<>();
+    private final Map<Type, Map<Type, IConverter<?, ?>>> converters = new HashMap<>();
 
     private final BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(256);
     private final Executor executor = new ThreadPoolExecutor(10,
@@ -96,10 +98,17 @@ public class HTTPServer implements AutoCloseable {
         routes.computeIfAbsent(resource.method(), _ -> new ArrayList<>())
               .add(new RouteBundle(instance,
                                    callee,
-                                   new HTTPRoute(endpoint.value(),
-                                                 resource.path()),
+                                   new HTTPRoute(endpoint.value(), resource.path()),
                                    resource.accept(),
                                    resource.result()));
+    }
+
+    public <S, D> void registerConverter(
+            final Type source,
+            final Type destination,
+            final IConverter<S, D> converter
+    ) {
+        converters.computeIfAbsent(source, _ -> new HashMap<>()).put(destination, converter);
     }
 
     public void handleRequest() throws IOException {
@@ -120,42 +129,14 @@ public class HTTPServer implements AutoCloseable {
             handleRequest();
     }
 
-    private <T> Object convert(final Object object, final Class<T> type) {
-        if (object == null)
-            return null;
+    private <S, D> D convert(final S object, final Type source, final Type destination) {
+        if (IConverter.isAssignable(destination, source))
+            return (D) object;
 
-        if (type.isInstance(object))
-            return object;
+        if (converters.containsKey(source) && converters.get(source).containsKey(destination))
+            return ((IConverter<S, D>) converters.get(source).get(destination)).from(object);
 
-        final var objectType = object.getClass();
-        if (objectType == String.class) {
-            final var string = (String) object;
-            if (type == Boolean.class)
-                return Boolean.parseBoolean(string);
-            if (type == Integer.class)
-                return Integer.parseInt(string);
-            if (type == Float.class)
-                return Float.parseFloat(string);
-        }
-
-        throw new IllegalStateException("unsupported conversion from %s to %s".formatted(objectType, type));
-    }
-
-    private HTTPResultBase<?> convertResult(final Object object) {
-        if (object == null)
-            throw new IllegalStateException("unsupported conversion from null to %s".formatted(HTTPResultBase.class));
-
-        if (object instanceof HTTPResultBase<?> cast)
-            return cast;
-
-        if (object instanceof String || object instanceof JSONObject || object instanceof JSONArray)
-            return new HTTPResultString(200, "OK", object.toString());
-
-        if (object instanceof InputStream cast)
-            return new HTTPResultStream(200, "OK", cast);
-
-        throw new IllegalStateException("unsupported conversion from %s to %s".formatted(object.getClass(),
-                                                                                         HTTPResultBase.class));
+        throw new IllegalStateException("unsupported conversion from '%s' to '%s'".formatted(source, destination));
     }
 
     private void handleRequest(final Socket socket) throws IOException {
@@ -205,16 +186,17 @@ public class HTTPServer implements AutoCloseable {
                         value = null;
                     }
 
-                    args[i] = convert(value, parameter.getType());
+                    if (value != null) {
+                        args[i] = this.convert(value, value.getClass(), parameter.getType());
+                    }
                 }
 
-                final HTTPResultBase<?> result;
+                final HTTPResult<?> result;
                 try {
                     final var object = bundle.callee().invoke(bundle.instance(), args);
-                    final var type   = bundle.callee().getReturnType();
-                    result = type == Void.class
-                             ? new HTTPResultVoid(200, "OK")
-                             : convertResult(object);
+                    final var type   = bundle.callee().getGenericReturnType();
+                    result = convert(object, type, new TypeRef<HTTPResult<?>>() {
+                    }.getType());
                 } catch (final Exception e) {
                     Log.trace(e);
                     new HTTPResponseMessage("HTTP/1.1",

@@ -2,8 +2,8 @@ package io.scriptor.rest;
 
 import io.scriptor.annotation.*;
 import io.scriptor.http.HTTPMethod;
-import io.scriptor.log.Log;
 import io.scriptor.http.HTTPResultVoid;
+import io.scriptor.log.Log;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -16,12 +16,12 @@ import java.util.Objects;
 @Endpoint("/")
 public class MyRest {
 
-    @Resource(path = "hello", result = "text/html")
+    @Resource(path = "hello", method = HTTPMethod.GET, result = "text/html")
     public String getHello() {
         return "<html><head><title>Hello</title></head><body><h1>Hello World!</h1></body></html>";
     }
 
-    @Resource(path = "favicon.[]", result = "image/svg+xml")
+    @Resource(path = "favicon.[]", method = HTTPMethod.GET, result = "image/svg+xml")
     public InputStream getFavicon() {
         return ClassLoader.getSystemResourceAsStream("favicon.svg");
     }

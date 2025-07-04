@@ -14,18 +14,24 @@ public class HTTPRoute {
     }
 
     public HTTPRoute(final String path) {
-        final var parts = path.toLowerCase().split("[\\[\\]]");
+        final var lowerPath = path.toLowerCase();
 
-        final var route = new StringBuilder().append("^");
-        for (int i = 0; i < parts.length; ++i) {
-            if (i % 2 == 0) {
-                route.append(Pattern.quote(parts[i]));
-            } else {
-                if (!parts[i].trim().isEmpty())
-                    parameters.add(parts[i].trim());
-                route.append("([^\\/]+)");
-            }
+        final var matcher = Pattern.compile("\\[(.*?)]").matcher(lowerPath);
+        final var route   = new StringBuilder().append("^");
+
+        int end = 0;
+        while (matcher.find()) {
+            final var staticPart = lowerPath.substring(end, matcher.start());
+            route.append(Pattern.quote(staticPart));
+
+            final var paramPart = matcher.group(1).trim();
+            parameters.add(paramPart);
+            route.append("([^\\/]+)");
+
+            end = matcher.end();
         }
+
+        route.append(Pattern.quote(lowerPath.substring(end)));
         route.append("$");
 
         pattern = Pattern.compile(route.toString());
