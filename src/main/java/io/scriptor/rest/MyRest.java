@@ -17,8 +17,8 @@ import java.util.Objects;
 public class MyRest {
 
     @Resource(path = "hello", method = HTTPMethod.GET, result = "text/html")
-    public String getHello() {
-        return "<html><head><title>Hello</title></head><body><h1>Hello World!</h1></body></html>";
+    public InputStream getHello() {
+        return ClassLoader.getSystemResourceAsStream("hello.html");
     }
 
     @Resource(path = "favicon.[]", method = HTTPMethod.GET, result = "image/svg+xml")
