@@ -119,10 +119,12 @@ public class HTTPServer implements AutoCloseable {
     }
 
     public void start() throws IOException {
-        while (true)
+        while (!Thread.interrupted()) {
             handleRequest();
+        }
     }
 
+    @SuppressWarnings("unchecked")
     private <S, D> D convert(final S object, final Type source, final Type destination) {
         if (IConverter.isAssignable(destination, source))
             return (D) object;
