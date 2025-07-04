@@ -3,6 +3,7 @@ package io.scriptor.loader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 public final class ResourceClassLoader extends ClassLoader {
 
@@ -13,10 +14,8 @@ public final class ResourceClassLoader extends ClassLoader {
     private byte[] loadClassBytes(final String className) throws ClassNotFoundException {
         final var fileName = className.replace('.', File.separatorChar) + ".class";
         try (final var classStream = getResourceAsStream(fileName)) {
-            assert classStream != null;
-
             final var byteStream = new ByteArrayOutputStream();
-            classStream.transferTo(byteStream);
+            Objects.requireNonNull(classStream).transferTo(byteStream);
 
             return byteStream.toByteArray();
         } catch (final IOException e) {

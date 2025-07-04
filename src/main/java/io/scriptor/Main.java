@@ -1,30 +1,28 @@
 package io.scriptor;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import io.scriptor.annotation.Endpoint;
 import io.scriptor.annotation.Resource;
 import io.scriptor.http.HTTPServer;
 import io.scriptor.loader.Loader;
 import io.scriptor.log.Log;
 import io.scriptor.type.IConverter;
-import io.scriptor.type.TypeRef;
 
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.WildcardType;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
-import static io.scriptor.type.IConverter.isAssignable;
-import static io.scriptor.type.IConverter.isInBounds;
-
 public class Main {
+
+    public static String getenv(final String key, final String value) {
+        final var entry = System.getenv(key);
+        return entry == null ? value : entry;
+    }
 
     public static void main(final String[] args)
             throws IOException,
@@ -35,12 +33,10 @@ public class Main {
                    KeyManagementException,
                    ClassNotFoundException {
 
-        final var env = Dotenv.configure().filename(".env.local").load();
-
-        final var enableTLS          = Integer.parseInt(env.get("ENABLE_TLS", "0")) != 0;
-        final var port               = Integer.parseInt(env.get("PORT", enableTLS ? "443" : "80"));
-        final var keystoreFilename   = env.get("KEYSTORE");
-        final var keystorePassphrase = env.get("KEYSTORE_PASSPHRASE");
+        final var enableTLS          = Integer.parseInt(getenv("ENABLE_TLS", "0")) != 0;
+        final var port               = Integer.parseInt(getenv("PORT", enableTLS ? "443" : "80"));
+        final var keystoreFilename   = getenv("KEYSTORE", null);
+        final var keystorePassphrase = getenv("KEYSTORE_PASSPHRASE", null);
 
         try (final var server = new HTTPServer(port, enableTLS, keystoreFilename, keystorePassphrase)) {
 

@@ -33,10 +33,7 @@ public class HTTPServer implements AutoCloseable {
     ) {
     }
 
-    private final int port;
     private final boolean enableTLS;
-    private final String keystoreFilename;
-    private final String keystorePassphrase;
 
     private final ServerSocket serverSocket;
 
@@ -63,10 +60,7 @@ public class HTTPServer implements AutoCloseable {
                    NoSuchAlgorithmException,
                    UnrecoverableKeyException {
 
-        this.port = port;
         this.enableTLS = enableTLS;
-        this.keystoreFilename = keystoreFilename;
-        this.keystorePassphrase = keystorePassphrase;
 
         final ServerSocketFactory serverSocketFactory;
         if (enableTLS) {
