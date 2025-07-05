@@ -36,7 +36,7 @@ public class HTTPServer implements AutoCloseable {
     ) {
     }
 
-    private final boolean enableTLS;
+    private final boolean tls;
 
     private final ServerSocket serverSocket;
 
@@ -63,7 +63,7 @@ public class HTTPServer implements AutoCloseable {
                    NoSuchAlgorithmException,
                    UnrecoverableKeyException {
 
-        this.enableTLS = enableTLS;
+        tls = enableTLS;
 
         final ServerSocketFactory serverSocketFactory;
         if (enableTLS) {
@@ -112,7 +112,7 @@ public class HTTPServer implements AutoCloseable {
         final var socket = serverSocket.accept();
         executor.execute(() -> {
             try {
-                if (enableTLS)
+                if (tls)
                     ((SSLSocket) socket).startHandshake();
                 handleRequest(socket);
             } catch (final IOException e) {
@@ -186,7 +186,7 @@ public class HTTPServer implements AutoCloseable {
                     }
 
                     if (value != null) {
-                        args[i] = this.convert(value, value.getClass(), parameter.getType());
+                        args[i] = convert(value, value.getClass(), parameter.getType());
                     }
                 }
 
