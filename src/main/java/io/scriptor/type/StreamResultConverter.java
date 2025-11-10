@@ -12,8 +12,9 @@ public class StreamResultConverter implements IConverter<InputStream, HTTPResult
 
     @Override
     public @NotNull HTTPResult<?> from(final @Nullable InputStream source) {
-        if (source == null)
+        if (source == null) {
             return new HTTPResultVoid(200, "OK");
+        }
         return new HTTPResultStream(200, "OK", source);
     }
 }

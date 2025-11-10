@@ -23,15 +23,17 @@ public record HTTPRequestMessage(
         final var string = new StringBuilder();
 
         var c = stream.read();
-        if (c < 0)
+        if (c < 0) {
             return null;
+        }
 
-        if (c == '\n')
+        if (c == '\n') {
             return "";
+        }
 
-        do
+        do {
             string.append((char) c);
-        while ((c = stream.read()) > 0 && c != '\n');
+        } while ((c = stream.read()) > 0 && c != '\n');
 
         return string.toString();
     }
@@ -39,8 +41,9 @@ public record HTTPRequestMessage(
     public static @Nullable HTTPRequestMessage read(final @NotNull InputStream stream) throws IOException {
 
         var line = readLine(stream);
-        if (line == null)
+        if (line == null) {
             return null;
+        }
 
         line = line.trim();
 
@@ -66,12 +69,14 @@ public record HTTPRequestMessage(
 
         while (true) {
             line = readLine(stream);
-            if (line == null)
+            if (line == null) {
                 break;
+            }
 
             line = line.trim();
-            if (line.isEmpty())
+            if (line.isEmpty()) {
                 break;
+            }
 
             final var header = line.split(":\\s*");
             headers.put(header[0].toLowerCase(), header[1]);

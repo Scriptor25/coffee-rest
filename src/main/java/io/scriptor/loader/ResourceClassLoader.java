@@ -24,8 +24,9 @@ public class ResourceClassLoader extends ClassLoader {
             throws IOException, ClassNotFoundException {
         final var fileName = packageName.replace('.', File.separatorChar);
         try (final var packageStream = getResourceAsStream(fileName)) {
-            if (packageStream == null)
+            if (packageStream == null) {
                 return new IterableEntry();
+            }
 
             final List<IPackageEntry> entries = new ArrayList<>();
 

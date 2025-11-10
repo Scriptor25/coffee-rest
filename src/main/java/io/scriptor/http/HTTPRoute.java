@@ -13,7 +13,7 @@ public class HTTPRoute {
     private final List<String> parameters = new ArrayList<>();
 
     public HTTPRoute(final @NotNull String endpoint, final @NotNull String resource) {
-        this(endpoint + resource);
+        this("%s/%s".formatted(endpoint, resource).replaceAll("/+", "/"));
     }
 
     public HTTPRoute(final @NotNull String path) {
@@ -46,11 +46,13 @@ public class HTTPRoute {
 
     public @Nullable String get(final @NotNull String path, final @NotNull String parameter) {
         final var index = parameters.indexOf(parameter);
-        if (index < 0)
+        if (index < 0) {
             return null;
+        }
         final var matcher = pattern.matcher(path);
-        if (!matcher.matches())
+        if (!matcher.matches()) {
             return null;
+        }
         return matcher.group(index + 1);
     }
 }

@@ -19,14 +19,16 @@ public record HTTPResponseMessage(
 
     private static void writeString(final @NotNull OutputStream stream, final @NotNull String value)
             throws IOException {
-        for (final var b : value.getBytes())
+        for (final var b : value.getBytes()) {
             stream.write(b);
+        }
     }
 
     public void write(final @NotNull OutputStream stream) throws IOException {
         writeString(stream, "%s %s %s\r\n".formatted(protocol, statusCode, statusText));
-        for (final var entry : headers.entrySet())
+        for (final var entry : headers.entrySet()) {
             writeString(stream, "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()));
+        }
         writeString(stream, "\r\n");
         stream.flush();
 

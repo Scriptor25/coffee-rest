@@ -112,8 +112,9 @@ public class HTTPServer implements AutoCloseable {
         final var socket = serverSocket.accept();
         executor.execute(() -> {
             try {
-                if (tls)
+                if (tls) {
                     ((SSLSocket) socket).startHandshake();
+                }
                 handleRequest(socket);
             } catch (final IOException e) {
                 Log.trace(e);
@@ -129,11 +130,13 @@ public class HTTPServer implements AutoCloseable {
 
     @SuppressWarnings("unchecked")
     private <S, D> D convert(final @Nullable S object, final @NotNull Type source, final @NotNull Type destination) {
-        if (IConverter.isAssignable(destination, source))
+        if (IConverter.isAssignable(destination, source)) {
             return (D) object;
+        }
 
-        if (converters.containsKey(source) && converters.get(source).containsKey(destination))
+        if (converters.containsKey(source) && converters.get(source).containsKey(destination)) {
             return ((IConverter<S, D>) converters.get(source).get(destination)).from(object);
+        }
 
         throw new IllegalStateException("unsupported conversion from '%s' to '%s'".formatted(source, destination));
     }
@@ -153,45 +156,46 @@ public class HTTPServer implements AutoCloseable {
             Log.info("%s %s %s", request.method(), request.path(), request.protocol());
 
             for (final var bundle : routes.get(request.method())) {
-                if (!bundle.route().matches(request.path()))
+                if (!bundle.route().matches(request.path())) {
                     continue;
+                }
 
                 final var parameterCount = bundle.callee().getParameterCount();
                 final var parameters     = bundle.callee().getParameters();
 
                 final var args = new Object[parameterCount];
 
-                for (int i = 0; i < parameterCount; ++i) {
-                    final var parameter = parameters[i];
-
-                    final Object value;
-                    if (parameter.isAnnotationPresent(Body.class)) {
-                        value = request.body();
-                    } else if (parameter.isAnnotationPresent(Header.class)) {
-                        final var name = Objects.requireNonNull(parameter.getAnnotation(Header.class)).value();
-                        value = request.headers().get(name.toLowerCase());
-                    } else if (parameter.isAnnotationPresent(Path.class)) {
-                        final var name = Objects.requireNonNull(parameter.getAnnotation(Path.class)).value();
-                        value = bundle.route().get(request.path(), name);
-                    } else if (parameter.isAnnotationPresent(Query.class)) {
-                        final var name   = Objects.requireNonNull(parameter.getAnnotation(Query.class)).value();
-                        final var values = request.query().computeIfAbsent(name, _ -> new ArrayList<>());
-                        value = parameter.getType().isArray()
-                                ? values.toArray()
-                                : !values.isEmpty()
-                                  ? values.getFirst()
-                                  : null;
-                    } else {
-                        value = null;
-                    }
-
-                    if (value != null) {
-                        args[i] = convert(value, value.getClass(), parameter.getType());
-                    }
-                }
-
                 final HTTPResult<?> result;
                 try {
+                    for (int i = 0; i < parameterCount; ++i) {
+                        final var parameter = parameters[i];
+
+                        final Object value;
+                        if (parameter.isAnnotationPresent(Body.class)) {
+                            value = request.body();
+                        } else if (parameter.isAnnotationPresent(Header.class)) {
+                            final var name = Objects.requireNonNull(parameter.getAnnotation(Header.class)).value();
+                            value = request.headers().get(name.toLowerCase());
+                        } else if (parameter.isAnnotationPresent(Path.class)) {
+                            final var name = Objects.requireNonNull(parameter.getAnnotation(Path.class)).value();
+                            value = bundle.route().get(request.path(), name);
+                        } else if (parameter.isAnnotationPresent(Query.class)) {
+                            final var name   = Objects.requireNonNull(parameter.getAnnotation(Query.class)).value();
+                            final var values = request.query().computeIfAbsent(name, _ -> new ArrayList<>());
+                            value = parameter.getType().isArray()
+                                    ? values.toArray()
+                                    : !values.isEmpty()
+                                      ? values.getFirst()
+                                      : null;
+                        } else {
+                            value = null;
+                        }
+
+                        if (value != null) {
+                            args[i] = convert(value, value.getClass(), parameter.getType());
+                        }
+                    }
+
                     final var object = bundle.callee().invoke(bundle.instance(), args);
                     final var type   = bundle.callee().getGenericReturnType();
                     result = convert(object, type, new TypeRef<HTTPResult<?>>() {
@@ -212,10 +216,11 @@ public class HTTPServer implements AutoCloseable {
                 headers.put("Connection", "Close");
 
                 final var chunked = result.getSize() < 0;
-                if (chunked)
+                if (chunked) {
                     headers.put("Transfer-Encoding", "chunked");
-                else
+                } else {
                     headers.put("Content-Length", Integer.toString(result.getSize()));
+                }
 
                 new HTTPResponseMessage("HTTP/1.1",
                                         result.getStatusCode(),

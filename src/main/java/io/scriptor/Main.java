@@ -6,6 +6,9 @@ import io.scriptor.http.HTTPServer;
 import io.scriptor.loader.Loader;
 import io.scriptor.log.Log;
 import io.scriptor.type.IConverter;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
@@ -20,19 +23,19 @@ import java.util.stream.StreamSupport;
 
 public class Main {
 
-    public static String getenv(final String key, final String value) {
+    @Contract("_, !null -> !null")
+    public static String getenv(final @NotNull String key, final @Nullable String value) {
         final var entry = System.getenv(key);
         return entry == null ? value : entry;
     }
 
-    public static void main(final String[] args)
+    public static void main(final @NotNull String @NotNull [] args)
             throws IOException,
                    KeyStoreException,
                    CertificateException,
                    NoSuchAlgorithmException,
                    UnrecoverableKeyException,
-                   KeyManagementException,
-                   ClassNotFoundException {
+                   KeyManagementException {
 
         final var enableTLS          = Integer.parseInt(getenv("ENABLE_TLS", "0")) != 0;
         final var port               = Integer.parseInt(getenv("PORT", enableTLS ? "443" : "80"));

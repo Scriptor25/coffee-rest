@@ -7,7 +7,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public final class ClassTree implements ITree<Class<?>> {
+public record ClassTree(@NotNull ResourceClassLoader classLoader, @NotNull String packageName)
+        implements ITree<Class<?>> {
 
     private record ClassEntry(@NotNull Class<?> value) implements ITree<Class<?>> {
 
@@ -20,14 +21,6 @@ public final class ClassTree implements ITree<Class<?>> {
         public boolean hasValue() {
             return true;
         }
-    }
-
-    private final ResourceClassLoader classLoader;
-    private final String packageName;
-
-    public ClassTree(final @NotNull ResourceClassLoader classLoader, final @NotNull String packageName) {
-        this.classLoader = classLoader;
-        this.packageName = packageName;
     }
 
     @Override
@@ -52,10 +45,12 @@ public final class ClassTree implements ITree<Class<?>> {
             @Override
             public ITree<Class<?>> next() {
                 final var entry = iterator.next();
-                if (entry instanceof IPackageEntry.ClassEntry(Class<?> type))
+                if (entry instanceof IPackageEntry.ClassEntry(Class<?> type)) {
                     return new ClassEntry(type);
-                if (entry instanceof IPackageEntry.FutureEntry(ResourceClassLoader loader, String name))
+                }
+                if (entry instanceof IPackageEntry.FutureEntry(ResourceClassLoader loader, String name)) {
                     return new ClassTree(loader, name);
+                }
                 throw new NoSuchElementException();
             }
         };

@@ -34,8 +34,9 @@ public interface ITree<T> extends Iterable<T> {
 
         @Override
         public T next() {
-            if (!hasNext())
+            if (!hasNext()) {
                 throw new NoSuchElementException();
+            }
             final var result = next;
             advance();
             return result;

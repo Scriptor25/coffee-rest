@@ -74,8 +74,9 @@ public abstract class HTTPResult<T> {
     }
 
     public @NotNull T getBody() {
-        if (body == null)
+        if (body == null) {
             throw new IllegalStateException();
+        }
         return body;
     }
 

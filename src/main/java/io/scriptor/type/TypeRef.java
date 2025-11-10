@@ -11,10 +11,11 @@ public abstract class TypeRef<T> {
 
     protected TypeRef() {
         final var superclass = getClass().getGenericSuperclass();
-        if (superclass instanceof ParameterizedType parameterized)
+        if (superclass instanceof ParameterizedType parameterized) {
             this.type = parameterized.getActualTypeArguments()[0];
-        else
+        } else {
             throw new IllegalStateException();
+        }
     }
 
     public @NotNull Type getType() {

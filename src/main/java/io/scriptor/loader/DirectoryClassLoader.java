@@ -4,11 +4,14 @@ import io.scriptor.loader.IPackageEntry.IterableEntry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DirectoryClassLoader extends ResourceClassLoader {
+public final class DirectoryClassLoader extends ResourceClassLoader {
 
     private final File rootFile;
 
@@ -18,18 +21,19 @@ public class DirectoryClassLoader extends ResourceClassLoader {
     }
 
     @Override
-    public @NotNull IterableEntry getClassPackage(final @NotNull String packageName)
-            throws IOException, ClassNotFoundException {
+    public @NotNull IterableEntry getClassPackage(final @NotNull String packageName) throws ClassNotFoundException {
 
         final var fileName = packageName.replace('.', File.separatorChar);
         final var file     = new File(rootFile, fileName);
 
-        if (!file.exists() || !file.isDirectory())
+        if (!file.exists() || !file.isDirectory()) {
             return new IterableEntry();
+        }
 
         final var files = file.listFiles();
-        if (files == null)
+        if (files == null) {
             return new IterableEntry();
+        }
 
         final List<IPackageEntry> entries = new ArrayList<>();
 

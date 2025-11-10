@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.Iterator;
 
-public class Loader implements Iterable<Class<?>> {
+public final class Loader implements Iterable<Class<?>> {
 
     private final ITree<Class<?>> classes;
 

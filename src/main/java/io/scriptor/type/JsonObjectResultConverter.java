@@ -11,8 +11,9 @@ public class JsonObjectResultConverter implements IConverter<JSONObject, HTTPRes
 
     @Override
     public @NotNull HTTPResult<?> from(final @Nullable JSONObject source) {
-        if (source == null)
+        if (source == null) {
             return new HTTPResultVoid(200, "OK");
+        }
         return new HTTPResultString(200, "OK", source.toString());
     }
 }

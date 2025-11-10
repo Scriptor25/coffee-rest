@@ -65,4 +65,15 @@ public class MyRest {
 
         return connection.getInputStream();
     }
+
+    @Resource(path = "fib([n])", method = HTTPMethod.GET, result = "text/plain")
+    public Integer getFib(final @Path("n") Integer n) {
+        int a = 0, b = 1;
+        for (int i = 0; i < n; ++i) {
+            final var c = a + b;
+            a = b;
+            b = c;
+        }
+        return a;
+    }
 }

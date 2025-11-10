@@ -6,13 +6,13 @@ import io.scriptor.http.result.HTTPResultVoid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class StringResultConverter implements IConverter<String, HTTPResult<?>> {
+public class IntegerResultConverter implements IConverter<Integer, HTTPResult<?>> {
 
     @Override
-    public @NotNull HTTPResult<?> from(final @Nullable String source) {
+    public @NotNull HTTPResult<?> from(final @Nullable Integer source) {
         if (source == null) {
             return new HTTPResultVoid(200, "OK");
         }
-        return new HTTPResultString(200, "OK", source);
+        return new HTTPResultString(200, "OK", source.toString());
     }
 }
