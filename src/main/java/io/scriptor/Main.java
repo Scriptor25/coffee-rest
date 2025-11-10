@@ -106,7 +106,7 @@ public class Main {
                                 ];
                         final var source      = interfaceType.getActualTypeArguments()[0];
                         final var destination = interfaceType.getActualTypeArguments()[1];
-                        Log.info("converter [%s -> %s]", interfaceType, source, destination);
+                        Log.info("converter [ %s -> %s ]", source, destination);
                         server.registerConverter(source, destination, instance);
                     });
 
