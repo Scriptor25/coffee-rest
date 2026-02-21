@@ -13,7 +13,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
-@Endpoint("/")
+@Endpoint("/my")
 public class MyRest {
 
     @Resource(path = "hello", method = HTTPMethod.GET, result = "text/html")
@@ -28,8 +28,8 @@ public class MyRest {
 
     @Resource(path = "message/[from]/[to]", method = HTTPMethod.POST, accept = "text/plain", result = "text/plain")
     public HTTPResultVoid postMessage(
-            final @Path("from") String from,
-            final @Path("to") String to,
+            final @Parameter("from") String from,
+            final @Parameter("to") String to,
             final @Body InputStream body,
             final @Header("Content-Length") Integer contentLength
     ) throws IOException {
@@ -67,7 +67,7 @@ public class MyRest {
     }
 
     @Resource(path = "fib([n])", method = HTTPMethod.GET, result = "text/plain")
-    public Integer getFib(final @Path("n") Integer n) {
+    public Integer getFib(final @Parameter("n") Integer n) {
         int a = 0, b = 1;
         for (int i = 0; i < n; ++i) {
             final var c = a + b;

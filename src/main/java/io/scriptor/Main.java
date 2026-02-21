@@ -29,7 +29,7 @@ public class Main {
         return entry == null ? value : entry;
     }
 
-    public static void main(final @NotNull String @NotNull [] args)
+    static void main(final @NotNull String @NotNull [] args)
             throws IOException,
                    KeyStoreException,
                    CertificateException,
@@ -38,7 +38,7 @@ public class Main {
                    KeyManagementException {
 
         final var enableTLS          = Integer.parseInt(getenv("ENABLE_TLS", "0")) != 0;
-        final var port               = Integer.parseInt(getenv("PORT", enableTLS ? "443" : "80"));
+        final var port               = Integer.parseInt(getenv("PORT", enableTLS ? "8443" : "8080"));
         final var keystoreFilename   = getenv("KEYSTORE", null);
         final var keystorePassphrase = getenv("KEYSTORE_PASSPHRASE", null);
 

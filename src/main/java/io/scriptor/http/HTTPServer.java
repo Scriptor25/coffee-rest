@@ -33,7 +33,12 @@ public class HTTPServer implements AutoCloseable {
             @NotNull HTTPRoute route,
             @NotNull String accept,
             @NotNull String result
-    ) {
+    ) implements Comparable<RouteBundle> {
+
+        @Override
+        public int compareTo(final @NotNull RouteBundle other) {
+            return this.route.compareTo(other.route);
+        }
     }
 
     private final boolean tls;
@@ -155,83 +160,86 @@ public class HTTPServer implements AutoCloseable {
 
             Log.info("%s %s %s", request.method(), request.path(), request.protocol());
 
-            for (final var bundle : routes.get(request.method())) {
-                if (!bundle.route().matches(request.path())) {
-                    continue;
-                }
+            final var opt = routes.get(request.method())
+                                  .stream()
+                                  .filter(x -> x.route().matches(request.path()))
+                                  .max(RouteBundle::compareTo);
 
-                final var parameterCount = bundle.callee().getParameterCount();
-                final var parameters     = bundle.callee().getParameters();
-
-                final var args = new Object[parameterCount];
-
-                final HTTPResult<?> result;
-                try {
-                    for (int i = 0; i < parameterCount; ++i) {
-                        final var parameter = parameters[i];
-
-                        final Object value;
-                        if (parameter.isAnnotationPresent(Body.class)) {
-                            value = request.body();
-                        } else if (parameter.isAnnotationPresent(Header.class)) {
-                            final var name = Objects.requireNonNull(parameter.getAnnotation(Header.class)).value();
-                            value = request.headers().get(name.toLowerCase());
-                        } else if (parameter.isAnnotationPresent(Path.class)) {
-                            final var name = Objects.requireNonNull(parameter.getAnnotation(Path.class)).value();
-                            value = bundle.route().get(request.path(), name);
-                        } else if (parameter.isAnnotationPresent(Query.class)) {
-                            final var name   = Objects.requireNonNull(parameter.getAnnotation(Query.class)).value();
-                            final var values = request.query().computeIfAbsent(name, _ -> new ArrayList<>());
-                            value = parameter.getType().isArray()
-                                    ? values.toArray()
-                                    : !values.isEmpty()
-                                      ? values.getFirst()
-                                      : null;
-                        } else {
-                            value = null;
-                        }
-
-                        if (value != null) {
-                            args[i] = convert(value, value.getClass(), parameter.getType());
-                        }
-                    }
-
-                    final var object = bundle.callee().invoke(bundle.instance(), args);
-                    final var type   = bundle.callee().getGenericReturnType();
-                    result = convert(object, type, new TypeRef<HTTPResult<?>>() {
-                    }.getType());
-                } catch (final Exception e) {
-                    Log.trace(e);
-                    new HTTPResponseMessage("HTTP/1.1",
-                                            500,
-                                            "Internal Server Error - %s".formatted(e.getMessage()),
-                                            new HashMap<>(),
-                                            null,
-                                            false).write(outputStream);
-                    return;
-                }
-
-                final Map<String, String> headers = new HashMap<>(result.getHeaders());
-                headers.put("Content-Type", bundle.result());
-                headers.put("Connection", "Close");
-
-                final var chunked = result.getSize() < 0;
-                if (chunked) {
-                    headers.put("Transfer-Encoding", "chunked");
-                } else {
-                    headers.put("Content-Length", Integer.toString(result.getSize()));
-                }
-
-                new HTTPResponseMessage("HTTP/1.1",
-                                        result.getStatusCode(),
-                                        result.getStatusText(),
-                                        headers,
-                                        result.getStream(),
-                                        chunked).write(outputStream);
+            if (opt.isEmpty()) {
+                notFound().write(outputStream);
                 return;
             }
 
-            notFound().write(outputStream);
+            final var bundle = opt.get();
+
+            final var parameterCount = bundle.callee().getParameterCount();
+            final var parameters     = bundle.callee().getParameters();
+
+            final var args = new Object[parameterCount];
+
+            final HTTPResult<?> result;
+            try {
+                for (int i = 0; i < parameterCount; ++i) {
+                    final var parameter = parameters[i];
+
+                    final Object value;
+                    if (parameter.isAnnotationPresent(Body.class)) {
+                        value = request.body();
+                    } else if (parameter.isAnnotationPresent(Header.class)) {
+                        final var name = Objects.requireNonNull(parameter.getAnnotation(Header.class)).value();
+                        value = request.headers().get(name.toLowerCase());
+                    } else if (parameter.isAnnotationPresent(Parameter.class)) {
+                        final var name = Objects.requireNonNull(parameter.getAnnotation(Parameter.class)).value();
+                        value = bundle.route().get(request.path(), name);
+                    } else if (parameter.isAnnotationPresent(Query.class)) {
+                        final var name   = Objects.requireNonNull(parameter.getAnnotation(Query.class)).value();
+                        final var values = request.query().computeIfAbsent(name, _ -> new ArrayList<>());
+                        value = parameter.getType().isArray()
+                                ? values.toArray()
+                                : !values.isEmpty()
+                                  ? values.getFirst()
+                                  : null;
+                    } else {
+                        value = null;
+                    }
+
+                    if (value != null) {
+                        args[i] = convert(value, value.getClass(), parameter.getType());
+                    }
+                }
+
+                final var object = bundle.callee().invoke(bundle.instance(), args);
+                final var type   = bundle.callee().getGenericReturnType();
+                result = convert(object, type, new TypeRef<HTTPResult<?>>() {
+                }.getType());
+            } catch (final Exception e) {
+                Log.trace(e);
+                new HTTPResponseMessage("HTTP/1.1",
+                                        500,
+                                        "Internal Server Error - %s".formatted(e.getMessage()),
+                                        new HashMap<>(),
+                                        null,
+                                        false).write(outputStream);
+                return;
+            }
+
+            final Map<String, String> headers = new HashMap<>(result.getHeaders());
+            headers.put("Content-Type", bundle.result());
+            headers.put("Connection", "Close");
+
+            final var chunked = result.getSize() < 0;
+            if (chunked) {
+                headers.put("Transfer-Encoding", "chunked");
+            } else {
+                headers.put("Content-Length", Integer.toString(result.getSize()));
+            }
+
+            new HTTPResponseMessage("HTTP/1.1",
+                                    result.getStatusCode(),
+                                    result.getStatusText(),
+                                    headers,
+                                    result.getStream(),
+                                    chunked).write(outputStream);
         }
     }
 
