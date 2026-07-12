@@ -3,6 +3,7 @@ package io.scriptor.http;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -12,6 +13,8 @@ public class HTTPRoute implements Comparable<HTTPRoute> {
     public record Parameter(int index, boolean collecting) {
     }
 
+    private final Path path;
+
     private final int priority;
     private final int index;
 
@@ -19,13 +22,15 @@ public class HTTPRoute implements Comparable<HTTPRoute> {
     private final Map<String, Parameter> parameters = new HashMap<>();
 
     public HTTPRoute(final @NotNull String endpoint, final @NotNull String resource) {
-        this("%s/%s".formatted(endpoint, resource).replaceAll("/+", "/"));
+        this(Path.of(endpoint, resource));
     }
 
-    public HTTPRoute(final @NotNull String path) {
-        final var lowerPath = path.toLowerCase();
+    public HTTPRoute(final @NotNull Path path) {
+        this.path = path.toAbsolutePath();
 
-        final var matcher = Pattern.compile("\\[(.*?)]").matcher(lowerPath);
+        final var pathname = this.path.toString().toLowerCase();
+
+        final var matcher = Pattern.compile("\\[(.*?)]").matcher(pathname);
         final var route   = new StringBuilder().append("^");
 
         int end = 0;
@@ -40,7 +45,7 @@ public class HTTPRoute implements Comparable<HTTPRoute> {
         int collectingCount = 0;
 
         while (matcher.find()) {
-            final var staticPart = lowerPath.substring(end, matcher.start());
+            final var staticPart = pathname.substring(end, matcher.start());
 
             if (!staticPart.isEmpty()) {
                 route.append(Pattern.quote(staticPart));
@@ -79,7 +84,7 @@ public class HTTPRoute implements Comparable<HTTPRoute> {
             end = matcher.end();
         }
 
-        final var tail = lowerPath.substring(end);
+        final var tail = pathname.substring(end);
         route.append(Pattern.quote(tail));
         route.append("$");
 
@@ -143,5 +148,10 @@ public class HTTPRoute implements Comparable<HTTPRoute> {
             return Integer.compare(this.priority, other.priority);
         }
         return Integer.compare(other.index, this.index);
+    }
+
+    @Override
+    public @NotNull String toString() {
+        return path.toString();
     }
 }

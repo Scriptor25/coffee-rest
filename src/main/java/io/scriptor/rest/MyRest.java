@@ -21,11 +21,6 @@ public class MyRest {
         return ClassLoader.getSystemResourceAsStream("hello.html");
     }
 
-    @Resource(path = "favicon.[]", method = HTTPMethod.GET, result = "image/svg+xml")
-    public InputStream getFavicon() {
-        return ClassLoader.getSystemResourceAsStream("favicon.svg");
-    }
-
     @Resource(path = "message/[from]/[to]", method = HTTPMethod.POST, accept = "text/plain", result = "text/plain")
     public HTTPResultVoid postMessage(
             final @Parameter("from") String from,

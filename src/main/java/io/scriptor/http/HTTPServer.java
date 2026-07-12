@@ -27,17 +27,23 @@ import java.util.concurrent.*;
 
 public class HTTPServer implements AutoCloseable {
 
-    private record RouteBundle(
+    public record Route(
             @NotNull Object instance,
             @NotNull Method callee,
             @NotNull HTTPRoute route,
+            @NotNull HTTPMethod method,
             @NotNull String accept,
             @NotNull String result
-    ) implements Comparable<RouteBundle> {
+    ) implements Comparable<Route> {
 
         @Override
-        public int compareTo(final @NotNull RouteBundle other) {
+        public int compareTo(final @NotNull Route other) {
             return this.route.compareTo(other.route);
+        }
+
+        @Override
+        public @NotNull String toString() {
+            return "%s %s : %s -> %s".formatted(method, route, accept, result);
         }
     }
 
@@ -45,7 +51,7 @@ public class HTTPServer implements AutoCloseable {
 
     private final ServerSocket serverSocket;
 
-    private final Map<HTTPMethod, List<RouteBundle>> routes = new HashMap<>();
+    private final Map<HTTPMethod, List<Route>> routes = new HashMap<>();
     private final Map<Type, Map<Type, IConverter<?, ?>>> converters = new HashMap<>();
 
     private final BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(256);
@@ -91,18 +97,22 @@ public class HTTPServer implements AutoCloseable {
         Log.info("HTTP%s server listening on port %d", enableTLS ? "S" : "", port);
     }
 
-    public void registerRoute(
+    public @NotNull Route registerRoute(
             final @NotNull Object instance,
             final @NotNull Method callee,
             final @NotNull Endpoint endpoint,
             final @NotNull Resource resource
     ) {
-        routes.computeIfAbsent(resource.method(), _ -> new ArrayList<>())
-              .add(new RouteBundle(instance,
-                                   callee,
-                                   new HTTPRoute(endpoint.value(), resource.path()),
-                                   resource.accept(),
-                                   resource.result()));
+        final var route = new Route(instance,
+                                    callee,
+                                    new HTTPRoute(endpoint.value(), resource.path()),
+                                    resource.method(),
+                                    resource.accept(),
+                                    resource.result());
+
+        routes.computeIfAbsent(resource.method(), _ -> new ArrayList<>()).add(route);
+
+        return route;
     }
 
     public <S, D> void registerConverter(
@@ -163,7 +173,7 @@ public class HTTPServer implements AutoCloseable {
             final var opt = routes.get(request.method())
                                   .stream()
                                   .filter(x -> x.route().matches(request.path()))
-                                  .max(RouteBundle::compareTo);
+                                  .max(Route::compareTo);
 
             if (opt.isEmpty()) {
                 notFound().write(outputStream);

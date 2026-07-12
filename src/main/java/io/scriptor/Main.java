@@ -6,7 +6,6 @@ import io.scriptor.http.HTTPServer;
 import io.scriptor.loader.Loader;
 import io.scriptor.log.Log;
 import io.scriptor.type.IConverter;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,8 +22,11 @@ import java.util.stream.StreamSupport;
 
 public class Main {
 
-    @Contract("_, !null -> !null")
-    public static String getenv(final @NotNull String key, final @Nullable String value) {
+    public static @Nullable String getEnv(final @NotNull String key) {
+        return System.getenv(key);
+    }
+
+    public static @NotNull String getEnv(final @NotNull String key, final @NotNull String value) {
         final var entry = System.getenv(key);
         return entry == null ? value : entry;
     }
@@ -37,10 +39,10 @@ public class Main {
                    UnrecoverableKeyException,
                    KeyManagementException {
 
-        final var enableTLS          = Integer.parseInt(getenv("ENABLE_TLS", "0")) != 0;
-        final var port               = Integer.parseInt(getenv("PORT", enableTLS ? "8443" : "8080"));
-        final var keystoreFilename   = getenv("KEYSTORE", null);
-        final var keystorePassphrase = getenv("KEYSTORE_PASSPHRASE", null);
+        final var enableTLS          = Integer.parseInt(getEnv("ENABLE_TLS", "0")) != 0;
+        final var port               = Integer.parseInt(getEnv("PORT", enableTLS ? "8443" : "8080"));
+        final var keystoreFilename   = getEnv("KEYSTORE");
+        final var keystorePassphrase = getEnv("KEYSTORE_PASSPHRASE");
 
         try (final var server = new HTTPServer(port, enableTLS, keystoreFilename, keystorePassphrase)) {
 
@@ -70,14 +72,9 @@ public class Main {
                               .filter(method -> method.isAnnotationPresent(Resource.class))
                               .forEach(method -> {
                                   final var resource = Objects.requireNonNull(method.getAnnotation(Resource.class));
+                                  final var bundle   = server.registerRoute(instance, method, endpoint, resource);
 
-                                  Log.info("route %s%s %s %s %s",
-                                           endpoint.value(),
-                                           resource.path(),
-                                           resource.method(),
-                                           resource.accept(),
-                                           resource.result());
-                                  server.registerRoute(instance, method, endpoint, resource);
+                                  Log.info(bundle.toString());
                               });
                     });
 
