@@ -29,15 +29,31 @@ class MyRest {
 
     @Resource(path = "lorem", result = "application/json")
     fun getLorem(@Query("count") count: Int?): JSONObject? {
+        val count = count ?: 5
+
         val stream = ClassLoader.getSystemResourceAsStream("lorem.txt") ?: return null
 
-        val bytes =
-            if (count == null) stream.readAllBytes()
-            else stream.readNBytes(count)
-        val lorem = String(bytes)
+        val sourceBytes = stream.readAllBytes()
+        val sourceWords = String(sourceBytes, Charsets.UTF_8)
+            .trim()
+            .split(Regex("\\s+"))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+
+        val wordCount = count * 20
+
+        var lorem = String()
+        for (i in 0..<wordCount) {
+            if (i != 0) {
+                lorem += (if (i % 20 == 0) "\n\n" else " ")
+            }
+
+            val index = i % sourceWords.size
+            lorem += sourceWords[index]
+        }
 
         val json = JSONObject()
-        json.put("count", count ?: bytes.size)
+        json.put("count", count)
         json.put("text", lorem)
 
         return json

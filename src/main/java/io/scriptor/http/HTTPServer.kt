@@ -193,8 +193,7 @@ class HTTPServer(
                             val values = request.query.computeIfAbsent(name) { ArrayList() }
                             value =
                                 if (parameter.type.isArray) values.toTypedArray()
-                                else if (!values.isEmpty()) values.first()
-                                else null
+                                else values.firstOrNull()
                         } else {
                             value = null
                         }
