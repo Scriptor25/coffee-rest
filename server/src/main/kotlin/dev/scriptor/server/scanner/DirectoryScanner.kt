@@ -4,8 +4,10 @@ import java.io.File
 
 class DirectoryScanner(private val root: File) : ClassPathScanner {
 
-    override fun scan(packageName: String): Sequence<String> {
-        val begin = File(root, packageName.replace('.', File.separatorChar))
+    override fun scan(packageName: String?): Sequence<String> {
+        val begin =
+            if (packageName.isNullOrEmpty()) root
+            else File(root, packageName.replace('.', File.separatorChar))
 
         if (!begin.exists()) {
             return emptySequence()

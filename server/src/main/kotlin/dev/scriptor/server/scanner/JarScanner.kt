@@ -5,8 +5,10 @@ import java.util.zip.ZipFile
 
 class JarScanner(private val jar: File) : ClassPathScanner {
 
-    override fun scan(packageName: String): Sequence<String> {
-        val prefix = packageName.replace('.', '/') + '/'
+    override fun scan(packageName: String?): Sequence<String> {
+        val prefix =
+            if (packageName.isNullOrEmpty()) null
+            else packageName.replace('.', '/') + '/'
 
         return sequence {
             ZipFile(jar).use { zip ->
@@ -20,7 +22,7 @@ class JarScanner(private val jar: File) : ClassPathScanner {
                         continue
                     }
 
-                    if (!name.startsWith(prefix)) {
+                    if (prefix != null && !name.startsWith(prefix)) {
                         continue
                     }
 

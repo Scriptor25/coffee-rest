@@ -1,7 +1,7 @@
 package dev.scriptor.server.scanner
 
 class Scanner(
-    private val packageName: String,
+    private val packageName: String? = null,
     private val loader: ClassLoader = Thread.currentThread().contextClassLoader,
 ) : Iterable<Class<*>> {
 
