@@ -151,7 +151,7 @@ class HTTPServer(
         }
 
         if (source in converters && destination in converters[source]!!) {
-            return (converters[source]!![destination]!! as IConverter<S, D?>).from(obj)
+            return (converters[source]!![destination]!! as IConverter<S, D>).from(obj)
         }
 
         throw IllegalStateException("unsupported conversion from '%s' to '%s'".format(source, destination))
@@ -227,7 +227,7 @@ class HTTPServer(
                     val type = bundle.callee.genericReturnType
 
                     @OptIn(ExperimentalStdlibApi::class)
-                    val c = convert<Any, HTTPResult<*>>(obj, type, typeOf<HTTPResult<*>>().javaType)
+                    val c = convert<Any?, HTTPResult<*>>(obj, type, typeOf<HTTPResult<*>>().javaType)
                         ?: throw Exception("failed to convert '$obj' from '$type' to HTTP result")
 
                     result = c
