@@ -168,16 +168,6 @@ class HTTPServer(
 
                 info("%s %s %s", request.method, request.path, request.protocol)
 
-                info("query:")
-                for ((key, value) in request.query) {
-                    info(" - $key = ${value.joinToString()}")
-                }
-
-                info("headers:")
-                for ((key, value) in request.headers) {
-                    info(" - $key = $value")
-                }
-
                 val opt = routes
                     .computeIfAbsent(request.method) { ArrayList() }
                     .stream()
@@ -212,10 +202,10 @@ class HTTPServer(
                             value = bundle.route.get(request.path, name)
                         } else if (parameter.isAnnotationPresent(Query::class.java)) {
                             val name = parameter.getAnnotation(Query::class.java).value
-                            val values = request.query.computeIfAbsent(name) { ArrayList() }
+                            val values = request.query[name]
                             value =
-                                if (parameter.type.isArray) values.toTypedArray()
-                                else values.firstOrNull()
+                                if (parameter.type.isArray) values?.toTypedArray() ?: arrayOf<String>()
+                                else values?.firstOrNull()
                         } else {
                             value = null
                         }
@@ -251,11 +241,17 @@ class HTTPServer(
                 val headers: MutableMap<String, String> = HashMap(result.headers)
                 headers.computeIfAbsent("Content-Type") { bundle.result }
 
-                val chunked = result.size < 0
-                if (chunked) {
-                    headers.computeIfAbsent("Transfer-Encoding") { "chunked" }
+                val chunked: Boolean
+                if ("Content-Length" !in headers && "Transfer-Encoding" !in headers) {
+                    chunked = result.size < 0
+
+                    if (chunked) {
+                        headers["Transfer-Encoding"] = "chunked"
+                    } else {
+                        headers["Content-Length"] = result.size.toString()
+                    }
                 } else {
-                    headers.computeIfAbsent("Content-Length") { result.size.toString() }
+                    chunked = false
                 }
 
                 HTTPResponseMessage(

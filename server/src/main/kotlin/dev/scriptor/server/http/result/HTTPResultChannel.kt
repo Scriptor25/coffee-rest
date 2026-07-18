@@ -24,7 +24,7 @@ class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
         }
 
         override fun transferTo(out: OutputStream): Long {
-            var count: Long = 0
+            var count = 0L
 
             while (body.isOpen) {
                 val buffer = ByteBuffer.wrap(ByteArray(1024))
@@ -62,18 +62,18 @@ class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
         value: ReadableByteChannel
     ) : super(statusCode, statusText, value)
 
-    constructor(statusCode: Int, headers: MutableMap<String, String>) : super(statusCode, headers)
+    constructor(statusCode: Int, headers: Map<String, String>) : super(statusCode, headers)
 
     constructor(
         statusCode: Int,
         statusText: String,
-        headers: MutableMap<String, String>
+        headers: Map<String, String>
     ) : super(statusCode, statusText, headers)
 
     constructor(
         statusCode: Int,
         statusText: String,
-        headers: MutableMap<String, String>,
+        headers: Map<String, String>,
         value: ReadableByteChannel
     ) : super(statusCode, statusText, headers, value)
 }

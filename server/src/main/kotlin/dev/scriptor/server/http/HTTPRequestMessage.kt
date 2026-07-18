@@ -2,14 +2,13 @@ package dev.scriptor.server.http
 
 import java.io.InputStream
 import java.net.URI
-import java.util.*
 
 data class HTTPRequestMessage(
     val method: HTTPMethod,
     val path: String,
-    val query: MutableMap<String, MutableList<String>>,
+    val query: Map<String, MutableList<String>>,
     val protocol: String,
-    val headers: MutableMap<String, String>,
+    val headers: Map<String, String>,
     val body: InputStream
 ) {
     companion object {

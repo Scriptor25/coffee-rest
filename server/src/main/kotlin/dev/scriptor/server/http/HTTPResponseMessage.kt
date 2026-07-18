@@ -7,7 +7,7 @@ data class HTTPResponseMessage(
     val protocol: String,
     val statusCode: Int,
     val statusText: String,
-    val headers: MutableMap<String, String>,
+    val headers: Map<String, String>,
     val body: InputStream?,
     val chunked: Boolean
 ) {
