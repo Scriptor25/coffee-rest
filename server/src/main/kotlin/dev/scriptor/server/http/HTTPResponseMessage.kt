@@ -24,13 +24,21 @@ data class HTTPResponseMessage(
                 body.transferTo(stream)
                 stream.flush()
             } else {
-                var n: Int
-                while ((body.available().also { n = it }) > 0) {
-                    writeString(stream, "%x\r\n".format(n))
-                    stream.write(body.readNBytes(n))
+                val buffer = ByteArray(1024)
+
+                while (true) {
+                    val count = body.read(buffer)
+
+                    if (count < 0) {
+                        break
+                    }
+
+                    writeString(stream, "%x\r\n".format(count))
+                    stream.write(buffer, 0, count)
                     writeString(stream, "\r\n")
                     stream.flush()
                 }
+
                 writeString(stream, "0\r\n\r\n")
                 stream.flush()
             }

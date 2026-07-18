@@ -168,6 +168,16 @@ class HTTPServer(
 
                 info("%s %s %s", request.method, request.path, request.protocol)
 
+                info("query:")
+                for ((key, value) in request.query) {
+                    info(" - $key = ${value.joinToString()}")
+                }
+
+                info("headers:")
+                for ((key, value) in request.headers) {
+                    info(" - $key = $value")
+                }
+
                 val opt = routes
                     .computeIfAbsent(request.method) { ArrayList() }
                     .stream()
@@ -240,7 +250,6 @@ class HTTPServer(
 
                 val headers: MutableMap<String, String> = HashMap(result.headers)
                 headers.computeIfAbsent("Content-Type") { bundle.result }
-                headers.computeIfAbsent("Connection") { "Close" }
 
                 val chunked = result.size < 0
                 if (chunked) {
@@ -272,7 +281,6 @@ class HTTPServer(
             val headers: MutableMap<String, String> = HashMap()
             headers["Content-Type"] = "text/plain"
             headers["Content-Length"] = bytes.size.toString()
-            headers["Connection"] = "Close"
 
             val body = bytes.inputStream()
 
@@ -300,7 +308,6 @@ class HTTPServer(
             val headers: MutableMap<String, String> = HashMap()
             headers["Content-Type"] = "text/html"
             headers["Content-Length"] = bytes.size.toString()
-            headers["Connection"] = "Close"
 
             return HTTPResponseMessage(
                 "HTTP/1.1",
