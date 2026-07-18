@@ -17,5 +17,5 @@ fun main() {
     val keystoreFilename = getEnv("KEYSTORE")
     val keystorePassphrase = getEnv("KEYSTORE_PASSPHRASE")
 
-    scan(port, enableTLS, keystoreFilename, keystorePassphrase).use { it.start() }
+    scan(port, enableTLS, keystoreFilename, keystorePassphrase, "dev.scriptor").use { it.start() }
 }

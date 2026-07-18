@@ -16,9 +16,10 @@ fun scan(
     port: Int,
     enableTLS: Boolean,
     keystoreFilename: String? = null,
-    keystorePassphrase: String? = null
+    keystorePassphrase: String? = null,
+    packageName: String? = null,
 ): HTTPServer {
-    val scanner = Scanner("")
+    val scanner = Scanner(packageName)
 
     val server = HTTPServer(port, enableTLS, keystoreFilename, keystorePassphrase)
 
