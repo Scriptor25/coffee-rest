@@ -73,7 +73,7 @@ data class HTTPRequestMessage(
                 }
 
                 val header = line.split(":\\s*".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                headers[header[0].lowercase(Locale.getDefault())] = header[1]
+                headers[header[0].lowercase()] = header[1]
             }
 
             return HTTPRequestMessage(method, path, query, protocol, headers, stream)

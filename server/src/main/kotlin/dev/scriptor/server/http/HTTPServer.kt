@@ -7,10 +7,8 @@ import dev.scriptor.server.log.trace
 import dev.scriptor.server.log.warning
 import dev.scriptor.server.type.IConverter
 import dev.scriptor.server.type.normalize
-import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.io.IOException
-import java.io.InputStream
 import java.lang.AutoCloseable
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
@@ -144,16 +142,16 @@ class HTTPServer(
         running = false
     }
 
-    private fun <S, D> convert(obj: S, source: Type, destination: Type): D {
+    private fun <S, D> convert(obj: S, source: Type, destination: Type): D? {
         val source = source.normalize()
         val destination = destination.normalize()
 
         if (IConverter.isAssignable(destination, source)) {
-            return obj as D
+            return obj as D?
         }
 
         if (source in converters && destination in converters[source]!!) {
-            return (converters[source]!![destination]!! as IConverter<S, D>).from(obj)
+            return (converters[source]!![destination]!! as IConverter<S, D?>).from(obj)
         }
 
         throw IllegalStateException("unsupported conversion from '%s' to '%s'".format(source, destination))
@@ -198,7 +196,7 @@ class HTTPServer(
                             value = request.body
                         } else if (parameter.isAnnotationPresent(Header::class.java)) {
                             val name = parameter.getAnnotation(Header::class.java).value
-                            value = request.headers[name.lowercase(Locale.getDefault())]
+                            value = request.headers[name.lowercase()]
                         } else if (parameter.isAnnotationPresent(Path::class.java)) {
                             val name = parameter.getAnnotation(Path::class.java).value
                             value = bundle.route.get(request.path, name)
@@ -213,11 +211,15 @@ class HTTPServer(
                         }
 
                         if (value != null) {
-                            args[i] = convert(
+                            val c = convert<Any, Any>(
                                 value,
                                 value.javaClass,
                                 parameter.type
                             )
+                            if (c == null) {
+                                throw Exception("failed to convert '$value' from '${value.javaClass}' to '${parameter.type}'")
+                            }
+                            args[i] = c
                         }
                     }
 
@@ -225,17 +227,14 @@ class HTTPServer(
                     val type = bundle.callee.genericReturnType
 
                     @OptIn(ExperimentalStdlibApi::class)
-                    result = convert(obj, type, typeOf<HTTPResult<*>>().javaType)
+                    val c = convert<Any, HTTPResult<*>>(obj, type, typeOf<HTTPResult<*>>().javaType)
+                        ?: throw Exception("failed to convert '$obj' from '$type' to HTTP result")
+
+                    result = c
                 } catch (e: Exception) {
                     trace(e)
-                    HTTPResponseMessage(
-                        "HTTP/1.1",
-                        500,
-                        "Internal Server Error - %s".format(e.message),
-                        HashMap(),
-                        null,
-                        false
-                    ).write(outputStream)
+
+                    internalServerError(e.message).write(outputStream)
                     return
                 }
 
@@ -268,19 +267,45 @@ class HTTPServer(
 
     companion object {
         private fun notFound(): HTTPResponseMessage {
-            val bytes = "resource not found".toByteArray()
+            val bytes = "resource not found".encodeToByteArray()
 
             val headers: MutableMap<String, String> = HashMap()
             headers["Content-Type"] = "text/plain"
             headers["Content-Length"] = bytes.size.toString()
             headers["Connection"] = "Close"
 
-            val body: InputStream = ByteArrayInputStream(bytes)
+            val body = bytes.inputStream()
 
             return HTTPResponseMessage(
                 "HTTP/1.1",
                 404,
                 "Not Found",
+                headers,
+                body,
+                false
+            )
+        }
+
+        private fun internalServerError(message: String?): HTTPResponseMessage {
+            val document = ClassLoader
+                .getSystemResourceAsStream("error.html")!!
+                .readAllBytes()
+                .decodeToString()
+                .replace("%code%", "500")
+                .replace("%message%", message.orEmpty())
+
+            val bytes = document.encodeToByteArray()
+            val body = bytes.inputStream()
+
+            val headers: MutableMap<String, String> = HashMap()
+            headers["Content-Type"] = "text/html"
+            headers["Content-Length"] = bytes.size.toString()
+            headers["Connection"] = "Close"
+
+            return HTTPResponseMessage(
+                "HTTP/1.1",
+                500,
+                "Internal Server Error",
                 headers,
                 body,
                 false

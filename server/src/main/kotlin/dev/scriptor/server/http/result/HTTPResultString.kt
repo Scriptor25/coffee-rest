@@ -1,6 +1,5 @@
 package dev.scriptor.server.http.result
 
-import java.io.ByteArrayInputStream
 import java.io.InputStream
 
 class HTTPResultString : HTTPResult<String> {
@@ -30,9 +29,9 @@ class HTTPResultString : HTTPResult<String> {
     ) : super(statusCode, statusText, headers, value)
 
     init {
-        val buf = getBody().toByteArray()
+        val buf = getBody().encodeToByteArray()
 
         size = buf.size
-        stream = ByteArrayInputStream(buf)
+        stream = buf.inputStream()
     }
 }

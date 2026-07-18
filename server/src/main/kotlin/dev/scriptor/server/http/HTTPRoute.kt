@@ -19,7 +19,7 @@ class HTTPRoute(path: Path) : Comparable<HTTPRoute> {
     constructor(endpoint: String, resource: String) : this(Path.of(endpoint, resource))
 
     init {
-        val pathname = this.path.toString().lowercase(Locale.getDefault())
+        val pathname = this.path.toString().lowercase()
 
         val matcher = Pattern.compile("\\[(.*?)]").matcher(pathname)
         val route = StringBuilder().append("^")
@@ -110,7 +110,7 @@ class HTTPRoute(path: Path) : Comparable<HTTPRoute> {
     }
 
     fun matches(path: String): Boolean {
-        return pattern.matcher(path.lowercase(Locale.getDefault())).matches()
+        return pattern.matcher(path.lowercase()).matches()
     }
 
     fun get(path: String, name: String): Any? {

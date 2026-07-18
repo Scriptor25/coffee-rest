@@ -4,7 +4,7 @@ import java.lang.reflect.*
 
 interface IConverter<S, D> {
 
-    fun from(source: S?): D
+    fun from(source: S): D?
 
     companion object {
         fun isInBounds(

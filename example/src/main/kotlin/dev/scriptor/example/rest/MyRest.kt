@@ -11,11 +11,11 @@ import java.net.URI
 @Endpoint("/my")
 class MyRest {
 
-    @Resource(path = "hello", result = "text/html")
+    @Resource(path = "/hello", result = "text/html")
     fun getHello(): InputStream? = ClassLoader.getSystemResourceAsStream("hello.html")
 
     @Resource(
-        path = "message/[from]/[to]",
+        path = "/message/[from]/[to]",
         method = dev.scriptor.server.http.HTTPMethod.POST,
         accept = "text/plain",
         result = "text/plain"
@@ -31,7 +31,7 @@ class MyRest {
         return HTTPResultVoid(201, "Message Sent")
     }
 
-    @Resource(path = "random-quote", result = "text/html")
+    @Resource(path = "/random-quote", result = "text/html")
     fun getRandomQuote(): String {
         val url = URI("https://dummyjson.com/quotes/random").toURL()
         val connection = url.openConnection() as HttpURLConnection
@@ -59,7 +59,7 @@ class MyRest {
         """.trimIndent()
     }
 
-    @Resource(path = "fib([n])", result = "text/plain")
+    @Resource(path = "/fib([n])", result = "text/plain")
     fun getFib(@Path("n") n: Int): Int {
         var a = 0
         var b = 1

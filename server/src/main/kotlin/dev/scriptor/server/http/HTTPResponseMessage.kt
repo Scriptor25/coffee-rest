@@ -39,7 +39,7 @@ data class HTTPResponseMessage(
 
     companion object {
         private fun writeString(stream: OutputStream, value: String) {
-            for (b in value.toByteArray()) {
+            for (b in value.encodeToByteArray()) {
                 stream.write(b.toInt())
             }
         }
