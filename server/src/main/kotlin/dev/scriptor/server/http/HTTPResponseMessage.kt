@@ -12,9 +12,9 @@ data class HTTPResponseMessage(
     val chunked: Boolean
 ) {
     fun write(stream: OutputStream) {
-        writeString(stream, "%s %s %s\r\n".format(protocol, statusCode, statusText))
+        writeString(stream, "$protocol $statusCode $statusText\r\n")
         for ((key, value) in headers) {
-            writeString(stream, "%s: %s\r\n".format(key, value))
+            writeString(stream, "$key: $value\r\n")
         }
         writeString(stream, "\r\n")
         stream.flush()
@@ -24,17 +24,17 @@ data class HTTPResponseMessage(
                 body.transferTo(stream)
                 stream.flush()
             } else {
-                val buffer = ByteArray(1024)
+                val buffer = ByteArray(1024 * 1024)
 
                 while (true) {
-                    val count = body.read(buffer)
+                    val read = body.read(buffer)
 
-                    if (count < 0) {
+                    if (read < 0) {
                         break
                     }
 
-                    writeString(stream, "%x\r\n".format(count))
-                    stream.write(buffer, 0, count)
+                    writeString(stream, "$read\r\n")
+                    stream.write(buffer, 0, read)
                     writeString(stream, "\r\n")
                     stream.flush()
                 }

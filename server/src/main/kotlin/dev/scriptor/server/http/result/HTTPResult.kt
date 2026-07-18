@@ -47,6 +47,6 @@ abstract class HTTPResult<T> {
     }
 
     override fun toString(): String {
-        return "Result( statusCode=%d, statusText=%s, value=%s )".format(statusCode, statusText, body)
+        return "Result( statusCode=$statusCode, statusText=$statusText, value=$body )"
     }
 }

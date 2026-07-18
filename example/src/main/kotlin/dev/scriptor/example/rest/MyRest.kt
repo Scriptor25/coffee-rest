@@ -27,7 +27,8 @@ class MyRest {
         @Header("Content-Length") contentLength: Int
     ): HTTPResultVoid {
         val bytes = body.readNBytes(contentLength)
-        info("message (from %s to %s): %s", from, to, String(bytes))
+        val message = bytes.decodeToString()
+        info("message (from $from to $to): $message")
         return HTTPResultVoid(201, "Message Sent")
     }
 

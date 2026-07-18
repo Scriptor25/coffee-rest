@@ -46,7 +46,7 @@ class HTTPServer(
         }
 
         override fun toString(): String {
-            return "%s %s : %s -> %s".format(method, route, accept, result)
+            return "$method $route : $accept -> $result"
         }
     }
 
@@ -85,7 +85,7 @@ class HTTPServer(
         }
 
         serverSocket = serverSocketFactory.createServerSocket(port)
-        info("HTTP%s server listening on port %d", if (tls) "S" else "", port)
+        info("HTTP${if (tls) "S" else ""} server listening on port $port")
     }
 
     fun registerRoute(
@@ -154,7 +154,7 @@ class HTTPServer(
             return (converters[source]!![destination]!! as IConverter<S, D>).from(obj)
         }
 
-        throw IllegalStateException("unsupported conversion from '%s' to '%s'".format(source, destination))
+        throw IllegalStateException("unsupported conversion from '$source' to '$destination'")
     }
 
     private fun handleRequest(socket: Socket) {
@@ -166,7 +166,7 @@ class HTTPServer(
                     return
                 }
 
-                info("%s %s %s", request.method, request.path, request.protocol)
+                info("${request.method} ${request.path} ${request.protocol}")
 
                 val opt = routes
                     .computeIfAbsent(request.method) { ArrayList() }

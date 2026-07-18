@@ -30,7 +30,7 @@ fun scan(
                     .stream(clazz.constructors)
                     .noneMatch { constructor -> constructor.parameterCount == 0 }
             ) {
-                severe("endpoint class '%s' does not have a default constructor", clazz)
+                severe("endpoint class '$clazz' does not have a default constructor")
                 return@forEach
             }
 
@@ -60,7 +60,7 @@ fun scan(
                     .stream(clazz.constructors)
                     .noneMatch { constructor -> constructor.parameterCount == 0 }
             ) {
-                severe("converter class '%s' does not have a default constructor", clazz)
+                severe("converter class '$clazz' does not have a default constructor")
                 return@forEach
             }
 
@@ -81,7 +81,7 @@ fun scan(
             val source = interfaceType.actualTypeArguments[0].normalize()
             val destination = interfaceType.actualTypeArguments[1].normalize()
 
-            info("converter [ %s -> %s ]", source, destination)
+            info("converter [ $source -> $destination ]")
 
             server.registerConverter(source, destination, instance)
         }

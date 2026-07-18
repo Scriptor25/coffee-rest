@@ -27,7 +27,7 @@ class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
             var count = 0L
 
             while (body.isOpen) {
-                val buffer = ByteBuffer.wrap(ByteArray(1024))
+                val buffer = ByteBuffer.wrap(ByteArray(1024 * 1024))
                 val read = body.read(buffer)
 
                 if (read < 0) {
