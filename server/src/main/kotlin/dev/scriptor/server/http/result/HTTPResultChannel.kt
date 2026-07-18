@@ -8,16 +8,16 @@ import java.nio.channels.ReadableByteChannel
 class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
 
     override val size = -1
-    override val stream = object : InputStream() {
+    override val stream = if (body !== null) (object : InputStream() {
 
         override fun read(b: ByteArray, off: Int, len: Int): Int {
             if (len == 0) {
                 return 0
             }
 
-            if (getBody().isOpen) {
+            if (body.isOpen) {
                 val buffer = ByteBuffer.wrap(b).limit(off + len).position(off)
-                return getBody().read(buffer)
+                return body.read(buffer)
             }
 
             return -1
@@ -26,9 +26,9 @@ class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
         override fun transferTo(out: OutputStream): Long {
             var count: Long = 0
 
-            while (getBody().isOpen) {
+            while (body.isOpen) {
                 val buffer = ByteBuffer.wrap(ByteArray(1024))
-                val read = getBody().read(buffer)
+                val read = body.read(buffer)
 
                 if (read < 0) {
                     break
@@ -42,15 +42,15 @@ class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
         }
 
         override fun read(): Int {
-            if (getBody().isOpen) {
+            if (body.isOpen) {
                 val buffer = ByteBuffer.allocate(1)
-                getBody().read(buffer)
+                body.read(buffer)
                 return buffer.get(0).toInt()
             }
 
             return -1
         }
-    }
+    }) else null
 
     constructor(statusCode: Int) : super(statusCode)
 

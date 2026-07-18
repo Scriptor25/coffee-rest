@@ -9,7 +9,7 @@ abstract class HTTPResult<T> {
 
     val headers: Map<String, String>
 
-    private val body: T?
+    val body: T?
 
     abstract val size: Int
     abstract val stream: InputStream?

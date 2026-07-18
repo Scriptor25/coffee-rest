@@ -161,7 +161,7 @@ class HTTPServer(
         socket.getInputStream().use { inputStream ->
             socket.getOutputStream().use { outputStream ->
                 val request = HTTPRequestMessage.read(inputStream)
-                if (request == null) {
+                if (request === null) {
                     warning("invalid request: request is null")
                     return
                 }
@@ -210,13 +210,13 @@ class HTTPServer(
                             value = null
                         }
 
-                        if (value != null) {
+                        if (value !== null) {
                             val c = convert<Any, Any>(
                                 value,
                                 value.javaClass,
                                 parameter.type
                             )
-                            if (c == null) {
+                            if (c === null) {
                                 throw Exception("failed to convert '$value' from '${value.javaClass}' to '${parameter.type}'")
                             }
                             args[i] = c
@@ -239,14 +239,14 @@ class HTTPServer(
                 }
 
                 val headers: MutableMap<String, String> = HashMap(result.headers)
-                headers["Content-Type"] = bundle.result
-                headers["Connection"] = "Close"
+                headers.computeIfAbsent("Content-Type") { bundle.result }
+                headers.computeIfAbsent("Connection") { "Close" }
 
                 val chunked = result.size < 0
                 if (chunked) {
-                    headers["Transfer-Encoding"] = "chunked"
+                    headers.computeIfAbsent("Transfer-Encoding") { "chunked" }
                 } else {
-                    headers["Content-Length"] = result.size.toString()
+                    headers.computeIfAbsent("Content-Length") { result.size.toString() }
                 }
 
                 HTTPResponseMessage(

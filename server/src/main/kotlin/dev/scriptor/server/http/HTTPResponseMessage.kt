@@ -19,7 +19,7 @@ data class HTTPResponseMessage(
         writeString(stream, "\r\n")
         stream.flush()
 
-        if (body != null) {
+        if (body !== null) {
             if (!chunked) {
                 body.transferTo(stream)
                 stream.flush()

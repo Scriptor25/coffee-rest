@@ -35,7 +35,7 @@ data class HTTPRequestMessage(
         fun read(stream: InputStream): HTTPRequestMessage? {
             var line = readLine(stream)
 
-            if (line == null) {
+            if (line === null) {
                 return null
             }
 
@@ -49,7 +49,7 @@ data class HTTPRequestMessage(
 
             val query: MutableMap<String, MutableList<String>> = HashMap()
 
-            if (uri.query != null) {
+            if (uri.query !== null) {
                 val params = uri.query.split("&+".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 for (param in params) {
                     if ("=" in param) {
@@ -63,7 +63,7 @@ data class HTTPRequestMessage(
 
             while (true) {
                 line = readLine(stream)
-                if (line == null) {
+                if (line === null) {
                     break
                 }
 

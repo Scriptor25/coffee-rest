@@ -12,14 +12,14 @@ interface IConverter<S, D> {
             upper: Array<Type>? = null,
             lower: Array<Type>? = null
         ): Boolean {
-            if (upper != null) {
+            if (upper !== null) {
                 for (u in upper) {
                     if (!isAssignable(u, type)) {
                         return false
                     }
                 }
             }
-            if (lower != null) {
+            if (lower !== null) {
                 for (l in lower) {
                     if (!isAssignable(type, l)) {
                         return false

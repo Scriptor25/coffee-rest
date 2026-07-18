@@ -5,7 +5,7 @@ import java.io.InputStream
 class HTTPResultStream : HTTPResult<InputStream> {
 
     override val size = -1
-    override val stream = getBody()
+    override val stream = body
 
     constructor(statusCode: Int) : super(statusCode)
 

@@ -5,7 +5,7 @@ import java.io.InputStream
 class HTTPResultString : HTTPResult<String> {
 
     override val size: Int
-    override val stream: InputStream
+    override val stream: InputStream?
 
     constructor(statusCode: Int) : super(statusCode)
 
@@ -29,9 +29,14 @@ class HTTPResultString : HTTPResult<String> {
     ) : super(statusCode, statusText, headers, value)
 
     init {
-        val buf = getBody().encodeToByteArray()
+        if (body !== null) {
+            val buf = body.encodeToByteArray()
 
-        size = buf.size
-        stream = buf.inputStream()
+            size = buf.size
+            stream = buf.inputStream()
+        } else {
+            size = -1
+            stream = null
+        }
     }
 }
