@@ -24,11 +24,23 @@ data class HTTPResponseMessage(
         }
     }
 
+    private fun sanitize(str: String, esc: Map<Char, CharSequence>): String {
+        var res = String()
+        for (c in str) {
+            res +=
+                if (c in esc) esc[c]
+                else c
+        }
+        return res
+    }
+
     fun write(channel: WritableByteChannel): HTTPResponseMessage {
         writeString(channel, "$protocol $statusCode $statusText\r\n")
 
         for ((key, value) in headers) {
-            writeString(channel, "$key: $value\r\n")
+            val keys = sanitize(key, mapOf(Pair(':', "\\:"), Pair('\r', "\\r"), Pair('\n', "\\n")))
+            val values = sanitize(value, mapOf(Pair('\r', "\\r"), Pair('\n', "\\n")))
+            writeString(channel, "$keys: $values\r\n")
         }
 
         writeString(channel, "\r\n")
@@ -36,39 +48,43 @@ data class HTTPResponseMessage(
         if (body != null) {
             if (!chunked) {
                 if (body is FileChannel) {
-                    val limit = body.size() - body.position()
+                    val limit = body.size() - position
 
-                    var position = body.position()
-                    var remaining =
-                        if (count < 0) limit
+                    var pos = position
+                    var rem =
+                        if (count < 0L) limit
                         else minOf(count, limit)
 
-                    while (remaining > 0) {
-                        val written = body.transferTo(position, remaining, channel)
-                        if (written < 0L) break
-                        if (written == 0L) continue
+                    while (rem > 0) {
+                        val n = body.transferTo(pos, rem, channel)
+                        if (n < 0L) break
+                        if (n == 0L) continue
 
-                        position += written
-                        remaining -= written
+                        pos += n
+                        rem -= n
                     }
                 } else {
                     val buffer = ByteBuffer.allocateDirect(1024 * 1024)
 
                     var i = 0L
-                    while (i < count) {
+                    while (count < 0 || i < count + position) {
                         buffer.clear()
 
-                        val read = body.read(buffer)
-                        if (read < 0) break
-                        if (read == 0) continue
+                        val n = body.read(buffer)
+                        if (n < 0) break
+                        if (n == 0) continue
 
                         buffer.flip()
+
+                        if (i < position) {
+                            buffer.position(minOf((position - i).toInt(), buffer.limit()))
+                        }
 
                         while (buffer.hasRemaining()) {
                             channel.write(buffer)
                         }
 
-                        i += read
+                        i += n
                     }
                 }
             } else {
@@ -77,13 +93,13 @@ data class HTTPResponseMessage(
                 while (true) {
                     buffer.clear()
 
-                    val read = body.read(buffer)
-                    if (read < 0) break
-                    if (read == 0) continue
+                    val n = body.read(buffer)
+                    if (n < 0) break
+                    if (n == 0) continue
 
                     buffer.flip()
 
-                    writeString(channel, "${read.toString(0x10)}\r\n")
+                    writeString(channel, "${n.toString(0x10)}\r\n")
 
                     while (buffer.hasRemaining()) {
                         channel.write(buffer)
