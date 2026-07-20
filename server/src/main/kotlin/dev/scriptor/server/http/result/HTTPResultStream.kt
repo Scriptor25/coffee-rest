@@ -2,33 +2,22 @@ package dev.scriptor.server.http.result
 
 import java.io.InputStream
 import java.nio.channels.Channels
-import java.nio.channels.ReadableByteChannel
 
 class HTTPResultStream : HTTPResult<InputStream> {
 
-    override val count: Long = -1L
-    override val channel: ReadableByteChannel? =
+    constructor(
+        statusCode: Int = 200,
+        statusText: String = "OK",
+        headers: Map<String, String> = emptyMap(),
+        value: InputStream? = null,
+        count: Long = -1L,
+    ) : super(
+        statusCode,
+        statusText,
+        headers,
+        0L,
+        count,
         if (value != null) Channels.newChannel(value)
-        else null
-
-    constructor(statusCode: Int) : super(statusCode)
-
-    constructor(statusCode: Int, statusText: String) : super(statusCode, statusText)
-
-    constructor(statusCode: Int, statusText: String, value: InputStream) : super(statusCode, statusText, value)
-
-    constructor(statusCode: Int, headers: Map<String, String>) : super(statusCode, headers)
-
-    constructor(
-        statusCode: Int,
-        statusText: String,
-        headers: Map<String, String>
-    ) : super(statusCode, statusText, headers)
-
-    constructor(
-        statusCode: Int,
-        statusText: String,
-        headers: Map<String, String>,
-        value: InputStream
-    ) : super(statusCode, statusText, headers, value)
+        else null,
+    )
 }

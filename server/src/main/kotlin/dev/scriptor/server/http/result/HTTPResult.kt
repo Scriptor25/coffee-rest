@@ -9,40 +9,24 @@ abstract class HTTPResult<T> {
 
     val headers: Map<String, String>
 
-    val value: T?
+    val position: Long
+    val count: Long
 
-    abstract val count: Long
-    abstract val channel: ReadableByteChannel?
-
-    constructor(statusCode: Int, statusText: String, body: T) : this(
-        statusCode,
-        statusText,
-        HashMap(),
-        body
-    )
-
-    constructor(statusCode: Int, headers: Map<String, String>) : this(statusCode, "", headers)
+    val channel: ReadableByteChannel?
 
     constructor(
-        statusCode: Int,
-        statusText: String = "",
-        headers: Map<String, String> = HashMap()
+        statusCode: Int = 200,
+        statusText: String = "OK",
+        headers: Map<String, String> = emptyMap(),
+        position: Long = 0L,
+        count: Long = -1L,
+        channel: ReadableByteChannel? = null,
     ) {
         this.statusCode = statusCode
         this.statusText = statusText
-        this.headers = HashMap(headers)
-        this.value = null
-    }
-
-    constructor(
-        statusCode: Int,
-        statusText: String,
-        headers: Map<String, String>,
-        value: T
-    ) {
-        this.statusCode = statusCode
-        this.statusText = statusText
-        this.headers = HashMap(headers)
-        this.value = value
+        this.headers = headers
+        this.position = position
+        this.count = count
+        this.channel = channel
     }
 }

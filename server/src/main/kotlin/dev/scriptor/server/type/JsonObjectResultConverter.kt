@@ -7,6 +7,6 @@ import org.json.JSONObject
 class JsonObjectResultConverter : IConverter<JSONObject, HTTPResult<*>> {
 
     override fun from(source: JSONObject): HTTPResult<*> {
-        return HTTPResultString(200, "OK", source.toString())
+        return HTTPResultString(statusCode = 200, statusText = "OK", value = source.toString())
     }
 }

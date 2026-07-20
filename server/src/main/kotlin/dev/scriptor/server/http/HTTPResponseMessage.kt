@@ -11,6 +11,7 @@ data class HTTPResponseMessage(
     val statusText: String,
     val headers: Map<String, String>,
     val chunked: Boolean,
+    val position: Long,
     val count: Long,
     val body: ReadableByteChannel?,
 ) : AutoCloseable {

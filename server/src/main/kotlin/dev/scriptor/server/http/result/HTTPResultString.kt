@@ -5,39 +5,37 @@ import java.nio.channels.ReadableByteChannel
 
 class HTTPResultString : HTTPResult<String> {
 
-    override val count: Long
-    override val channel: ReadableByteChannel?
+    private companion object {
 
-    constructor(statusCode: Int) : super(statusCode)
+        data class CountChannel(val count: Long, val channel: ReadableByteChannel?)
 
-    constructor(statusCode: Int, statusText: String) : super(statusCode, statusText)
+        fun create(value: String?): CountChannel {
+            val count: Long
+            val channel: ReadableByteChannel?
+            if (value != null) {
+                val buf = value.encodeToByteArray()
 
-    constructor(statusCode: Int, statusText: String, value: String) : super(statusCode, statusText, value)
+                count = buf.size.toLong()
+                channel = Channels.newChannel(buf.inputStream())
+            } else {
+                count = 0L
+                channel = null
+            }
+            return CountChannel(count, channel)
+        }
+    }
 
-    constructor(statusCode: Int, headers: Map<String, String>) : super(statusCode, headers)
-
-    constructor(
-        statusCode: Int,
-        statusText: String,
-        headers: Map<String, String>
-    ) : super(statusCode, statusText, headers)
-
-    constructor(
+    private constructor(
         statusCode: Int,
         statusText: String,
         headers: Map<String, String>,
-        value: String
-    ) : super(statusCode, statusText, headers, value)
+        countChannel: CountChannel,
+    ) : super(statusCode, statusText, headers, 0L, countChannel.count, countChannel.channel)
 
-    init {
-        if (value != null) {
-            val buf = value.encodeToByteArray()
-
-            count = buf.size.toLong()
-            channel = Channels.newChannel(buf.inputStream())
-        } else {
-            count = 0L
-            channel = null
-        }
-    }
+    constructor(
+        statusCode: Int = 200,
+        statusText: String = "OK",
+        headers: Map<String, String> = emptyMap(),
+        value: String? = null,
+    ) : this(statusCode, statusText, headers, create(value))
 }

@@ -162,7 +162,7 @@ class HTTPServer(port: Int) : AutoCloseable {
 
         val result: HTTPResult<*>
         try {
-            for (i in 0..<parameterCount) {
+            for (i in 0 until parameterCount) {
                 val parameter: Parameter = parameters[i]
 
                 val value: Any?
@@ -234,6 +234,7 @@ class HTTPServer(port: Int) : AutoCloseable {
             result.statusText,
             headers,
             chunked,
+            result.position,
             result.count,
             result.channel,
         ).write(channel).close()
@@ -258,6 +259,7 @@ class HTTPServer(port: Int) : AutoCloseable {
             "Not Found",
             headers,
             false,
+            0L,
             bytes.size.toLong(),
             body,
         )
@@ -278,6 +280,7 @@ class HTTPServer(port: Int) : AutoCloseable {
             "Internal Server Error",
             headers,
             false,
+            0L,
             bytes.size.toLong(),
             body,
         )

@@ -6,6 +6,6 @@ import dev.scriptor.server.http.result.HTTPResultString
 class IntResultConverter : IConverter<Int, HTTPResult<*>> {
 
     override fun from(source: Int): HTTPResult<*> {
-        return HTTPResultString(200, "OK", source.toString())
+        return HTTPResultString(statusCode = 200, statusText = "OK", value = source.toString())
     }
 }
