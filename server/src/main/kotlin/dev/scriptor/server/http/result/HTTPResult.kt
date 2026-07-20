@@ -1,6 +1,6 @@
 package dev.scriptor.server.http.result
 
-import java.io.InputStream
+import java.nio.channels.ReadableByteChannel
 
 abstract class HTTPResult<T> {
 
@@ -9,10 +9,10 @@ abstract class HTTPResult<T> {
 
     val headers: Map<String, String>
 
-    val body: T?
+    val value: T?
 
-    abstract val size: Int
-    abstract val stream: InputStream?
+    abstract val count: Long
+    abstract val channel: ReadableByteChannel?
 
     constructor(statusCode: Int, statusText: String, body: T) : this(
         statusCode,
@@ -31,22 +31,18 @@ abstract class HTTPResult<T> {
         this.statusCode = statusCode
         this.statusText = statusText
         this.headers = HashMap(headers)
-        this.body = null
+        this.value = null
     }
 
     constructor(
         statusCode: Int,
         statusText: String,
         headers: Map<String, String>,
-        body: T
+        value: T
     ) {
         this.statusCode = statusCode
         this.statusText = statusText
         this.headers = HashMap(headers)
-        this.body = body
-    }
-
-    override fun toString(): String {
-        return "Result( statusCode=$statusCode, statusText=$statusText, value=$body )"
+        this.value = value
     }
 }

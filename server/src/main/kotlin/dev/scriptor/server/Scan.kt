@@ -14,14 +14,11 @@ import java.util.*
 
 fun scan(
     port: Int,
-    enableTLS: Boolean,
-    keystoreFilename: String? = null,
-    keystorePassphrase: String? = null,
     packageName: String? = null,
 ): HTTPServer {
     val scanner = Scanner(packageName)
 
-    val server = HTTPServer(port, enableTLS, keystoreFilename, keystorePassphrase)
+    val server = HTTPServer(port)
 
     scanner
         .filter { it.isAnnotationPresent(Endpoint::class.java) }

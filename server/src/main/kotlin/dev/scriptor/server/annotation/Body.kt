@@ -1,5 +1,5 @@
 package dev.scriptor.server.annotation
 
-@Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Body 
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Body

@@ -22,7 +22,7 @@ class JarScanner(private val jar: File) : ClassPathScanner {
                         continue
                     }
 
-                    if (prefix !== null && !name.startsWith(prefix)) {
+                    if (prefix != null && !name.startsWith(prefix)) {
                         continue
                     }
 

@@ -1,55 +1,104 @@
 package dev.scriptor.server.http
 
-import java.io.InputStream
-import java.io.OutputStream
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.nio.channels.ReadableByteChannel
+import java.nio.channels.WritableByteChannel
 
 data class HTTPResponseMessage(
     val protocol: String,
     val statusCode: Int,
     val statusText: String,
     val headers: Map<String, String>,
-    val body: InputStream?,
-    val chunked: Boolean
-) {
-    fun write(stream: OutputStream) {
-        writeString(stream, "$protocol $statusCode $statusText\r\n")
-        for ((key, value) in headers) {
-            writeString(stream, "$key: $value\r\n")
-        }
-        writeString(stream, "\r\n")
-        stream.flush()
+    val chunked: Boolean,
+    val count: Long,
+    val body: ReadableByteChannel?,
+) : AutoCloseable {
 
-        if (body !== null) {
-            if (!chunked) {
-                body.transferTo(stream)
-                stream.flush()
-            } else {
-                val buffer = ByteArray(1024 * 1024)
+    private fun writeString(channel: WritableByteChannel, value: String) {
+        val buffer = ByteBuffer.wrap(value.encodeToByteArray())
 
-                while (true) {
-                    val read = body.read(buffer)
-
-                    if (read < 0) {
-                        break
-                    }
-
-                    writeString(stream, "$read\r\n")
-                    stream.write(buffer, 0, read)
-                    writeString(stream, "\r\n")
-                    stream.flush()
-                }
-
-                writeString(stream, "0\r\n\r\n")
-                stream.flush()
-            }
+        while (buffer.hasRemaining()) {
+            channel.write(buffer)
         }
     }
 
-    companion object {
-        private fun writeString(stream: OutputStream, value: String) {
-            for (b in value.encodeToByteArray()) {
-                stream.write(b.toInt())
+    fun write(channel: WritableByteChannel): HTTPResponseMessage {
+        writeString(channel, "$protocol $statusCode $statusText\r\n")
+
+        for ((key, value) in headers) {
+            writeString(channel, "$key: $value\r\n")
+        }
+
+        writeString(channel, "\r\n")
+
+        if (body != null) {
+            if (!chunked) {
+                if (body is FileChannel) {
+                    val limit = body.size() - body.position()
+
+                    var position = body.position()
+                    var remaining =
+                        if (count < 0) limit
+                        else minOf(count, limit)
+
+                    while (remaining > 0) {
+                        val written = body.transferTo(position, remaining, channel)
+                        if (written < 0L) break
+                        if (written == 0L) continue
+
+                        position += written
+                        remaining -= written
+                    }
+                } else {
+                    val buffer = ByteBuffer.allocateDirect(1024 * 1024)
+
+                    var i = 0L
+                    while (i < count) {
+                        buffer.clear()
+
+                        val read = body.read(buffer)
+                        if (read < 0) break
+                        if (read == 0) continue
+
+                        buffer.flip()
+
+                        while (buffer.hasRemaining()) {
+                            channel.write(buffer)
+                        }
+
+                        i += read
+                    }
+                }
+            } else {
+                val buffer = ByteBuffer.allocateDirect(1024 * 1024)
+
+                while (true) {
+                    buffer.clear()
+
+                    val read = body.read(buffer)
+                    if (read < 0) break
+                    if (read == 0) continue
+
+                    buffer.flip()
+
+                    writeString(channel, "${read.toString(0x10)}\r\n")
+
+                    while (buffer.hasRemaining()) {
+                        channel.write(buffer)
+                    }
+
+                    writeString(channel, "\r\n")
+                }
+
+                writeString(channel, "0\r\n\r\n")
             }
         }
+
+        return this
+    }
+
+    override fun close() {
+        body?.close()
     }
 }

@@ -1,11 +1,12 @@
 package dev.scriptor.server.http.result
 
-import java.io.InputStream
+import java.nio.channels.Channels
+import java.nio.channels.ReadableByteChannel
 
 class HTTPResultString : HTTPResult<String> {
 
-    override val size: Int
-    override val stream: InputStream?
+    override val count: Long
+    override val channel: ReadableByteChannel?
 
     constructor(statusCode: Int) : super(statusCode)
 
@@ -29,14 +30,14 @@ class HTTPResultString : HTTPResult<String> {
     ) : super(statusCode, statusText, headers, value)
 
     init {
-        if (body !== null) {
-            val buf = body.encodeToByteArray()
+        if (value != null) {
+            val buf = value.encodeToByteArray()
 
-            size = buf.size
-            stream = buf.inputStream()
+            count = buf.size.toLong()
+            channel = Channels.newChannel(buf.inputStream())
         } else {
-            size = -1
-            stream = null
+            count = 0L
+            channel = null
         }
     }
 }

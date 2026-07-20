@@ -1,11 +1,15 @@
 package dev.scriptor.server.http.result
 
 import java.io.InputStream
+import java.nio.channels.Channels
+import java.nio.channels.ReadableByteChannel
 
 class HTTPResultStream : HTTPResult<InputStream> {
 
-    override val size = -1
-    override val stream = body
+    override val count: Long = -1L
+    override val channel: ReadableByteChannel? =
+        if (value != null) Channels.newChannel(value)
+        else null
 
     constructor(statusCode: Int) : super(statusCode)
 

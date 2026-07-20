@@ -1,7 +1,8 @@
 package dev.scriptor.server.http
 
-import java.io.InputStream
 import java.net.URI
+import java.nio.ByteBuffer
+import java.nio.channels.ReadableByteChannel
 
 data class HTTPRequestMessage(
     val method: HTTPMethod,
@@ -9,14 +10,22 @@ data class HTTPRequestMessage(
     val query: Map<String, MutableList<String>>,
     val protocol: String,
     val headers: Map<String, String>,
-    val body: InputStream
+    val body: ReadableByteChannel
 ) {
     companion object {
 
-        private fun readLine(stream: InputStream): String? {
+        private fun pop(channel: ReadableByteChannel): Int {
+            val buffer = ByteBuffer.allocateDirect(1)
+            if (channel.read(buffer) < 0) {
+                return -1
+            }
+            return buffer[0].toInt()
+        }
+
+        private fun readLine(channel: ReadableByteChannel): String? {
             val line = StringBuilder()
 
-            var c = stream.read()
+            var c = pop(channel)
             if (c < 0) {
                 return null
             }
@@ -26,15 +35,15 @@ data class HTTPRequestMessage(
             }
 
             do line.append(c.toChar())
-            while ((stream.read().also { c = it }) > 0 && c != '\n'.code)
+            while ((pop(channel).also { c = it }) > 0 && c != '\n'.code)
 
             return line.toString()
         }
 
-        fun read(stream: InputStream): HTTPRequestMessage? {
-            var line = readLine(stream)
+        fun read(channel: ReadableByteChannel): HTTPRequestMessage? {
+            var line = readLine(channel)
 
-            if (line === null) {
+            if (line == null) {
                 return null
             }
 
@@ -48,7 +57,7 @@ data class HTTPRequestMessage(
 
             val query: MutableMap<String, MutableList<String>> = HashMap()
 
-            if (uri.query !== null) {
+            if (uri.query != null) {
                 val params = uri.query.split("&+".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 for (param in params) {
                     if ("=" in param) {
@@ -61,8 +70,8 @@ data class HTTPRequestMessage(
             val headers: MutableMap<String, String> = HashMap()
 
             while (true) {
-                line = readLine(stream)
-                if (line === null) {
+                line = readLine(channel)
+                if (line == null) {
                     break
                 }
 
@@ -75,7 +84,7 @@ data class HTTPRequestMessage(
                 headers[header[0].lowercase()] = header[1]
             }
 
-            return HTTPRequestMessage(method, path, query, protocol, headers, stream)
+            return HTTPRequestMessage(method, path, query, protocol, headers, channel)
         }
     }
 }

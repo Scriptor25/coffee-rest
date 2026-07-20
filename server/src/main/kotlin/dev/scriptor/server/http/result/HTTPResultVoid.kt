@@ -1,9 +1,11 @@
 package dev.scriptor.server.http.result
 
+import java.nio.channels.ReadableByteChannel
+
 class HTTPResultVoid : HTTPResult<Void> {
 
-    override val size = 0
-    override val stream = null
+    override val count: Long = 0L
+    override val channel: ReadableByteChannel? = null
 
     constructor(statusCode: Int) : super(statusCode)
 
