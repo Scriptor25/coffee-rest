@@ -21,7 +21,10 @@ import java.util.concurrent.*
 import kotlin.reflect.javaType
 import kotlin.reflect.typeOf
 
-class HTTPServer(port: Int) : AutoCloseable {
+class HTTPServer(
+    hostname: String = "0.0.0.0",
+    port: Int = 8080,
+) : AutoCloseable {
 
     data class Route(
         val instance: Any,
@@ -41,27 +44,26 @@ class HTTPServer(port: Int) : AutoCloseable {
         }
     }
 
-    private val server: ServerSocketChannel
+    private val server = ServerSocketChannel.open()
 
     private val routes: MutableMap<HTTPMethod, MutableList<Route>> = EnumMap(HTTPMethod::class.java)
     private val converters: MutableMap<Type, MutableMap<Type, IConverter<*, *>>> = HashMap()
 
-    private val workQueue: BlockingQueue<Runnable> = ArrayBlockingQueue(256)
+    private val queue: BlockingQueue<Runnable> = ArrayBlockingQueue(256)
     private val executor: Executor = ThreadPoolExecutor(
         10,
         10,
         100,
         TimeUnit.MILLISECONDS,
-        workQueue
+        queue
     )
 
     private var running: Boolean = false
 
     init {
-        server = ServerSocketChannel.open()
-        server.bind(InetSocketAddress("0.0.0.0", port))
+        server.bind(InetSocketAddress(hostname, port))
 
-        info("server listening on port $port")
+        info("server listening on http:/${server.localAddress}")
     }
 
     fun registerRoute(

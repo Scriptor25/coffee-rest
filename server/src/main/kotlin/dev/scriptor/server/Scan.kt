@@ -13,12 +13,12 @@ import java.lang.reflect.ParameterizedType
 import java.util.*
 
 fun scan(
-    port: Int,
+    hostname: String = "0.0.0.0",
+    port: Int = 8080,
     packageName: String? = null,
 ): HTTPServer {
     val scanner = Scanner(packageName)
-
-    val server = HTTPServer(port)
+    val server = HTTPServer(hostname, port)
 
     scanner
         .filter { it.isAnnotationPresent(Endpoint::class.java) }
