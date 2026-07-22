@@ -2,14 +2,17 @@ package dev.scriptor.example.rest
 
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.http.result.HTTPResultVoid
-import dev.scriptor.server.log.info
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
+import java.util.logging.Logger
 
 @Endpoint("/my")
 class MyRest {
+
+    @Inject("log")
+    var log: Logger? = null
 
     @Resource(path = "/hello", result = "text/html")
     fun getHello(): InputStream? = ClassLoader.getSystemResourceAsStream("hello.html")
@@ -28,7 +31,7 @@ class MyRest {
     ): HTTPResultVoid {
         val bytes = body.readNBytes(contentLength)
         val message = bytes.decodeToString()
-        info("message (from $from to $to): $message")
+        log!!.info("message (from $from to $to): $message")
         return HTTPResultVoid(201, "Message Sent")
     }
 
@@ -40,6 +43,8 @@ class MyRest {
 
         val text = connection.getInputStream().readAllBytes().decodeToString()
         val json = JSONObject(text)
+
+        log!!.info(text)
 
         val author = json["author"]
         val quote = json["quote"]

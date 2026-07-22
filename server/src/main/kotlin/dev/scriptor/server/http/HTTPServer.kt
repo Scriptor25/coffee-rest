@@ -1,34 +1,35 @@
 package dev.scriptor.server.http
 
 import dev.scriptor.server.annotation.*
+import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.result.HTTPResult
-import dev.scriptor.server.log.info
-import dev.scriptor.server.log.trace
-import dev.scriptor.server.log.warning
-import dev.scriptor.server.type.IConverter
-import dev.scriptor.server.type.normalize
+import dev.scriptor.server.http.result.HTTPResultVoid
+import dev.scriptor.server.trace
+import dev.scriptor.server.type.isAssignable
 import java.io.IOException
 import java.lang.AutoCloseable
-import java.lang.reflect.Method
-import java.lang.reflect.Parameter
-import java.lang.reflect.Type
 import java.net.InetSocketAddress
 import java.nio.channels.Channels
 import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.util.*
 import java.util.concurrent.*
-import kotlin.reflect.javaType
+import java.util.logging.Logger
+import kotlin.reflect.KCallable
+import kotlin.reflect.KMutableProperty
+import kotlin.reflect.KType
+import kotlin.reflect.full.*
 import kotlin.reflect.typeOf
 
 class HTTPServer(
-    hostname: String = "0.0.0.0",
-    port: Int = 8080,
+    val log: Logger = Logger.getLogger("dev.scriptor"),
+    val hostname: String = "0.0.0.0",
+    val port: Int = 8080,
 ) : AutoCloseable {
 
     data class Route(
         val instance: Any,
-        val callee: Method,
+        val callee: KCallable<*>,
         val route: HTTPRoute,
         val method: HTTPMethod,
         val accept: String,
@@ -47,7 +48,7 @@ class HTTPServer(
     private val server = ServerSocketChannel.open()
 
     private val routes: MutableMap<HTTPMethod, MutableList<Route>> = EnumMap(HTTPMethod::class.java)
-    private val converters: MutableMap<Type, MutableMap<Type, IConverter<*, *>>> = HashMap()
+    private val converters: MutableMap<KType, MutableMap<KType, Converter<*, *>>> = HashMap()
 
     private val queue: BlockingQueue<Runnable> = ArrayBlockingQueue(256)
     private val executor: Executor = ThreadPoolExecutor(
@@ -58,17 +59,20 @@ class HTTPServer(
         queue
     )
 
+    private val instances: MutableList<Any> = ArrayList()
+    private val context: MutableMap<String, Any?> = HashMap()
+
     private var running: Boolean = false
 
     init {
         server.bind(InetSocketAddress(hostname, port))
 
-        info("server listening on http:/${server.localAddress}")
+        log.info("server listening on http:/${server.localAddress}")
     }
 
     fun registerRoute(
         instance: Any,
-        callee: Method,
+        callee: KCallable<*>,
         endpoint: Endpoint,
         resource: Resource
     ): Route {
@@ -86,12 +90,40 @@ class HTTPServer(
         return route
     }
 
-    fun <S, D> registerConverter(
-        source: Type,
-        destination: Type,
-        converter: IConverter<S, D>
+    fun <S : Any, D : Any> registerConverter(
+        source: KType,
+        destination: KType,
+        converter: Converter<S, D>,
     ) {
         converters.computeIfAbsent(source) { HashMap() }[destination] = converter
+    }
+
+    fun registerInstance(instance: Any) {
+        instances.add(instance)
+
+        for (property in instance::class.memberProperties) {
+            if (property !is KMutableProperty<*>) continue
+
+            val inject = property.findAnnotation<Inject>() ?: continue
+            if (inject.value !in context) continue
+
+            property.setter.call(instance, context[inject.value])
+        }
+    }
+
+    fun registerValue(key: String, value: Any?) {
+        context[key] = value
+
+        for (instance in instances) {
+            for (property in instance::class.memberProperties) {
+                if (property !is KMutableProperty<*>) continue
+
+                val inject = property.findAnnotation<Inject>() ?: continue
+                if (inject.value != key) continue
+
+                property.setter.call(instance, value)
+            }
+        }
     }
 
     fun spin() {
@@ -101,7 +133,7 @@ class HTTPServer(
             try {
                 process(socket)
             } catch (e: IOException) {
-                trace(e)
+                log.trace(e)
             } finally {
                 socket.close()
             }
@@ -120,16 +152,17 @@ class HTTPServer(
         running = false
     }
 
-    private fun <S, D> convert(obj: S, source: Type, destination: Type): D? {
-        val source = source.normalize()
-        val destination = destination.normalize()
+    private fun <S, D> convert(value: S, source: KType, destination: KType): D? {
 
-        if (IConverter.isAssignable(destination, source)) {
-            return obj as D?
+        if (isAssignable(destination, source)) {
+            return value as D?
         }
 
+        val source = source.withNullability(false)
+        val destination = destination.withNullability(false)
+
         if (source in converters && destination in converters[source]!!) {
-            return (converters[source]!![destination]!! as IConverter<S, D>).from(obj)
+            return (converters[source]!![destination]!! as Converter<S, D>).from(value)
         }
 
         throw IllegalStateException("unsupported conversion from '$source' to '$destination'")
@@ -138,11 +171,11 @@ class HTTPServer(
     private fun process(channel: SocketChannel) {
         val request = HTTPRequestMessage.read(channel)
         if (request == null) {
-            warning("invalid request: request is null")
+            log.warning("invalid request: request is null")
             return
         }
 
-        info("${request.method} ${request.path} ${request.protocol}")
+        log.info("${request.method} ${request.path} ${request.protocol}")
 
         val opt = routes
             .computeIfAbsent(request.method) { ArrayList() }
@@ -157,60 +190,75 @@ class HTTPServer(
 
         val bundle = opt.get()
 
-        val parameterCount = bundle.callee.parameterCount
         val parameters = bundle.callee.parameters
-
-        val args = arrayOfNulls<Any>(parameterCount)
+        val arguments = arrayOfNulls<Any>(parameters.size)
 
         val result: HTTPResult<*>
         try {
-            for (i in 0 until parameterCount) {
-                val parameter: Parameter = parameters[i]
+            for (i in parameters.indices) {
+                if (i == 0) {
+                    arguments[i] = bundle.instance
+                    continue
+                }
+
+                val parameter = parameters[i]
 
                 val value: Any?
-                if (parameter.isAnnotationPresent(Body::class.java)) {
+                if (parameter.hasAnnotation<Body>()) {
                     value = request.body
-                } else if (parameter.isAnnotationPresent(Header::class.java)) {
-                    val name = parameter.getAnnotation(Header::class.java).value
+                } else if (parameter.hasAnnotation<Header>()) {
+                    val name = parameter.findAnnotation<Header>()!!.value
                     value = request.headers[name.lowercase()]
-                } else if (parameter.isAnnotationPresent(PathParameter::class.java)) {
-                    val name = parameter.getAnnotation(PathParameter::class.java).value
+                } else if (parameter.hasAnnotation<PathParameter>()) {
+                    val name = parameter.findAnnotation<PathParameter>()!!.value
                     value = bundle.route.get(request.path, name.lowercase())
-                } else if (parameter.isAnnotationPresent(QueryParameter::class.java)) {
-                    val name = parameter.getAnnotation(QueryParameter::class.java).value
+                } else if (parameter.hasAnnotation<QueryParameter>()) {
+                    val name = parameter.findAnnotation<QueryParameter>()!!.value
                     val values = request.query[name.lowercase()]
                     value =
-                        if (parameter.type.isArray) values?.toTypedArray() ?: arrayOf<String>()
-                        else values?.firstOrNull()
+                        if (parameter.type.classifier == Array::class)
+                            values?.toTypedArray() ?: emptyArray<String>()
+                        else
+                            values?.firstOrNull()
                 } else {
                     value = null
                 }
 
                 if (value != null) {
-                    val c = convert<Any, Any>(
+                    val type =
+                        if (value::class == Array<String>::class)
+                            typeOf<Array<String>>()
+                        else
+                            value::class.starProjectedType
+
+                    val c = convert<Any?, Any?>(
                         value,
-                        value.javaClass,
-                        parameter.type
+                        type,
+                        parameter.type,
                     )
-                    if (c == null) {
-                        throw Exception("failed to convert '$value' from '${value.javaClass}' to '${parameter.type}'")
-                    }
-                    args[i] = c
+
+                    arguments[i] = c
                 }
             }
 
-            val obj = bundle.callee.invoke(bundle.instance, *args)
-            val type = bundle.callee.genericReturnType
+            val value = bundle.callee.call(*arguments)
+            val type = bundle.callee.returnType
 
-            @OptIn(ExperimentalStdlibApi::class)
-            val c = convert<Any?, HTTPResult<*>>(obj, type, typeOf<HTTPResult<*>>().javaType)
-                ?: throw Exception("failed to convert '$obj' from '$type' to HTTP result")
+            if (type.classifier == Unit::class) {
+                result = HTTPResultVoid()
+            } else {
+                val c = convert<Any?, HTTPResult<*>>(
+                    value,
+                    type,
+                    typeOf<HTTPResult<*>>(),
+                ) ?: throw Exception("failed to convert '$value' from '$type' to HTTP result")
 
-            result = c
+                result = c
+            }
         } catch (e: Exception) {
-            trace(e)
+            log.trace(e)
 
-            internalServerError(e.message).write(channel).close()
+            internalServerError(e.stackTraceToString()).write(channel).close()
             return
         }
 

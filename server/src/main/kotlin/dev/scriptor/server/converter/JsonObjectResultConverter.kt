@@ -1,11 +1,12 @@
-package dev.scriptor.server.type
+package dev.scriptor.server.converter
 
 import dev.scriptor.server.http.result.HTTPResult
 import dev.scriptor.server.http.result.HTTPResultString
+import org.json.JSONObject
 
-class IntResultConverter : IConverter<Int, HTTPResult<*>> {
+class JsonObjectResultConverter : Converter<JSONObject, HTTPResult<*>> {
 
-    override fun from(source: Int): HTTPResult<*> {
+    override fun from(source: JSONObject): HTTPResult<*> {
         return HTTPResultString(statusCode = 200, statusText = "OK", value = source.toString())
     }
 }
