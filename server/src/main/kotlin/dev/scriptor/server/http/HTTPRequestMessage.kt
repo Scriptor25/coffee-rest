@@ -62,7 +62,7 @@ data class HTTPRequestMessage(
                 for (param in params) {
                     if ("=" in param) {
                         val pair = param.split("=".toRegex(), limit = 2).toTypedArray()
-                        query.computeIfAbsent(pair[0]) { ArrayList() }.add(pair[1])
+                        query.computeIfAbsent(pair[0].lowercase()) { ArrayList() }.add(pair[1])
                     }
                 }
             }

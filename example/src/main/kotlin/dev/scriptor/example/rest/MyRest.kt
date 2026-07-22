@@ -21,8 +21,8 @@ class MyRest {
         result = "text/plain"
     )
     fun postMessage(
-        @Path("from") from: String,
-        @Path("to") to: String,
+        @PathParameter("from") from: String,
+        @PathParameter("to") to: String,
         @Body body: InputStream,
         @Header("Content-Length") contentLength: Int
     ): HTTPResultVoid {
@@ -61,7 +61,7 @@ class MyRest {
     }
 
     @Resource(path = "/fib([n])", result = "text/plain")
-    fun getFib(@Path("n") n: Int): Int {
+    fun getFib(@PathParameter("n") n: Int): Int {
         var a = 0
         var b = 1
         for (i in 0 until n) {

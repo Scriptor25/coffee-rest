@@ -171,12 +171,12 @@ class HTTPServer(port: Int) : AutoCloseable {
                 } else if (parameter.isAnnotationPresent(Header::class.java)) {
                     val name = parameter.getAnnotation(Header::class.java).value
                     value = request.headers[name.lowercase()]
-                } else if (parameter.isAnnotationPresent(Path::class.java)) {
-                    val name = parameter.getAnnotation(Path::class.java).value
-                    value = bundle.route.get(request.path, name)
-                } else if (parameter.isAnnotationPresent(Query::class.java)) {
-                    val name = parameter.getAnnotation(Query::class.java).value
-                    val values = request.query[name]
+                } else if (parameter.isAnnotationPresent(PathParameter::class.java)) {
+                    val name = parameter.getAnnotation(PathParameter::class.java).value
+                    value = bundle.route.get(request.path, name.lowercase())
+                } else if (parameter.isAnnotationPresent(QueryParameter::class.java)) {
+                    val name = parameter.getAnnotation(QueryParameter::class.java).value
+                    val values = request.query[name.lowercase()]
                     value =
                         if (parameter.type.isArray) values?.toTypedArray() ?: arrayOf<String>()
                         else values?.firstOrNull()

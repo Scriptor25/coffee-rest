@@ -1,7 +1,6 @@
 package dev.scriptor.server.http
 
 import java.nio.file.Path
-import java.util.*
 import java.util.regex.Pattern
 
 class HTTPRoute(path: Path) : Comparable<HTTPRoute> {
@@ -58,10 +57,18 @@ class HTTPRoute(path: Path) : Comparable<HTTPRoute> {
 
             val parameter = matcher.group(1).trim { it <= ' ' }
 
-            val collecting = parameter.endsWith("+")
-            val name = if (collecting) parameter.substring(0, parameter.length - 1) else parameter
+            val collecting: Boolean
+            if (parameter.isNotEmpty()) {
+                collecting = parameter.endsWith("+")
 
-            parameters[name] = Parameter(parameterCount, collecting)
+                val name =
+                    if (collecting) parameter.substring(0, parameter.length - 1)
+                    else parameter
+
+                parameters[name.lowercase()] = Parameter(parameterCount, collecting)
+            } else {
+                collecting = false
+            }
 
             route.append(if (collecting) "(.+)" else "([^\\/]+)")
 

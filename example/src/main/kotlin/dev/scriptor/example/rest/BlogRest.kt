@@ -1,7 +1,7 @@
 package dev.scriptor.example.rest
 
 import dev.scriptor.server.annotation.Endpoint
-import dev.scriptor.server.annotation.Path
+import dev.scriptor.server.annotation.PathParameter
 import dev.scriptor.server.annotation.Resource
 import org.json.JSONObject
 import java.util.*
@@ -29,7 +29,7 @@ class BlogRest {
     """.trimIndent()
 
     @Resource(path = "/[slug+]", result = "text/html")
-    fun getArticle(@Path("slug") slug: Array<String>): String = """
+    fun getArticle(@PathParameter("slug") slug: Array<String>): String = """
         <!DOCTYPE html>
         <html>
         <head>
@@ -43,7 +43,7 @@ class BlogRest {
     """.trimIndent()
 
     @Resource(path = "/[slug+]/metadata", result = "application/json")
-    fun getArticleMetadata(@Path("slug") slug: Array<String>): JSONObject {
+    fun getArticleMetadata(@PathParameter("slug") slug: Array<String>): JSONObject {
         val json = JSONObject()
         json.put("title", slug[slug.size - 1])
         json.put("slug", slug)
@@ -52,7 +52,7 @@ class BlogRest {
     }
 
     @Resource(path = "/[slug+]/metadata/text", result = "text/plain")
-    fun getArticleMetadataText(@Path("slug") slug: Array<String>): String {
+    fun getArticleMetadataText(@PathParameter("slug") slug: Array<String>): String {
         return "title: ${slug[slug.size - 1]}, slug: ${slug.contentToString()}"
     }
 }
