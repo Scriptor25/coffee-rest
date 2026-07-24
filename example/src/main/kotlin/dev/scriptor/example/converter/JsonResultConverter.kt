@@ -7,7 +7,7 @@ import org.json.JSONObject
 
 class JsonResultConverter : Converter<JSONObject, HTTPResult<*>> {
 
-    override fun from(source: JSONObject): HTTPResult<*> {
-        return HTTPResultString(statusCode = 200, statusText = "OK", value = source.toString())
+    override fun convert(value: JSONObject): HTTPResult<*> {
+        return HTTPResultString(value = value.toString())
     }
 }

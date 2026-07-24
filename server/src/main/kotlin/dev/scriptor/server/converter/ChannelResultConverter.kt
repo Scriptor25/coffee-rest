@@ -6,7 +6,5 @@ import java.nio.channels.ReadableByteChannel
 
 class ChannelResultConverter : Converter<ReadableByteChannel, HTTPResult<*>> {
 
-    override fun from(source: ReadableByteChannel): HTTPResult<*> {
-        return HTTPResultChannel(value = source)
-    }
+    override fun convert(value: ReadableByteChannel): HTTPResult<*> = HTTPResultChannel(value = value)
 }

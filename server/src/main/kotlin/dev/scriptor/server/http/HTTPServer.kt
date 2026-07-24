@@ -51,15 +51,15 @@ class HTTPServer(
     }
 
     data class ConversionStep(
-        val source: KType,
-        val destination: KType,
+        val src: KType,
+        val dst: KType,
         val converter: Converter<Any, Any>,
     )
 
     private val server = ServerSocketChannel.open()
 
     private val routes: MutableMap<HTTPMethod, MutableList<Route>> = EnumMap(HTTPMethod::class.java)
-    private val converters: MutableMap<KType, MutableMap<KType, Converter<*, *>>> = HashMap()
+    private val converters: MutableList<ConversionStep> = ArrayList()
     private val instances: MutableList<Any> = ArrayList()
     private val context: MutableMap<String, Any?> = HashMap()
 
@@ -113,11 +113,15 @@ class HTTPServer(
     }
 
     fun registerConverter(
-        source: KType,
-        destination: KType,
+        src: KType,
+        dst: KType,
         converter: Converter<*, *>,
     ) {
-        converters.computeIfAbsent(source) { HashMap() }[destination] = converter
+        converters += ConversionStep(
+            src,
+            dst,
+            converter as Converter<Any, Any>,
+        )
     }
 
     fun registerInstance(instance: Any) {
@@ -174,9 +178,9 @@ class HTTPServer(
         running = false
     }
 
-    private fun findConversionPath(source: KType, destination: KType): List<ConversionStep>? {
+    private fun findConversionPath(src: KType, dst: KType): List<ConversionStep>? {
 
-        val key = Pair(source, destination)
+        val key = Pair(src, dst)
 
         if (key in conversionCache) {
             return conversionCache[key]
@@ -190,7 +194,7 @@ class HTTPServer(
         val queue = ArrayDeque<Node>()
         val visited = HashSet<KType>()
 
-        queue.add(Node(source, emptyList()))
+        queue.add(Node(src, emptyList()))
 
         while (queue.isNotEmpty()) {
 
@@ -198,28 +202,20 @@ class HTTPServer(
 
             if (!visited.add(current.type)) continue
 
-            if (isAssignable(destination, current.type)) {
+            if (isAssignable(dst, current.type)) {
                 conversionCache[key] = current.path
                 return current.path
             }
 
-            val edges = converters[current.type]?.map { (destination, converter) ->
-                ConversionStep(
-                    current.type,
-                    destination,
-                    converter as Converter<Any, Any>,
-                )
-            } ?: continue
+            val edges = converters.filter { isAssignable(it.src, current.type) }
 
             for ((_, next, converter) in edges) {
-                queue.add(
-                    Node(
+                queue += Node(
+                    next,
+                    current.path + ConversionStep(
+                        current.type,
                         next,
-                        current.path + ConversionStep(
-                            current.type,
-                            next,
-                            converter,
-                        )
+                        converter,
                     )
                 )
             }
@@ -228,45 +224,45 @@ class HTTPServer(
         return null
     }
 
-    private fun convertible(source: KType, destination: KType): Boolean {
+    private fun convertible(src: KType, dst: KType): Boolean {
 
-        if (isAssignable(destination, source)) {
+        if (isAssignable(dst, src)) {
             return true
         }
 
         findConversionPath(
-            source.withNullability(false),
-            destination.withNullability(false),
+            src.withNullability(false),
+            dst.withNullability(false),
         ) ?: return false
 
         return true
     }
 
-    private fun checkConvertible(source: KType, destination: KType) {
-        if (convertible(source, destination)) return
+    private fun checkConvertible(src: KType, dst: KType) {
+        if (convertible(src, dst)) return
 
-        throw Exception("unsupported conversion from '$source' to '$destination'")
+        throw Exception("unsupported conversion from '$src' to '$dst'")
     }
 
-    private fun <D> convert(value: Any?, source: KType, destination: KType): D? {
+    private fun <D> convert(value: Any?, src: KType, dst: KType): D? {
 
         if (value == null) {
             return null
         }
 
-        if (isAssignable(destination, source)) {
+        if (isAssignable(dst, src)) {
             return value as D
         }
 
         val path = findConversionPath(
-            source.withNullability(false),
-            destination.withNullability(false),
-        ) ?: throw Exception("unsupported conversion from '$source' to '$destination'")
+            src.withNullability(false),
+            dst.withNullability(false),
+        ) ?: throw Exception("unsupported conversion from '$src' to '$dst'")
 
         var current: Any = value
 
         for ((_, _, converter) in path) {
-            current = converter.from(current) ?: return null
+            current = converter.convert(current)
         }
 
         return current as D

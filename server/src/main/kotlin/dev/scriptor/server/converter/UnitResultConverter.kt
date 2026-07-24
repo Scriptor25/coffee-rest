@@ -5,7 +5,5 @@ import dev.scriptor.server.http.result.HTTPResultUnit
 
 class UnitResultConverter : Converter<Unit, HTTPResult<*>> {
 
-    override fun from(source: Unit): HTTPResult<*> {
-        return HTTPResultUnit()
-    }
+    override fun convert(value: Unit): HTTPResult<*> = HTTPResultUnit()
 }

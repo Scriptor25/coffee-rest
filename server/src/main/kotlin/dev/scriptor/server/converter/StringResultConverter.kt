@@ -5,7 +5,5 @@ import dev.scriptor.server.http.result.HTTPResultString
 
 class StringResultConverter : Converter<String, HTTPResult<*>> {
 
-    override fun from(source: String): HTTPResult<*> {
-        return HTTPResultString(value = source)
-    }
+    override fun convert(value: String): HTTPResult<*> = HTTPResultString(value = value)
 }

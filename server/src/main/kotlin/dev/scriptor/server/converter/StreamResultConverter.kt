@@ -6,7 +6,5 @@ import java.io.InputStream
 
 class StreamResultConverter : Converter<InputStream, HTTPResult<*>> {
 
-    override fun from(source: InputStream): HTTPResult<*> {
-        return HTTPResultStream(value = source)
-    }
+    override fun convert(value: InputStream): HTTPResult<*> = HTTPResultStream(value = value)
 }
