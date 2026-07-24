@@ -87,7 +87,11 @@ class HTTPServer(
             NAME -> normalizeName(hostname)
         }
 
-        log.info("server listening on http://${if (':' in normalized) "[$normalized]" else normalized}:$port")
+        log.info("server listening on ${if (':' in normalized) "[$normalized]" else normalized}:$port")
+    }
+
+    override fun close() {
+        server.close()
     }
 
     fun registerRoute(
@@ -107,7 +111,7 @@ class HTTPServer(
             resource.result
         )
 
-        routes.computeIfAbsent(resource.method) { ArrayList() }.add(route)
+        routes.computeIfAbsent(resource.method) { ArrayList() } += route
 
         return route
     }
@@ -269,129 +273,132 @@ class HTTPServer(
     }
 
     private fun process(channel: SocketChannel) {
-        val request = HTTPRequestMessage.read(channel)
-        if (request == null) {
-            log.warning("invalid request: request is null")
-            return
-        }
+        val reader = HTTPRequestMessageReader(channel)
 
-        log.info("${request.method} ${request.path} ${request.protocol}")
+        var keepAlive: Boolean
+        do {
+            val request = reader.read()
+            if (request == null) {
+                log.warning("invalid request: request is null")
+                break
+            }
 
-        val opt = routes
-            .computeIfAbsent(request.method) { ArrayList() }
-            .stream()
-            .filter { x -> x.route.matches(request.path) }
-            .max(Comparator { obj, other -> obj.compareTo(other) })
+            log.info("${request.method} ${request.path} ${request.protocol}")
 
-        if (opt.isEmpty) {
-            notFound().write(channel).close()
-            return
-        }
+            keepAlive = request.headers["connection"]?.lowercase() != "close"
 
-        val bundle = opt.get()
+            val opt = routes
+                .computeIfAbsent(request.method) { ArrayList() }
+                .stream()
+                .filter { x -> x.route.matches(request.path) }
+                .max(Comparator { obj, other -> obj.compareTo(other) })
 
-        val parameters = bundle.callee.parameters
-        val arguments = arrayOfNulls<Any>(parameters.size)
+            if (opt.isEmpty) {
+                notFound().use { it.write(channel) }
+                continue
+            }
 
-        val result: HTTPResult<*>
-        try {
-            for (i in parameters.indices) {
-                if (i == 0) {
-                    arguments[i] = bundle.instance
-                    continue
+            val bundle = opt.get()
+
+            val parameters = bundle.callee.parameters
+            val arguments = arrayOfNulls<Any>(parameters.size)
+
+            val result: HTTPResult<*>
+            try {
+                for (i in parameters.indices) {
+                    if (i == 0) {
+                        arguments[i] = bundle.instance
+                        continue
+                    }
+
+                    val parameter = parameters[i]
+
+                    val value: Any?
+                    if (parameter.hasAnnotation<Body>()) {
+                        value = request.body
+                    } else if (parameter.hasAnnotation<Header>()) {
+                        val name = parameter.findAnnotation<Header>()!!.value
+                        value = request.headers[name.lowercase()]
+                    } else if (parameter.hasAnnotation<PathParameter>()) {
+                        val name = parameter.findAnnotation<PathParameter>()!!.value
+                        value = bundle.route.get(request.path, name.lowercase())
+                    } else if (parameter.hasAnnotation<QueryParameter>()) {
+                        val name = parameter.findAnnotation<QueryParameter>()!!.value
+                        val values = request.query[name.lowercase()]
+                        value =
+                            if (parameter.type.classifier == Array::class)
+                                values?.toTypedArray() ?: emptyArray<String>()
+                            else
+                                values?.firstOrNull()
+                    } else {
+                        value = null
+                    }
+
+                    if (value != null) {
+                        val type =
+                            if (value::class == Array<String>::class)
+                                typeOf<Array<String>>()
+                            else
+                                value::class.starProjectedType
+
+                        val c = convert<Any?>(
+                            value,
+                            type,
+                            parameter.type,
+                        )
+
+                        arguments[i] = c
+                    }
                 }
 
-                val parameter = parameters[i]
+                val value = bundle.callee.call(*arguments)
+                val type = bundle.callee.returnType
 
-                val value: Any?
-                if (parameter.hasAnnotation<Body>()) {
-                    value = request.body
-                } else if (parameter.hasAnnotation<Header>()) {
-                    val name = parameter.findAnnotation<Header>()!!.value
-                    value = request.headers[name.lowercase()]
-                } else if (parameter.hasAnnotation<PathParameter>()) {
-                    val name = parameter.findAnnotation<PathParameter>()!!.value
-                    value = bundle.route.get(request.path, name.lowercase())
-                } else if (parameter.hasAnnotation<QueryParameter>()) {
-                    val name = parameter.findAnnotation<QueryParameter>()!!.value
-                    val values = request.query[name.lowercase()]
-                    value =
-                        if (parameter.type.classifier == Array::class)
-                            values?.toTypedArray() ?: emptyArray<String>()
-                        else
-                            values?.firstOrNull()
+                if (type.classifier == Unit::class) {
+                    result = HTTPResultUnit()
                 } else {
-                    value = null
-                }
-
-                if (value != null) {
-                    val type =
-                        if (value::class == Array<String>::class)
-                            typeOf<Array<String>>()
-                        else
-                            value::class.starProjectedType
-
-                    val c = convert<Any?>(
+                    val c = convert<HTTPResult<*>>(
                         value,
                         type,
-                        parameter.type,
-                    )
+                        typeOf<HTTPResult<*>>(),
+                    ) ?: throw Exception("failed to convert '$value' from '$type' to HTTP result")
 
-                    arguments[i] = c
+                    result = c
                 }
+            } catch (e: Exception) {
+                log.trace(e)
+
+                internalServerError(e.stackTraceToString()).use { it.write(channel) }
+                continue
             }
 
-            val value = bundle.callee.call(*arguments)
-            val type = bundle.callee.returnType
+            val headers: MutableMap<String, String> = HashMap(result.headers)
+            headers.computeIfAbsent("Content-Type") { bundle.result }
 
-            if (type.classifier == Unit::class) {
-                result = HTTPResultUnit()
+            val chunked: Boolean
+            if ("Content-Length" !in headers && "Transfer-Encoding" !in headers) {
+                chunked = result.count < 0
+
+                if (chunked) {
+                    headers["Transfer-Encoding"] = "chunked"
+                } else {
+                    headers["Content-Length"] = result.count.toString()
+                }
             } else {
-                val c = convert<HTTPResult<*>>(
-                    value,
-                    type,
-                    typeOf<HTTPResult<*>>(),
-                ) ?: throw Exception("failed to convert '$value' from '$type' to HTTP result")
-
-                result = c
+                chunked = false
             }
-        } catch (e: Exception) {
-            log.trace(e)
 
-            internalServerError(e.stackTraceToString()).write(channel).close()
-            return
-        }
-
-        val headers: MutableMap<String, String> = HashMap(result.headers)
-        headers.computeIfAbsent("Content-Type") { bundle.result }
-
-        val chunked: Boolean
-        if ("Content-Length" !in headers && "Transfer-Encoding" !in headers) {
-            chunked = result.count < 0
-
-            if (chunked) {
-                headers["Transfer-Encoding"] = "chunked"
-            } else {
-                headers["Content-Length"] = result.count.toString()
-            }
-        } else {
-            chunked = false
-        }
-
-        HTTPResponseMessage(
-            "HTTP/1.1",
-            result.statusCode,
-            result.statusText,
-            headers,
-            chunked,
-            result.position,
-            result.count,
-            result.channel,
-        ).write(channel).close()
-    }
-
-    override fun close() {
-        server.close()
+            HTTPResponseMessage(
+                "HTTP/1.1",
+                result.statusCode,
+                result.statusText,
+                headers,
+                chunked,
+                result.position,
+                result.count,
+                result.channel,
+            ).use { it.write(channel) }
+        } while (keepAlive)
     }
 
     private fun notFound(): HTTPResponseMessage {
