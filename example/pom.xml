@@ -17,5 +17,11 @@
             <groupId>dev.scriptor</groupId>
             <artifactId>coffee-rest</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20260522</version>
+        </dependency>
     </dependencies>
 </project>

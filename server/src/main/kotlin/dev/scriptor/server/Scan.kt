@@ -14,54 +14,56 @@ fun scan(
     port: Int,
     packageName: String? = null,
 ): HTTPServer {
-    val scanner = Scanner(packageName)
     val server = HTTPServer(log, hostname, port)
 
-    scanner
-        .filter { it.hasAnnotation<Endpoint>() }
-        .forEach { clazz ->
-            val instance: Any
-            try {
-                instance = clazz.createInstance()
-            } catch (e: Exception) {
-                log.trace(e)
-                return@forEach
-            }
-
-            val endpoint = clazz.findAnnotation<Endpoint>()!!
-
-            for (member in clazz.members) {
-                val resource = member.findAnnotation<Resource>()
-                if (resource != null) {
-                    val bundle = server.registerRoute(instance, member, endpoint, resource)
-                    log.config("route [ $bundle ]")
-                }
-            }
-
-            server.registerInstance(instance)
-        }
+    val scanner = Scanner(packageName)
 
     scanner
         .filter { Converter::class in it.allSuperclasses }
-        .forEach { clazz ->
+        .forEach { klass ->
             val instance: Converter<*, *>
             try {
-                instance = clazz.createInstance() as Converter<*, *>
+                instance = klass.createInstance() as Converter<*, *>
             } catch (e: Exception) {
                 log.trace(e)
                 return@forEach
             }
 
-            val superclass = clazz
+            val superclass = klass
                 .allSupertypes
                 .find { it.classifier == Converter::class }!!
 
             val source = superclass.arguments[0].type!!
             val destination = superclass.arguments[1].type!!
 
-            log.config("converter [ $source -> $destination ]")
-
             server.registerConverter(source, destination, instance)
+
+            log.config("converter [ $source -> $destination ]")
+        }
+
+    scanner
+        .filter { it.hasAnnotation<Endpoint>() }
+        .forEach { klass ->
+            val instance: Any
+            try {
+                instance = klass.createInstance()
+            } catch (e: Exception) {
+                log.trace(e)
+                return@forEach
+            }
+
+            val endpoint = klass.findAnnotation<Endpoint>()!!
+
+            for (member in klass.members) {
+                val resource = member.findAnnotation<Resource>()
+                if (resource != null) {
+                    val bundle = server.registerRoute(instance, member, endpoint, resource)
+
+                    log.config("route [ $bundle ]")
+                }
+            }
+
+            server.registerInstance(instance)
         }
 
     return server

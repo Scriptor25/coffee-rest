@@ -8,7 +8,7 @@ import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.result.HTTPResult
-import dev.scriptor.server.http.result.HTTPResultVoid
+import dev.scriptor.server.http.result.HTTPResultUnit
 import dev.scriptor.server.trace
 import dev.scriptor.server.type.isAssignable
 import java.io.IOException
@@ -50,10 +50,18 @@ class HTTPServer(
         }
     }
 
+    data class ConversionStep(
+        val source: KType,
+        val destination: KType,
+        val converter: Converter<Any, Any>,
+    )
+
     private val server = ServerSocketChannel.open()
 
     private val routes: MutableMap<HTTPMethod, MutableList<Route>> = EnumMap(HTTPMethod::class.java)
     private val converters: MutableMap<KType, MutableMap<KType, Converter<*, *>>> = HashMap()
+    private val instances: MutableList<Any> = ArrayList()
+    private val context: MutableMap<String, Any?> = HashMap()
 
     private val queue: BlockingQueue<Runnable> = ArrayBlockingQueue(256)
     private val executor: Executor = ThreadPoolExecutor(
@@ -64,8 +72,7 @@ class HTTPServer(
         queue
     )
 
-    private val instances: MutableList<Any> = ArrayList()
-    private val context: MutableMap<String, Any?> = HashMap()
+    private val conversionCache: MutableMap<Pair<KType, KType>, List<ConversionStep>> = HashMap()
 
     private var running: Boolean = false
 
@@ -87,8 +94,10 @@ class HTTPServer(
         instance: Any,
         callee: KCallable<*>,
         endpoint: Endpoint,
-        resource: Resource
+        resource: Resource,
     ): Route {
+        checkConvertible(callee.returnType, typeOf<HTTPResult<*>>())
+
         val route = Route(
             instance,
             callee,
@@ -103,10 +112,10 @@ class HTTPServer(
         return route
     }
 
-    fun <S : Any, D : Any> registerConverter(
+    fun registerConverter(
         source: KType,
         destination: KType,
-        converter: Converter<S, D>,
+        converter: Converter<*, *>,
     ) {
         converters.computeIfAbsent(source) { HashMap() }[destination] = converter
     }
@@ -165,20 +174,102 @@ class HTTPServer(
         running = false
     }
 
-    private fun <S, D> convert(value: S, source: KType, destination: KType): D? {
+    private fun findConversionPath(source: KType, destination: KType): List<ConversionStep>? {
+
+        val key = Pair(source, destination)
+
+        if (key in conversionCache) {
+            return conversionCache[key]
+        }
+
+        data class Node(
+            val type: KType,
+            val path: List<ConversionStep>,
+        )
+
+        val queue = ArrayDeque<Node>()
+        val visited = HashSet<KType>()
+
+        queue.add(Node(source, emptyList()))
+
+        while (queue.isNotEmpty()) {
+
+            val current = queue.removeFirst()
+
+            if (!visited.add(current.type)) continue
+
+            if (isAssignable(destination, current.type)) {
+                conversionCache[key] = current.path
+                return current.path
+            }
+
+            val edges = converters[current.type]?.map { (destination, converter) ->
+                ConversionStep(
+                    current.type,
+                    destination,
+                    converter as Converter<Any, Any>,
+                )
+            } ?: continue
+
+            for ((_, next, converter) in edges) {
+                queue.add(
+                    Node(
+                        next,
+                        current.path + ConversionStep(
+                            current.type,
+                            next,
+                            converter,
+                        )
+                    )
+                )
+            }
+        }
+
+        return null
+    }
+
+    private fun convertible(source: KType, destination: KType): Boolean {
 
         if (isAssignable(destination, source)) {
-            return value as D?
+            return true
         }
 
-        val source = source.withNullability(false)
-        val destination = destination.withNullability(false)
+        findConversionPath(
+            source.withNullability(false),
+            destination.withNullability(false),
+        ) ?: return false
 
-        if (source in converters && destination in converters[source]!!) {
-            return (converters[source]!![destination]!! as Converter<S, D>).from(value)
+        return true
+    }
+
+    private fun checkConvertible(source: KType, destination: KType) {
+        if (convertible(source, destination)) return
+
+        throw Exception("unsupported conversion from '$source' to '$destination'")
+    }
+
+    private fun <D> convert(value: Any?, source: KType, destination: KType): D? {
+
+        if (value == null) {
+            return null
         }
 
-        throw IllegalStateException("unsupported conversion from '$source' to '$destination'")
+        if (isAssignable(destination, source)) {
+            return value as D
+        }
+
+        val path = findConversionPath(
+            source.withNullability(false),
+            destination.withNullability(false),
+        ) ?: throw Exception("unsupported conversion from '$source' to '$destination'")
+
+        var current: Any = value
+
+        for ((_, _, converter) in path) {
+            current = converter.from(current) ?: return null
+        }
+
+        return current as D
     }
 
     private fun process(channel: SocketChannel) {
@@ -244,7 +335,7 @@ class HTTPServer(
                         else
                             value::class.starProjectedType
 
-                    val c = convert<Any?, Any?>(
+                    val c = convert<Any?>(
                         value,
                         type,
                         parameter.type,
@@ -258,9 +349,9 @@ class HTTPServer(
             val type = bundle.callee.returnType
 
             if (type.classifier == Unit::class) {
-                result = HTTPResultVoid()
+                result = HTTPResultUnit()
             } else {
-                val c = convert<Any?, HTTPResult<*>>(
+                val c = convert<HTTPResult<*>>(
                     value,
                     type,
                     typeOf<HTTPResult<*>>(),

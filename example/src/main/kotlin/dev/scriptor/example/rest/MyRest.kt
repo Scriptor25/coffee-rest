@@ -1,7 +1,7 @@
 package dev.scriptor.example.rest
 
 import dev.scriptor.server.annotation.*
-import dev.scriptor.server.http.result.HTTPResultVoid
+import dev.scriptor.server.http.result.HTTPResultUnit
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -28,11 +28,11 @@ class MyRest {
         @PathParameter("to") to: String,
         @Body body: InputStream,
         @Header("Content-Length") contentLength: Int
-    ): HTTPResultVoid {
+    ): HTTPResultUnit {
         val bytes = body.readNBytes(contentLength)
         val message = bytes.decodeToString()
         log!!.info("message (from $from to $to): $message")
-        return HTTPResultVoid(201, "Message Sent")
+        return HTTPResultUnit(201, "Message Sent")
     }
 
     @Resource(path = "/random-quote", result = "text/html")

@@ -7,6 +7,6 @@ import java.io.InputStream
 class StreamResultConverter : Converter<InputStream, HTTPResult<*>> {
 
     override fun from(source: InputStream): HTTPResult<*> {
-        return HTTPResultStream(statusCode = 200, statusText = "OK", value = source)
+        return HTTPResultStream(value = source)
     }
 }

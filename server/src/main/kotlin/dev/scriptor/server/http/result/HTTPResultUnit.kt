@@ -1,6 +1,6 @@
 package dev.scriptor.server.http.result
 
-class HTTPResultVoid : HTTPResult<Void> {
+class HTTPResultUnit : HTTPResult<Unit> {
 
     constructor(
         statusCode: Int = 200,
