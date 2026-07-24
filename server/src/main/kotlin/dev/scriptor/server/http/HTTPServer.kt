@@ -277,11 +277,7 @@ class HTTPServer(
 
         var keepAlive: Boolean
         do {
-            val request = reader.read()
-            if (request == null) {
-                log.warning("invalid request: request is null")
-                break
-            }
+            val request = reader.read() ?: break
 
             log.info("${request.method} ${request.path} ${request.protocol}")
 
