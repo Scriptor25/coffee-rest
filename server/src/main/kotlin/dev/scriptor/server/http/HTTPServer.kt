@@ -286,8 +286,8 @@ class HTTPServer(
             val opt = routes
                 .computeIfAbsent(request.method) { mutableListOf() }
                 .stream()
-                .filter { x -> x.route.matches(request.path) }
-                .max(Comparator { obj, other -> obj.compareTo(other) })
+                .filter { it.route.matches(request.path) }
+                .max(Comparator.naturalOrder())
 
             if (opt.isEmpty) {
                 notFound().use { it.write(channel) }

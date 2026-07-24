@@ -70,7 +70,7 @@ class HTTPRoute(path: Path) : Comparable<HTTPRoute> {
                 collecting = false
             }
 
-            route.append(if (collecting) "(.+)" else "([^\\/]+)")
+            route.append(if (collecting) "(.*)" else "([^\\/]+)")
 
             if (collecting) {
                 collectingCount++
@@ -83,7 +83,7 @@ class HTTPRoute(path: Path) : Comparable<HTTPRoute> {
         }
 
         val tail = pathname.substring(end)
-        route.append(Pattern.quote(tail))
+        if (tail.isNotEmpty()) route.append(Pattern.quote(tail))
         route.append("$")
 
         if (tail.isNotEmpty()) {
