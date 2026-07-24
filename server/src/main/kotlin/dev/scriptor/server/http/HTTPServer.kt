@@ -1,5 +1,10 @@
 package dev.scriptor.server.http
 
+import dev.scriptor.server.address.AddressType.*
+import dev.scriptor.server.address.normalizeIpv4
+import dev.scriptor.server.address.normalizeIpv6
+import dev.scriptor.server.address.normalizeName
+import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.result.HTTPResult
@@ -22,9 +27,9 @@ import kotlin.reflect.full.*
 import kotlin.reflect.typeOf
 
 class HTTPServer(
-    val log: Logger = Logger.getLogger("dev.scriptor"),
-    val hostname: String = "0.0.0.0",
-    val port: Int = 8080,
+    val log: Logger,
+    val hostname: String,
+    val port: Int,
 ) : AutoCloseable {
 
     data class Route(
@@ -67,7 +72,15 @@ class HTTPServer(
     init {
         server.bind(InetSocketAddress(hostname, port))
 
-        log.info("server listening on http:/${server.localAddress}")
+        val addressType = parseAddressType(hostname)
+        val normalized = when (addressType) {
+            INVALID -> throw Error("invalid hostname '$hostname'")
+            IPV4 -> normalizeIpv4(hostname)
+            IPV6 -> normalizeIpv6(hostname)
+            NAME -> normalizeName(hostname)
+        }
+
+        log.info("server listening on http://${if (':' in normalized) "[$normalized]" else normalized}:$port")
     }
 
     fun registerRoute(
@@ -111,7 +124,7 @@ class HTTPServer(
         }
     }
 
-    fun registerValue(key: String, value: Any?) {
+    fun inject(key: String, value: Any?) {
         context[key] = value
 
         for (instance in instances) {

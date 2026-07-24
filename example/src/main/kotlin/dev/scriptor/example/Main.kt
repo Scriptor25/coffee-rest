@@ -1,13 +1,29 @@
 package dev.scriptor.example
 
 import dev.scriptor.server.scan
-import java.util.logging.Logger
+import java.util.logging.*
 
 fun main() {
     val log = Logger.getLogger("custom")
-    val server = scan(log, packageName = "dev.scriptor")
+    log.level = Level.CONFIG
 
-    server.registerValue("log", log)
+    val handler = ConsoleHandler()
+    handler.level = log.level
+    handler.formatter = object : Formatter() {
+
+        override fun format(record: LogRecord?): String? {
+            if (record == null) return null
+
+            return "[${record.level}][${record.instant}][${record.sourceClassName}.${record.sourceMethodName}(...)] ${record.message}\n"
+        }
+    }
+
+    log.useParentHandlers = false
+    log.addHandler(handler)
+
+    val server = scan(log, "::", 8080, "dev.scriptor")
+
+    server.inject("log", log)
 
     server.use { it.start() }
 }
