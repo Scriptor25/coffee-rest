@@ -5,8 +5,8 @@ import java.nio.channels.ReadableByteChannel
 data class HTTPRequestMessage(
     val method: HTTPMethod,
     val path: String,
-    val query: Map<String, MutableList<String>>,
+    val query: ParameterList,
     val protocol: String,
-    val headers: Map<String, String>,
+    val headers: ParameterList,
     val body: ReadableByteChannel
 )

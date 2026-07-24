@@ -48,8 +48,9 @@ class HTTPRequestMessageReader(private val channel: ReadableByteChannel) {
         var line = readLine() ?: return null
 
         line = line.trim { it <= ' ' }
+        if (line.isEmpty()) return null
 
-        val request: Array<String> = line.split("\\s+".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        val request: Array<String> = line.split("\\s+".toRegex()).toTypedArray()
         val method = HTTPMethod.valueOf(request[0])
         val uri = URI.create(request[1])
         val path = uri.path
@@ -58,29 +59,27 @@ class HTTPRequestMessageReader(private val channel: ReadableByteChannel) {
         val query: MutableMap<String, MutableList<String>> = HashMap()
 
         if (uri.query != null) {
-            val params = uri.query.split("&+".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val params = uri.query.split("&+".toRegex()).toTypedArray()
             for (param in params) {
                 if ("=" in param) {
                     val pair = param.split("=".toRegex(), limit = 2).toTypedArray()
-                    query.computeIfAbsent(pair[0].lowercase()) { ArrayList() }.add(pair[1])
+                    query.computeIfAbsent(pair[0].lowercase()) { mutableListOf() }.add(pair[1])
                 }
             }
         }
 
-        val headers: MutableMap<String, String> = HashMap()
+        val headers: MutableMap<String, MutableList<String>> = HashMap()
 
         while (true) {
             line = readLine() ?: break
 
             line = line.trim { it <= ' ' }
-            if (line.isEmpty()) {
-                break
-            }
+            if (line.isEmpty()) break
 
-            val header = line.split(":\\s*".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            headers[header[0].lowercase()] = header[1]
+            val header = line.split(":\\s*".toRegex(), limit = 2).toTypedArray()
+            headers.computeIfAbsent(header[0].lowercase()) { mutableListOf() }.add(header[1])
         }
 
-        return HTTPRequestMessage(method, path, query, protocol, headers, channel)
+        return HTTPRequestMessage(method, path, ParameterList(query), protocol, ParameterList(headers), channel)
     }
 }

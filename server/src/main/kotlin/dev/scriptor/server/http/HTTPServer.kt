@@ -59,8 +59,8 @@ class HTTPServer(
     private val server = ServerSocketChannel.open()
 
     private val routes: MutableMap<HTTPMethod, MutableList<Route>> = EnumMap(HTTPMethod::class.java)
-    private val converters: MutableList<ConversionStep> = ArrayList()
-    private val instances: MutableList<Any> = ArrayList()
+    private val converters: MutableList<ConversionStep> = mutableListOf()
+    private val instances: MutableList<Any> = mutableListOf()
     private val context: MutableMap<String, Any?> = HashMap()
 
     private val queue: BlockingQueue<Runnable> = ArrayBlockingQueue(256)
@@ -111,7 +111,7 @@ class HTTPServer(
             resource.result
         )
 
-        routes.computeIfAbsent(resource.method) { ArrayList() } += route
+        routes.computeIfAbsent(resource.method) { mutableListOf() } += route
 
         return route
     }
@@ -284,7 +284,7 @@ class HTTPServer(
             keepAlive = request.headers["connection"]?.lowercase() != "close"
 
             val opt = routes
-                .computeIfAbsent(request.method) { ArrayList() }
+                .computeIfAbsent(request.method) { mutableListOf() }
                 .stream()
                 .filter { x -> x.route.matches(request.path) }
                 .max(Comparator { obj, other -> obj.compareTo(other) })
@@ -314,18 +314,23 @@ class HTTPServer(
                         value = request.body
                     } else if (parameter.hasAnnotation<Header>()) {
                         val name = parameter.findAnnotation<Header>()!!.value
-                        value = request.headers[name.lowercase()]
+                        val values = request.headers.getAll(name.lowercase())
+                        value =
+                            if (parameter.type.classifier == Array::class)
+                                values.toTypedArray()
+                            else
+                                values.firstOrNull()
                     } else if (parameter.hasAnnotation<PathParameter>()) {
                         val name = parameter.findAnnotation<PathParameter>()!!.value
                         value = bundle.route.get(request.path, name.lowercase())
                     } else if (parameter.hasAnnotation<QueryParameter>()) {
                         val name = parameter.findAnnotation<QueryParameter>()!!.value
-                        val values = request.query[name.lowercase()]
+                        val values = request.query.getAll(name.lowercase())
                         value =
                             if (parameter.type.classifier == Array::class)
-                                values?.toTypedArray() ?: emptyArray<String>()
+                                values.toTypedArray()
                             else
-                                values?.firstOrNull()
+                                values.firstOrNull()
                     } else {
                         value = null
                     }
