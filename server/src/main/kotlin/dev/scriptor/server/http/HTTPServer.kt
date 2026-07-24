@@ -20,6 +20,7 @@ import java.nio.channels.SocketChannel
 import java.util.*
 import java.util.concurrent.*
 import java.util.logging.Logger
+import kotlin.concurrent.timerTask
 import kotlin.reflect.KCallable
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KType
@@ -50,10 +51,16 @@ class HTTPServer(
         }
     }
 
-    data class ConversionStep(
+    private data class ConversionStep(
         val src: KType,
         val dst: KType,
         val converter: Converter<Any, Any>,
+    )
+
+    private data class Task(
+        val interval: Long,
+        val callee: Runnable,
+        val task: TimerTask,
     )
 
     private val server = ServerSocketChannel.open()
@@ -61,7 +68,10 @@ class HTTPServer(
     private val routes: MutableMap<HTTPMethod, MutableList<Route>> = EnumMap(HTTPMethod::class.java)
     private val converters: MutableList<ConversionStep> = mutableListOf()
     private val instances: MutableList<Any> = mutableListOf()
-    private val context: MutableMap<String, Any?> = HashMap()
+    private val context: MutableMap<String, Any?> = mutableMapOf()
+
+    private val timer = Timer()
+    private val tasks: MutableMap<String, Task> = mutableMapOf()
 
     private val queue: BlockingQueue<Runnable> = ArrayBlockingQueue(256)
     private val executor: Executor = ThreadPoolExecutor(
@@ -92,6 +102,7 @@ class HTTPServer(
 
     override fun close() {
         server.close()
+        timer.cancel()
     }
 
     fun registerRoute(
@@ -154,6 +165,18 @@ class HTTPServer(
                 property.setter.call(instance, value)
             }
         }
+    }
+
+    fun registerTask(name: String, interval: Long, callee: Runnable) {
+        val task = timerTask { callee.run() }
+        tasks[name] = Task(interval, callee, task)
+
+        timer.scheduleAtFixedRate(task, interval, interval)
+    }
+
+    fun cancelTask(name: String) {
+        val value = tasks.remove(name) ?: return
+        value.task.cancel()
     }
 
     fun spin() {
