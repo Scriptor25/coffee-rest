@@ -75,6 +75,6 @@ fun scan(
                 }
             }
 
-            server.registerContext(endpoint.value, instance)
+            server.registerEndpoint(instance)
         }
 }

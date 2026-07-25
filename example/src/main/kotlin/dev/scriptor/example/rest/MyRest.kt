@@ -30,7 +30,7 @@ class MyRest {
         @PathParameter("from") from: String,
         @PathParameter("to") to: String,
         @Body body: InputStream,
-        @Header("Content-Length") contentLength: Int
+        @Header("content-length") contentLength: Int
     ): HTTPResultUnit {
         val bytes = body.readNBytes(contentLength)
         val message = bytes.decodeToString()

@@ -1,8 +1,6 @@
 package dev.scriptor.server.http
 
-import dev.scriptor.server.InternalServerErrorSignal
-import dev.scriptor.server.NotFoundSignal
-import dev.scriptor.server.Signal
+import dev.scriptor.server.*
 import dev.scriptor.server.address.AddressType.*
 import dev.scriptor.server.address.normalizeIpv4
 import dev.scriptor.server.address.normalizeIpv6
@@ -11,7 +9,6 @@ import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.result.HTTPResult
-import dev.scriptor.server.trace
 import dev.scriptor.server.type.isAssignable
 import java.io.IOException
 import java.lang.AutoCloseable
@@ -142,19 +139,28 @@ class HTTPServer(
             dst,
             converter as Converter<Any, Any>,
         )
+
+        val name = converter.name
+        if (name != null) {
+            inject(name, converter)
+        }
     }
 
     fun registerContext(name: String, instance: Any) {
         contexts[name] = instance
 
-        for (property in instance::class.memberProperties) {
-            if (property !is KMutableProperty<*>) continue
+        injectInstance(instance)
 
-            val inject = property.findAnnotation<Inject>() ?: continue
-            if (inject.value !in injected) continue
+        inject(name, instance)
+    }
 
-            property.setter.call(instance, injected[inject.value])
+    fun registerEndpoint(instance: Any) {
+        val name = instance::class.qualifiedName
+        if (name != null) {
+            contexts[name] = instance
         }
+
+        injectInstance(instance)
     }
 
     fun inject(name: String, value: Any?) {
@@ -208,6 +214,17 @@ class HTTPServer(
 
     fun stop() {
         running = false
+    }
+
+    private fun injectInstance(instance: Any) {
+        for (property in instance::class.memberProperties) {
+            if (property !is KMutableProperty<*>) continue
+
+            val inject = property.findAnnotation<Inject>() ?: continue
+            if (inject.value !in injected) continue
+
+            property.setter.call(instance, injected[inject.value])
+        }
     }
 
     private fun findConversionPath(src: KType, dst: KType): List<ConversionStep>? {
@@ -309,17 +326,21 @@ class HTTPServer(
                 .filter { it.route.matches(request.path) }
                 .max(Comparator.naturalOrder())
 
-            if (opt.isEmpty) {
-                throw NotFoundSignal()
-            }
-
-            val bundle = opt.get()
-
-            val parameters = bundle.callee.parameters
-            val arguments = arrayOfNulls<Any>(parameters.size)
+            var contentType = "*/*"
 
             var result: HTTPResult<*>
             try {
+                if (opt.isEmpty) {
+                    throw NotFoundSignal()
+                }
+
+                val bundle = opt.get()
+
+                contentType = bundle.result
+
+                val parameters = bundle.callee.parameters
+                val arguments = arrayOfNulls<Any>(parameters.size)
+
                 for (i in parameters.indices) {
                     if (i == 0) {
                         arguments[i] = bundle.instance
@@ -361,11 +382,17 @@ class HTTPServer(
                             else
                                 value::class.starProjectedType
 
-                        arguments[i] = convert(
-                            value,
-                            type,
-                            parameter.type,
-                        )
+                        try {
+                            arguments[i] = convert(
+                                value,
+                                type,
+                                parameter.type,
+                            )
+                        } catch (_: Exception) {
+                            throw BadRequestSignal(content = "failed to convert parameter")
+                        }
+                    } else if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
+                        throw BadRequestSignal(content = "parameter is neither optional nor nullable")
                     }
                 }
 
@@ -398,7 +425,7 @@ class HTTPServer(
             val headers = ParameterList(result.headers)
 
             if ("content-type" !in headers) {
-                headers["content-type"] = bundle.result
+                headers["content-type"] = contentType
             }
 
             var chunked = false
