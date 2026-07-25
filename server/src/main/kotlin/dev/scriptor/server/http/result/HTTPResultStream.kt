@@ -1,6 +1,6 @@
 package dev.scriptor.server.http.result
 
-import dev.scriptor.server.http.ParameterList
+import dev.scriptor.server.ParameterList
 import java.io.InputStream
 import java.nio.channels.Channels
 
@@ -16,9 +16,10 @@ class HTTPResultStream : HTTPResult<InputStream> {
         statusCode,
         statusText,
         headers,
+        if (value != null)
+            Channels.newChannel(value)
+        else null,
         0L,
         count,
-        if (value != null) Channels.newChannel(value)
-        else null,
     )
 }

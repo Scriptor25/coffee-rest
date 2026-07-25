@@ -1,6 +1,6 @@
 package dev.scriptor.server.http.result
 
-import dev.scriptor.server.http.ParameterList
+import dev.scriptor.server.ParameterList
 import java.nio.channels.ReadableByteChannel
 
 abstract class HTTPResult<T> {
@@ -10,24 +10,24 @@ abstract class HTTPResult<T> {
 
     val headers: ParameterList
 
+    val channel: ReadableByteChannel?
+
     val position: Long
     val count: Long
-
-    val channel: ReadableByteChannel?
 
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
         headers: ParameterList = ParameterList(),
+        channel: ReadableByteChannel? = null,
         position: Long = 0L,
         count: Long = -1L,
-        channel: ReadableByteChannel? = null,
     ) {
         this.statusCode = statusCode
         this.statusText = statusText
         this.headers = headers
+        this.channel = channel
         this.position = position
         this.count = count
-        this.channel = channel
     }
 }

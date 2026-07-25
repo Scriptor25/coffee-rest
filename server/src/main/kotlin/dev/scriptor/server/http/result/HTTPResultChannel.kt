@@ -1,6 +1,6 @@
 package dev.scriptor.server.http.result
 
-import dev.scriptor.server.http.ParameterList
+import dev.scriptor.server.ParameterList
 import java.nio.channels.ReadableByteChannel
 
 class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
@@ -16,8 +16,8 @@ class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
         statusCode,
         statusText,
         headers,
+        value,
         position,
         count,
-        value,
     )
 }

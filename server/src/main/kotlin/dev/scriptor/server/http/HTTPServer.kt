@@ -310,7 +310,7 @@ class HTTPServer(
     }
 
     private fun process(channel: SocketChannel) {
-        val reader = HTTPRequestMessageReader(channel)
+        val reader = HTTPRequestMessageReader(BufferedReadableByteChannel(channel))
 
         var keepAlive: Boolean
         do {
@@ -349,30 +349,47 @@ class HTTPServer(
 
                     val parameter = parameters[i]
 
+                    val typename: String
                     val value: Any?
-                    if (parameter.hasAnnotation<Body>()) {
-                        value = request.body
-                    } else if (parameter.hasAnnotation<Header>()) {
-                        val name = parameter.findAnnotation<Header>()!!.value
-                        val values = request.headers.getAll(name)
-                        value =
-                            if (parameter.type.classifier == Array::class)
-                                values.toTypedArray()
-                            else
-                                values.firstOrNull()
-                    } else if (parameter.hasAnnotation<PathParameter>()) {
-                        val name = parameter.findAnnotation<PathParameter>()!!.value
-                        value = bundle.route.get(request.path, name)
-                    } else if (parameter.hasAnnotation<QueryParameter>()) {
-                        val name = parameter.findAnnotation<QueryParameter>()!!.value
-                        val values = request.query.getAll(name)
-                        value =
-                            if (parameter.type.classifier == Array::class)
-                                values.toTypedArray()
-                            else
-                                values.firstOrNull()
-                    } else {
-                        value = null
+                    when {
+                        parameter.hasAnnotation<PathParameter>() -> {
+                            val name = parameter.findAnnotation<PathParameter>()!!.value
+
+                            typename = "path $name"
+                            value = bundle.route.get(request.path, name)
+                        }
+
+                        parameter.hasAnnotation<QueryParameter>() -> {
+                            val name = parameter.findAnnotation<QueryParameter>()!!.value
+                            val values = request.query.getAll(name)
+
+                            typename = "query $name"
+                            value =
+                                if (parameter.type.classifier == Array::class)
+                                    values.toTypedArray()
+                                else
+                                    values.firstOrNull()
+                        }
+
+                        parameter.hasAnnotation<Header>() -> {
+                            val name = parameter.findAnnotation<Header>()!!.value
+                            val values = request.headers.getAll(name)
+
+                            typename = "header $name"
+                            value =
+                                if (parameter.type.classifier == Array::class)
+                                    values.toTypedArray()
+                                else
+                                    values.firstOrNull()
+                        }
+
+                        parameter.hasAnnotation<Body>() -> {
+                            typename = "body"
+
+                            value = request.body
+                        }
+
+                        else -> continue
                     }
 
                     if (value != null) {
@@ -389,10 +406,10 @@ class HTTPServer(
                                 parameter.type,
                             )
                         } catch (_: Exception) {
-                            throw BadRequestSignal(content = "failed to convert parameter")
+                            throw BadRequestSignal(content = "failed to convert parameter '$typename'")
                         }
                     } else if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
-                        throw BadRequestSignal(content = "parameter is neither optional nor nullable")
+                        throw BadRequestSignal(content = "parameter '$typename' is neither optional nor nullable")
                     }
                 }
 
@@ -444,10 +461,14 @@ class HTTPServer(
                 result.statusCode,
                 result.statusText,
                 headers,
-                chunked,
-                result.position,
-                result.count,
-                result.channel,
+                if (result.channel != null)
+                    HTTPMessageBody(
+                        result.channel,
+                        result.position,
+                        result.count,
+                        chunked,
+                    )
+                else null,
             ).use { it.write(channel) }
         } while (keepAlive)
     }

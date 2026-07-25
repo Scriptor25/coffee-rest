@@ -1,6 +1,6 @@
 package dev.scriptor.server.http
 
-import java.nio.channels.ReadableByteChannel
+import dev.scriptor.server.ParameterList
 
 data class HTTPRequestMessage(
     val method: HTTPMethod,
@@ -8,5 +8,5 @@ data class HTTPRequestMessage(
     val query: ParameterList,
     val protocol: String,
     val headers: ParameterList,
-    val body: ReadableByteChannel
+    val body: HTTPMessageBody
 )

@@ -1,6 +1,6 @@
 package dev.scriptor.server.http.result
 
-import dev.scriptor.server.http.ParameterList
+import dev.scriptor.server.ParameterList
 import java.nio.channels.Channels
 import java.nio.channels.ReadableByteChannel
 
@@ -31,12 +31,24 @@ class HTTPResultString : HTTPResult<String> {
         statusText: String,
         headers: ParameterList,
         countChannel: CountChannel,
-    ) : super(statusCode, statusText, headers, 0L, countChannel.count, countChannel.channel)
+    ) : super(
+        statusCode,
+        statusText,
+        headers,
+        countChannel.channel,
+        0L,
+        countChannel.count,
+    )
 
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
         headers: ParameterList = ParameterList(),
         value: String? = null,
-    ) : this(statusCode, statusText, headers, create(value))
+    ) : this(
+        statusCode,
+        statusText,
+        headers,
+        create(value),
+    )
 }

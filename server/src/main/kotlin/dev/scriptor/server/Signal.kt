@@ -1,6 +1,5 @@
 package dev.scriptor.server
 
-import dev.scriptor.server.http.ParameterList
 import dev.scriptor.server.http.result.*
 import java.io.InputStream
 import java.nio.channels.ReadableByteChannel
