@@ -1,5 +1,6 @@
 package dev.scriptor.server.http.result
 
+import dev.scriptor.server.http.ParameterList
 import java.io.InputStream
 import java.nio.channels.Channels
 
@@ -8,7 +9,7 @@ class HTTPResultStream : HTTPResult<InputStream> {
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
-        headers: Map<String, String> = emptyMap(),
+        headers: ParameterList = ParameterList(),
         value: InputStream? = null,
         count: Long = -1L,
     ) : super(

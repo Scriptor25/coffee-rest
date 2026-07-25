@@ -1,5 +1,6 @@
 package dev.scriptor.example.rest
 
+import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.annotation.Endpoint
 import dev.scriptor.server.annotation.Inject
 import dev.scriptor.server.annotation.PathParameter
@@ -14,7 +15,9 @@ class RootRest {
     lateinit var log: Logger
 
     @Resource(path = "/favicon.[]", result = "image/svg+xml")
-    fun getFavicon(): InputStream? = ClassLoader.getSystemResourceAsStream("favicon.svg")
+    fun getFavicon(): InputStream =
+        ClassLoader.getSystemResourceAsStream("favicon.svg")
+            ?: throw NotFoundSignal()
 
     @Resource(path = "/[slug+]")
     fun getSomething(@PathParameter("slug") slug: Array<String>) {

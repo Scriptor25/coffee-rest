@@ -1,5 +1,6 @@
 package dev.scriptor.example.rest
 
+import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.http.result.HTTPResultUnit
 import org.json.JSONObject
@@ -15,7 +16,9 @@ class MyRest {
     var log: Logger? = null
 
     @Resource(path = "/hello", result = "text/html")
-    fun getHello(): InputStream? = ClassLoader.getSystemResourceAsStream("hello.html")
+    fun getHello(): InputStream =
+        ClassLoader.getSystemResourceAsStream("hello.html")
+            ?: throw NotFoundSignal()
 
     @Resource(
         path = "/message/[from]/[to]",

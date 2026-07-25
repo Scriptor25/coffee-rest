@@ -1,10 +1,12 @@
 package dev.scriptor.server.http.result
 
+import dev.scriptor.server.http.ParameterList
+
 class HTTPResultUnit : HTTPResult<Unit> {
 
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
-        headers: Map<String, String> = emptyMap(),
+        headers: ParameterList = ParameterList(),
     ) : super(statusCode, statusText, headers, 0L, 0L, null)
 }

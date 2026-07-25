@@ -1,5 +1,8 @@
 package dev.scriptor.server.http
 
+import dev.scriptor.server.InternalServerErrorSignal
+import dev.scriptor.server.NotFoundSignal
+import dev.scriptor.server.Signal
 import dev.scriptor.server.address.AddressType.*
 import dev.scriptor.server.address.normalizeIpv4
 import dev.scriptor.server.address.normalizeIpv6
@@ -8,13 +11,12 @@ import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.result.HTTPResult
-import dev.scriptor.server.http.result.HTTPResultUnit
 import dev.scriptor.server.trace
 import dev.scriptor.server.type.isAssignable
 import java.io.IOException
 import java.lang.AutoCloseable
+import java.lang.reflect.InvocationTargetException
 import java.net.InetSocketAddress
-import java.nio.channels.Channels
 import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.util.*
@@ -24,7 +26,10 @@ import kotlin.concurrent.timerTask
 import kotlin.reflect.KCallable
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KType
-import kotlin.reflect.full.*
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.hasAnnotation
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 
 class HTTPServer(
@@ -257,10 +262,8 @@ class HTTPServer(
             return true
         }
 
-        findConversionPath(
-            src.withNullability(false),
-            dst.withNullability(false),
-        ) ?: return false
+        findConversionPath(src, dst)
+            ?: return false
 
         return true
     }
@@ -271,22 +274,16 @@ class HTTPServer(
         throw Exception("unsupported conversion from '$src' to '$dst'")
     }
 
-    private fun <D> convert(value: Any?, src: KType, dst: KType): D? {
-
-        if (value == null) {
-            return null
-        }
+    private fun <D> convert(value: Any, src: KType, dst: KType): D {
 
         if (isAssignable(dst, src)) {
             return value as D
         }
 
-        val path = findConversionPath(
-            src.withNullability(false),
-            dst.withNullability(false),
-        ) ?: throw Exception("unsupported conversion from '$src' to '$dst'")
+        val path = findConversionPath(src, dst)
+            ?: throw Exception("unsupported conversion from '$src' to '$dst'")
 
-        var current: Any = value
+        var current = value
 
         for ((_, _, converter) in path) {
             current = converter.convert(current)
@@ -313,8 +310,7 @@ class HTTPServer(
                 .max(Comparator.naturalOrder())
 
             if (opt.isEmpty) {
-                notFound().use { it.write(channel) }
-                continue
+                throw NotFoundSignal()
             }
 
             val bundle = opt.get()
@@ -322,7 +318,7 @@ class HTTPServer(
             val parameters = bundle.callee.parameters
             val arguments = arrayOfNulls<Any>(parameters.size)
 
-            val result: HTTPResult<*>
+            var result: HTTPResult<*>
             try {
                 for (i in parameters.indices) {
                     if (i == 0) {
@@ -337,7 +333,7 @@ class HTTPServer(
                         value = request.body
                     } else if (parameter.hasAnnotation<Header>()) {
                         val name = parameter.findAnnotation<Header>()!!.value
-                        val values = request.headers.getAll(name.lowercase())
+                        val values = request.headers.getAll(name)
                         value =
                             if (parameter.type.classifier == Array::class)
                                 values.toTypedArray()
@@ -345,10 +341,10 @@ class HTTPServer(
                                 values.firstOrNull()
                     } else if (parameter.hasAnnotation<PathParameter>()) {
                         val name = parameter.findAnnotation<PathParameter>()!!.value
-                        value = bundle.route.get(request.path, name.lowercase())
+                        value = bundle.route.get(request.path, name)
                     } else if (parameter.hasAnnotation<QueryParameter>()) {
                         val name = parameter.findAnnotation<QueryParameter>()!!.value
-                        val values = request.query.getAll(name.lowercase())
+                        val values = request.query.getAll(name)
                         value =
                             if (parameter.type.classifier == Array::class)
                                 values.toTypedArray()
@@ -365,51 +361,55 @@ class HTTPServer(
                             else
                                 value::class.starProjectedType
 
-                        val c = convert<Any?>(
+                        arguments[i] = convert(
                             value,
                             type,
                             parameter.type,
                         )
-
-                        arguments[i] = c
                     }
                 }
 
-                val value = bundle.callee.call(*arguments)
+                val value: Any?
                 val type = bundle.callee.returnType
 
-                if (type.classifier == Unit::class) {
-                    result = HTTPResultUnit()
-                } else {
-                    val c = convert<HTTPResult<*>>(
-                        value,
-                        type,
-                        typeOf<HTTPResult<*>>(),
-                    ) ?: throw Exception("failed to convert '$value' from '$type' to HTTP result")
-
-                    result = c
+                try {
+                    value = bundle.callee.call(*arguments)
+                } catch (e: InvocationTargetException) {
+                    throw e.targetException
                 }
-            } catch (e: Exception) {
-                log.trace(e)
 
-                internalServerError(e.stackTraceToString()).use { it.write(channel) }
-                continue
+                if (value == null) {
+                    throw NotFoundSignal()
+                }
+
+                result = convert(
+                    value,
+                    type,
+                    typeOf<HTTPResult<*>>(),
+                )
+            } catch (s: Signal) {
+                result = s.generate()
+            } catch (t: Throwable) {
+                result = InternalServerErrorSignal().generate()
+
+                log.trace(t)
             }
 
-            val headers: MutableMap<String, String> = HashMap(result.headers)
-            headers.computeIfAbsent("Content-Type") { bundle.result }
+            val headers = ParameterList(result.headers)
 
-            val chunked: Boolean
-            if ("Content-Length" !in headers && "Transfer-Encoding" !in headers) {
+            if ("content-type" !in headers) {
+                headers["content-type"] = bundle.result
+            }
+
+            var chunked = false
+            if ("content-length" !in headers && "transfer-encoding" !in headers) {
                 chunked = result.count < 0
 
                 if (chunked) {
-                    headers["Transfer-Encoding"] = "chunked"
+                    headers["transfer-encoding"] = "chunked"
                 } else {
-                    headers["Content-Length"] = result.count.toString()
+                    headers["content-length"] = result.count.toString()
                 }
-            } else {
-                chunked = false
             }
 
             HTTPResponseMessage(
@@ -423,47 +423,5 @@ class HTTPServer(
                 result.channel,
             ).use { it.write(channel) }
         } while (keepAlive)
-    }
-
-    private fun notFound(): HTTPResponseMessage {
-        val bytes = "resource not found".encodeToByteArray()
-        val input = bytes.inputStream()
-        val body = Channels.newChannel(input)
-
-        val headers: MutableMap<String, String> = HashMap()
-        headers["Content-Type"] = "text/plain"
-        headers["Content-Length"] = bytes.size.toString()
-
-        return HTTPResponseMessage(
-            "HTTP/1.1",
-            404,
-            "Not Found",
-            headers,
-            false,
-            0L,
-            bytes.size.toLong(),
-            body,
-        )
-    }
-
-    private fun internalServerError(message: String?): HTTPResponseMessage {
-        val bytes = "internal server error: $message".encodeToByteArray()
-        val input = bytes.inputStream()
-        val body = Channels.newChannel(input)
-
-        val headers: MutableMap<String, String> = HashMap()
-        headers["Content-Type"] = "text/plain"
-        headers["Content-Length"] = bytes.size.toString()
-
-        return HTTPResponseMessage(
-            "HTTP/1.1",
-            500,
-            "Internal Server Error",
-            headers,
-            false,
-            0L,
-            bytes.size.toLong(),
-            body,
-        )
     }
 }

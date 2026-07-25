@@ -5,17 +5,12 @@ import dev.scriptor.server.annotation.Resource
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.HTTPServer
 import dev.scriptor.server.scanner.Scanner
-import java.util.logging.Logger
 import kotlin.reflect.full.*
 
 fun scan(
-    log: Logger,
-    hostname: String,
-    port: Int,
+    server: HTTPServer,
     packageName: String? = null,
-): HTTPServer {
-    val server = HTTPServer(log, hostname, port)
-
+) {
     val scanner = Scanner(packageName)
 
     scanner
@@ -25,7 +20,7 @@ fun scan(
             try {
                 instance = klass.createInstance() as Converter<*, *>
             } catch (e: Exception) {
-                log.trace(e)
+                server.log.trace(e)
                 return@forEach
             }
 
@@ -38,7 +33,7 @@ fun scan(
 
             server.registerConverter(source, destination, instance)
 
-            log.config("converter [ $source -> $destination ]")
+            server.log.config("converter [ $source -> $destination ]")
         }
 
     scanner
@@ -48,7 +43,7 @@ fun scan(
             try {
                 instance = klass.createInstance()
             } catch (e: Exception) {
-                log.trace(e)
+                server.log.trace(e)
                 return@forEach
             }
 
@@ -59,12 +54,10 @@ fun scan(
                 if (resource != null) {
                     val bundle = server.registerRoute(instance, member, endpoint, resource)
 
-                    log.config("route [ $bundle ]")
+                    server.log.config("route [ $bundle ]")
                 }
             }
 
             server.registerInstance(instance)
         }
-
-    return server
 }

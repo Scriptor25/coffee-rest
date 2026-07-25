@@ -19,8 +19,16 @@ fun normalizeIpv4(address: String): String = address.split('.').joinToString("."
 fun normalizeIpv6(address: String): String {
     val halves = address.lowercase().split("::", limit = 2)
 
-    val left = if (halves[0].isEmpty()) emptyList() else halves[0].split(':')
-    val right = if (halves.size == 1 || halves[1].isEmpty()) emptyList() else halves[1].split(':')
+    val left =
+        if (halves[0].isEmpty())
+            emptyList()
+        else
+            halves[0].split(':')
+    val right =
+        if (halves.size == 1 || halves[1].isEmpty())
+            emptyList()
+        else
+            halves[1].split(':')
 
     val groups = mutableListOf<String>()
     groups += left

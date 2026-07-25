@@ -9,7 +9,7 @@ data class HTTPResponseMessage(
     val protocol: String,
     val statusCode: Int,
     val statusText: String,
-    val headers: Map<String, String>,
+    val headers: ParameterList,
     val chunked: Boolean,
     val position: Long,
     val count: Long,
@@ -37,10 +37,12 @@ data class HTTPResponseMessage(
     fun write(channel: WritableByteChannel): HTTPResponseMessage {
         writeString(channel, "$protocol $statusCode $statusText\r\n")
 
-        for ((key, value) in headers) {
-            val keys = sanitize(key, mapOf(Pair(':', "\\:"), Pair('\r', "\\r"), Pair('\n', "\\n")))
-            val values = sanitize(value, mapOf(Pair('\r', "\\r"), Pair('\n', "\\n")))
-            writeString(channel, "$keys: $values\r\n")
+        for ((key, values) in headers) {
+            val keySan = sanitize(key, mapOf(Pair(':', "\\:"), Pair('\r', "\\r"), Pair('\n', "\\n")))
+            for (value in values) {
+                val valueSan = sanitize(value, mapOf(Pair('\r', "\\r"), Pair('\n', "\\n")))
+                writeString(channel, "$keySan: $valueSan\r\n")
+            }
         }
 
         writeString(channel, "\r\n")
