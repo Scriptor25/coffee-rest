@@ -70,13 +70,13 @@ class HTTPServer(
 
     private val server = ServerSocketChannel.open()
 
-    private val routes: MutableMap<HTTPMethod, MutableList<Route>> = EnumMap(HTTPMethod::class.java)
-    private val converters: MutableList<ConversionStep> = mutableListOf()
-    private val instances: MutableList<Any> = mutableListOf()
-    private val context: MutableMap<String, Any?> = mutableMapOf()
+    private val routes = mutableMapOf<HTTPMethod, MutableList<Route>>()
+    private val converters = mutableListOf<ConversionStep>()
+    private val contexts = mutableMapOf<String, Any>()
+    private val injected = mutableMapOf<String, Any?>()
 
     private val timer = Timer()
-    private val tasks: MutableMap<String, Task> = mutableMapOf()
+    private val tasks = mutableMapOf<String, Task>()
 
     private val queue: BlockingQueue<Runnable> = ArrayBlockingQueue(256)
     private val executor: Executor = ThreadPoolExecutor(
@@ -87,7 +87,7 @@ class HTTPServer(
         queue
     )
 
-    private val conversionCache: MutableMap<Pair<KType, KType>, List<ConversionStep>> = HashMap()
+    private val conversionCache = mutableMapOf<Pair<KType, KType>, List<ConversionStep>>()
 
     private var running: Boolean = false
 
@@ -144,28 +144,28 @@ class HTTPServer(
         )
     }
 
-    fun registerInstance(instance: Any) {
-        instances.add(instance)
+    fun registerContext(name: String, instance: Any) {
+        contexts[name] = instance
 
         for (property in instance::class.memberProperties) {
             if (property !is KMutableProperty<*>) continue
 
             val inject = property.findAnnotation<Inject>() ?: continue
-            if (inject.value !in context) continue
+            if (inject.value !in injected) continue
 
-            property.setter.call(instance, context[inject.value])
+            property.setter.call(instance, injected[inject.value])
         }
     }
 
-    fun inject(key: String, value: Any?) {
-        context[key] = value
+    fun inject(name: String, value: Any?) {
+        injected[name] = value
 
-        for (instance in instances) {
+        for ((_, instance) in contexts) {
             for (property in instance::class.memberProperties) {
                 if (property !is KMutableProperty<*>) continue
 
                 val inject = property.findAnnotation<Inject>() ?: continue
-                if (inject.value != key) continue
+                if (inject.value != name) continue
 
                 property.setter.call(instance, value)
             }

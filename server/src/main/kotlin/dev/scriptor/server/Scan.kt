@@ -1,5 +1,6 @@
 package dev.scriptor.server
 
+import dev.scriptor.server.annotation.Context
 import dev.scriptor.server.annotation.Endpoint
 import dev.scriptor.server.annotation.Resource
 import dev.scriptor.server.converter.Converter
@@ -37,6 +38,22 @@ fun scan(
         }
 
     scanner
+        .filter { it.hasAnnotation<Context>() }
+        .forEach { klass ->
+            val instance: Any
+            try {
+                instance = klass.createInstance()
+            } catch (e: Exception) {
+                server.log.trace(e)
+                return@forEach
+            }
+
+            val context = klass.findAnnotation<Context>()!!
+
+            server.registerContext(context.value, instance)
+        }
+
+    scanner
         .filter { it.hasAnnotation<Endpoint>() }
         .forEach { klass ->
             val instance: Any
@@ -58,6 +75,6 @@ fun scan(
                 }
             }
 
-            server.registerInstance(instance)
+            server.registerContext(endpoint.value, instance)
         }
 }
