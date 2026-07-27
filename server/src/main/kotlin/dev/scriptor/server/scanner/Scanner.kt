@@ -11,6 +11,7 @@ class Scanner(
         val names = ClassPathScannerFactory
             .scanners
             .flatMap { it.scan(packageName) }
+            .filter { "$" !in it }
 
         return names
             .map { Class.forName(it, false, loader).kotlin }
