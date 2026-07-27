@@ -15,7 +15,7 @@ fun scan(
     val scanner = Scanner(packageName)
 
     scanner
-        .filter { Converter::class in it.allSuperclasses }
+        .filter { it.isSubclassOf(Converter::class) }
         .forEach { klass ->
             val instance: Converter<*, *>
             try {
