@@ -29,11 +29,13 @@ class HTTPResultString : HTTPResult<String> {
     private constructor(
         statusCode: Int,
         statusText: String,
+        contentType: String,
         headers: ParameterList,
         countChannel: CountChannel,
     ) : super(
         statusCode,
         statusText,
+        contentType,
         headers,
         countChannel.channel,
         0L,
@@ -43,11 +45,13 @@ class HTTPResultString : HTTPResult<String> {
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
+        contentType: String = "text/plain",
         headers: ParameterList = ParameterList(),
         value: String? = null,
     ) : this(
         statusCode,
         statusText,
+        contentType,
         headers,
         create(value),
     )

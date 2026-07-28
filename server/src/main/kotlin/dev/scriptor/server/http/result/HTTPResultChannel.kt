@@ -8,6 +8,7 @@ class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
+        contentType: String = "application/octet-stream",
         headers: ParameterList = ParameterList(),
         value: ReadableByteChannel? = null,
         position: Long = 0L,
@@ -15,6 +16,7 @@ class HTTPResultChannel : HTTPResult<ReadableByteChannel> {
     ) : super(
         statusCode,
         statusText,
+        contentType,
         headers,
         value,
         position,

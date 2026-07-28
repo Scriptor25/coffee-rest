@@ -8,6 +8,8 @@ abstract class HTTPResult<T> {
     val statusCode: Int
     val statusText: String
 
+    val contentType: String
+
     val headers: ParameterList
 
     val channel: ReadableByteChannel?
@@ -18,6 +20,7 @@ abstract class HTTPResult<T> {
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
+        contentType: String = "*/*",
         headers: ParameterList = ParameterList(),
         channel: ReadableByteChannel? = null,
         position: Long = 0L,
@@ -25,6 +28,7 @@ abstract class HTTPResult<T> {
     ) {
         this.statusCode = statusCode
         this.statusText = statusText
+        this.contentType = contentType
         this.headers = headers
         this.channel = channel
         this.position = position

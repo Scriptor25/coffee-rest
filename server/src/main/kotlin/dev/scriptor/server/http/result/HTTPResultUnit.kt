@@ -5,12 +5,13 @@ import dev.scriptor.server.ParameterList
 class HTTPResultUnit : HTTPResult<Unit> {
 
     constructor(
-        statusCode: Int = 200,
-        statusText: String = "OK",
+        statusCode: Int = 204,
+        statusText: String = "No Content",
         headers: ParameterList = ParameterList(),
     ) : super(
         statusCode,
         statusText,
+        "*/*",
         headers,
         null,
         0L,

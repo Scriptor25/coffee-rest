@@ -9,6 +9,7 @@ import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.result.HTTPResult
+import dev.scriptor.server.http.result.HTTPResultUnit
 import dev.scriptor.server.type.isAssignable
 import java.io.IOException
 import java.lang.AutoCloseable
@@ -20,14 +21,11 @@ import java.util.*
 import java.util.concurrent.*
 import java.util.logging.Logger
 import kotlin.concurrent.timerTask
-import kotlin.reflect.KCallable
-import kotlin.reflect.KMutableProperty
-import kotlin.reflect.KType
+import kotlin.reflect.*
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.starProjectedType
-import kotlin.reflect.typeOf
 
 class HTTPServer(
     val log: Logger,
@@ -195,7 +193,7 @@ class HTTPServer(
 
         executor.execute {
             try {
-                process(socket)
+                handle(socket)
             } catch (e: IOException) {
                 log.trace(e)
             } finally {
@@ -309,143 +307,181 @@ class HTTPServer(
         return current as D
     }
 
-    private fun process(channel: SocketChannel) {
+    private fun handle(channel: SocketChannel) {
         val reader = HTTPRequestMessageReader(BufferedReadableByteChannel(channel))
 
-        var keepAlive: Boolean
-        do {
-            val request = reader.read() ?: break
+        do while (handle(channel, reader.read() ?: break))
+    }
 
-            log.info("${request.method} ${request.path} ${request.protocol}")
+    private fun getOptions(request: HTTPRequestMessage): HTTPResult<*> {
+        val headers = ParameterList()
+        headers["access-control-allow-origin"] = "*"
+        headers["access-control-allow-methods"] =
+            routes
+                .filter { (_, value) -> value.any { it.route.matches(request.path) } }
+                .map { it.key }
+                .plusElement(HTTPMethod.OPTIONS)
+                .joinToString(", ")
+        request.headers["access-control-request-headers"]?.let {
+            headers["access-control-allow-headers"] = it
+        }
+        headers["access-control-max-age"] = "3600"
 
-            keepAlive = request.headers["connection"]?.lowercase() != "close"
+        return HTTPResultUnit(
+            204,
+            "No Content",
+            headers,
+        )
+    }
 
-            val opt = routes
-                .computeIfAbsent(request.method) { mutableListOf() }
-                .stream()
-                .filter { it.route.matches(request.path) }
-                .max(Comparator.naturalOrder())
+    private fun getArguments(
+        request: HTTPRequestMessage,
+        route: Route,
+        parameters: List<KParameter>,
+        arguments: Array<Any?>,
+    ) {
+        for (i in parameters.indices) {
+            if (i == 0) {
+                arguments[i] = route.instance
+                continue
+            }
 
-            var contentType = "*/*"
+            val parameter = parameters[i]
 
-            var result: HTTPResult<*>
-            try {
-                if (opt.isEmpty) {
-                    throw NotFoundSignal()
+            val typename: String
+            val value: Any?
+            when {
+                parameter.hasAnnotation<PathParameter>() -> {
+                    val name = parameter.findAnnotation<PathParameter>()!!.value
+
+                    typename = "path $name"
+                    value = route.route.get(request.path, name)
                 }
 
-                val bundle = opt.get()
+                parameter.hasAnnotation<QueryParameter>() -> {
+                    val name = parameter.findAnnotation<QueryParameter>()!!.value
+                    val values = request.query.getAll(name)
 
-                contentType = bundle.result
-
-                val parameters = bundle.callee.parameters
-                val arguments = arrayOfNulls<Any>(parameters.size)
-
-                for (i in parameters.indices) {
-                    if (i == 0) {
-                        arguments[i] = bundle.instance
-                        continue
-                    }
-
-                    val parameter = parameters[i]
-
-                    val typename: String
-                    val value: Any?
-                    when {
-                        parameter.hasAnnotation<PathParameter>() -> {
-                            val name = parameter.findAnnotation<PathParameter>()!!.value
-
-                            typename = "path $name"
-                            value = bundle.route.get(request.path, name)
-                        }
-
-                        parameter.hasAnnotation<QueryParameter>() -> {
-                            val name = parameter.findAnnotation<QueryParameter>()!!.value
-                            val values = request.query.getAll(name)
-
-                            typename = "query $name"
-                            value =
-                                if (parameter.type.classifier == Array::class)
-                                    values.toTypedArray()
-                                else
-                                    values.firstOrNull()
-                        }
-
-                        parameter.hasAnnotation<Header>() -> {
-                            val name = parameter.findAnnotation<Header>()!!.value
-                            val values = request.headers.getAll(name)
-
-                            typename = "header $name"
-                            value =
-                                if (parameter.type.classifier == Array::class)
-                                    values.toTypedArray()
-                                else
-                                    values.firstOrNull()
-                        }
-
-                        parameter.hasAnnotation<Body>() -> {
-                            typename = "body"
-
-                            value = request.body
-                        }
-
-                        else -> continue
-                    }
-
-                    if (value != null) {
-                        val type =
-                            if (value::class == Array<String>::class)
-                                typeOf<Array<String>>()
-                            else
-                                value::class.starProjectedType
-
-                        try {
-                            arguments[i] = convert(
-                                value,
-                                type,
-                                parameter.type,
-                            )
-                        } catch (_: Exception) {
-                            throw BadRequestSignal(content = "failed to convert parameter '$typename'")
-                        }
-                    } else if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
-                        throw BadRequestSignal(content = "parameter '$typename' is neither optional nor nullable")
-                    }
+                    typename = "query $name"
+                    value =
+                        if (parameter.type.classifier == Array::class)
+                            values.toTypedArray()
+                        else
+                            values.firstOrNull()
                 }
 
-                val value: Any?
-                val type = bundle.callee.returnType
+                parameter.hasAnnotation<Header>() -> {
+                    val name = parameter.findAnnotation<Header>()!!.value
+                    val values = request.headers.getAll(name)
+
+                    typename = "header $name"
+                    value =
+                        if (parameter.type.classifier == Array::class)
+                            values.toTypedArray()
+                        else
+                            values.firstOrNull()
+                }
+
+                parameter.hasAnnotation<Body>() -> {
+                    typename = "body"
+
+                    value = request.body
+                }
+
+                else -> continue
+            }
+
+            if (value != null) {
+                val type =
+                    if (value::class == Array<String>::class)
+                        typeOf<Array<String>>()
+                    else
+                        value::class.starProjectedType
 
                 try {
-                    value = bundle.callee.call(*arguments)
-                } catch (e: InvocationTargetException) {
-                    throw e.targetException
+                    arguments[i] = convert(
+                        value,
+                        type,
+                        parameter.type,
+                    )
+                } catch (_: Exception) {
+                    throw BadRequestSignal(content = "failed to convert parameter '$typename'")
                 }
+            } else if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
+                throw BadRequestSignal(content = "parameter '$typename' is neither optional nor nullable")
+            }
+        }
+    }
 
-                if (value == null) {
-                    throw NotFoundSignal()
-                }
+    private fun getResult(request: HTTPRequestMessage): HTTPResult<*> {
 
-                result = convert(
-                    value,
-                    type,
-                    typeOf<HTTPResult<*>>(),
-                )
-            } catch (s: Signal) {
-                result = s.generate()
-            } catch (t: Throwable) {
-                result = InternalServerErrorSignal().generate()
+        val candidates = routes
+            .computeIfAbsent(request.method) { mutableListOf() }
+            .stream()
+            .filter { it.route.matches(request.path) }
+            .max(Comparator.naturalOrder())
 
-                log.trace(t)
+        if (candidates.isEmpty) {
+            return NotFoundSignal().generate()
+        }
+
+        try {
+            val route = candidates.get()
+
+            val parameters = route.callee.parameters
+            val arguments = arrayOfNulls<Any>(parameters.size)
+
+            getArguments(
+                request,
+                route,
+                parameters,
+                arguments,
+            )
+
+            val value: Any?
+            val type = route.callee.returnType
+
+            try {
+                value = route.callee.call(*arguments)
+            } catch (e: InvocationTargetException) {
+                throw e.targetException
             }
 
-            val headers = ParameterList(result.headers)
+            if (value == null) {
+                throw NullPointerException()
+            }
 
+            return convert(
+                value,
+                type,
+                typeOf<HTTPResult<*>>(),
+            )
+        } catch (s: Signal) {
+            return s.generate()
+        } catch (t: Throwable) {
+            log.trace(t)
+            return InternalServerErrorSignal().generate()
+        }
+    }
+
+    private fun handle(channel: SocketChannel, request: HTTPRequestMessage): Boolean {
+        log.info("${request.method} ${request.path} ${request.protocol}")
+
+        val keepAlive = request.headers["connection"]?.lowercase() != "close"
+
+        val result = when (request.method) {
+            HTTPMethod.OPTIONS -> getOptions(request)
+            else -> getResult(request)
+        }
+
+        val headers = ParameterList(result.headers)
+
+        var chunked = false
+        if (result !is HTTPResultUnit) {
             if ("content-type" !in headers) {
-                headers["content-type"] = contentType
+                headers["content-type"] = result.contentType
             }
 
-            var chunked = false
             if ("content-length" !in headers && "transfer-encoding" !in headers) {
                 chunked = result.count < 0
 
@@ -455,21 +491,27 @@ class HTTPServer(
                     headers["content-length"] = result.count.toString()
                 }
             }
+        }
 
-            HTTPResponseMessage(
-                "HTTP/1.1",
-                result.statusCode,
-                result.statusText,
-                headers,
-                if (result.channel != null)
-                    HTTPMessageBody(
-                        result.channel,
-                        result.position,
-                        result.count,
-                        chunked,
-                    )
-                else null,
-            ).use { it.write(channel) }
-        } while (keepAlive)
+        if ("access-control-allow-origin" !in headers) {
+            headers["access-control-allow-origin"] = "*"
+        }
+
+        HTTPResponseMessage(
+            "HTTP/1.1",
+            result.statusCode,
+            result.statusText,
+            headers,
+            if (result.channel != null)
+                HTTPMessageBody(
+                    result.channel,
+                    result.position,
+                    result.count,
+                    chunked,
+                )
+            else null,
+        ).use { it.write(channel) }
+
+        return keepAlive
     }
 }

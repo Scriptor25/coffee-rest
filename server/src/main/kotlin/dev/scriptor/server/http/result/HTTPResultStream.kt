@@ -9,12 +9,14 @@ class HTTPResultStream : HTTPResult<InputStream> {
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
+        contentType: String = "application/octet-stream",
         headers: ParameterList = ParameterList(),
         value: InputStream? = null,
         count: Long = -1L,
     ) : super(
         statusCode,
         statusText,
+        contentType,
         headers,
         if (value != null)
             Channels.newChannel(value)

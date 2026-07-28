@@ -69,9 +69,9 @@ fun scan(
             for (member in klass.members) {
                 val resource = member.findAnnotation<Resource>()
                 if (resource != null) {
-                    val bundle = server.registerRoute(instance, member, endpoint, resource)
+                    val route = server.registerRoute(instance, member, endpoint, resource)
 
-                    server.log.config("route [ $bundle ]")
+                    server.log.config("route [ $route ]")
                 }
             }
 

@@ -12,54 +12,51 @@ open class Signal(
 ) : Throwable("$code - $text") {
 
     fun generate(): HTTPResult<*> {
-        if (content == null) {
-            val headers = ParameterList(headers)
-
-            if ("content-type" !in headers) {
-                headers["content-type"] = "text/plain"
-            }
-
-            return HTTPResultString(
-                code,
-                text,
-                headers,
-                message,
-            )
-        }
-
         val headers = ParameterList(headers)
 
-        if ("content-type" !in headers) {
-            headers["content-type"] = "*/*"
-        }
-
         return when (content) {
-            is Unit -> HTTPResultUnit(
-                code,
-                text,
-                headers,
-            )
+            null ->
+                HTTPResultString(
+                    code,
+                    text,
+                    "text/plain",
+                    headers,
+                    message,
+                )
 
-            is String -> HTTPResultString(
-                code,
-                text,
-                headers,
-                content,
-            )
+            is Unit ->
+                HTTPResultUnit(
+                    code,
+                    text,
+                    headers,
+                )
 
-            is InputStream -> HTTPResultStream(
-                code,
-                text,
-                headers,
-                content,
-            )
+            is String ->
+                HTTPResultString(
+                    code,
+                    text,
+                    "text/plain",
+                    headers,
+                    content,
+                )
 
-            is ReadableByteChannel -> HTTPResultChannel(
-                code,
-                text,
-                headers,
-                content,
-            )
+            is InputStream ->
+                HTTPResultStream(
+                    code,
+                    text,
+                    "application/octet-stream",
+                    headers,
+                    content,
+                )
+
+            is ReadableByteChannel ->
+                HTTPResultChannel(
+                    code,
+                    text,
+                    "application/octet-stream",
+                    headers,
+                    content,
+                )
 
             else -> throw Error("invalid signal content $content")
         }

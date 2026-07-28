@@ -8,6 +8,6 @@ import org.json.JSONObject
 class JsonResultConverter : Converter<JSONObject, HTTPResult<*>> {
 
     override fun convert(value: JSONObject): HTTPResult<*> {
-        return HTTPResultString(value = value.toString())
+        return HTTPResultString(contentType = "application/json", value = value.toString())
     }
 }
