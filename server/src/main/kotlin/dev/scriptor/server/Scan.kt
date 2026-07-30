@@ -29,12 +29,12 @@ fun scan(
                 .allSupertypes
                 .find { it.classifier == Converter::class }!!
 
-            val source = superclass.arguments[0].type!!
-            val destination = superclass.arguments[1].type!!
+            val src = superclass.arguments[0].type!!
+            val dst = superclass.arguments[1].type!!
 
-            server.registerConverter(source, destination, instance)
+            server.registerConverter(src, dst, instance)
 
-            server.log.config("converter [ $source -> $destination ]")
+            server.log.config("converter [ $src -> $dst ]")
         }
 
     scanner

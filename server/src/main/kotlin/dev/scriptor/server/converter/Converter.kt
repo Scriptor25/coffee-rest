@@ -1,9 +1,6 @@
 package dev.scriptor.server.converter
 
-interface Converter<S : Any, D : Any> {
-
-    val name: String?
-        get() = this::class.qualifiedName
+interface Converter<in S : Any, out D : Any> {
 
     fun convert(value: S): D
 }

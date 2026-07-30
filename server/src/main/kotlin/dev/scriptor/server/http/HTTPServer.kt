@@ -7,6 +7,8 @@ import dev.scriptor.server.address.normalizeIpv6
 import dev.scriptor.server.address.normalizeName
 import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
+import dev.scriptor.server.converter.ConversionPath
+import dev.scriptor.server.converter.ConversionStep
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.result.HTTPResult
 import dev.scriptor.server.http.result.HTTPResultUnit
@@ -51,12 +53,6 @@ class HTTPServer(
         }
     }
 
-    private data class ConversionStep(
-        val src: KType,
-        val dst: KType,
-        val converter: Converter<Any, Any>,
-    )
-
     private data class Task(
         val interval: Long,
         val callee: Runnable,
@@ -67,7 +63,7 @@ class HTTPServer(
 
     private val routes = mutableMapOf<HTTPMethod, MutableList<Route>>()
     private val converters = mutableListOf<ConversionStep>()
-    private val contexts = mutableMapOf<String, Any>()
+    private val instances = mutableListOf<Any>()
     private val injected = mutableMapOf<String, Any?>()
 
     private val timer = Timer()
@@ -82,7 +78,7 @@ class HTTPServer(
         queue
     )
 
-    private val conversionCache = mutableMapOf<Pair<KType, KType>, List<ConversionStep>>()
+    private val conversionCache = mutableMapOf<Pair<KType, KType>, ConversionPath<Any, Any>>()
 
     private var running: Boolean = false
 
@@ -138,14 +134,11 @@ class HTTPServer(
             converter as Converter<Any, Any>,
         )
 
-        val name = converter.name
-        if (name != null) {
-            inject(name, converter)
-        }
+        injectInstance(converter)
     }
 
     fun registerContext(name: String, instance: Any) {
-        contexts[name] = instance
+        instances += instance
 
         injectInstance(instance)
 
@@ -153,10 +146,7 @@ class HTTPServer(
     }
 
     fun registerEndpoint(instance: Any) {
-        val name = instance::class.qualifiedName
-        if (name != null) {
-            contexts[name] = instance
-        }
+        instances += instance
 
         injectInstance(instance)
     }
@@ -164,7 +154,7 @@ class HTTPServer(
     fun inject(name: String, value: Any?) {
         injected[name] = value
 
-        for ((_, instance) in contexts) {
+        for (instance in instances) {
             for (property in instance::class.memberProperties) {
                 if (property !is KMutableProperty<*>) continue
 
@@ -218,6 +208,16 @@ class HTTPServer(
         for (property in instance::class.memberProperties) {
             if (property !is KMutableProperty<*>) continue
 
+            if (property.hasAnnotation<Conversion>()) {
+                if (property.returnType.classifier != ConversionPath::class) continue
+
+                val src = property.returnType.arguments[0].type!!
+                val dst = property.returnType.arguments[1].type!!
+
+                property.setter.call(instance, findConversionPath(src, dst) ?: continue)
+                continue
+            }
+
             val inject = property.findAnnotation<Inject>() ?: continue
             if (inject.value !in injected) continue
 
@@ -225,7 +225,7 @@ class HTTPServer(
         }
     }
 
-    private fun findConversionPath(src: KType, dst: KType): List<ConversionStep>? {
+    private fun findConversionPath(src: KType, dst: KType): ConversionPath<Any, Any>? {
 
         val key = Pair(src, dst)
 
@@ -250,8 +250,9 @@ class HTTPServer(
             if (!visited.add(current.type)) continue
 
             if (isAssignable(dst, current.type)) {
-                conversionCache[key] = current.path
-                return current.path
+                val path = ConversionPath<Any, Any>(current.path)
+                conversionCache[key] = path
+                return path
             }
 
             val edges = converters.filter { isAssignable(it.src, current.type) }
@@ -272,15 +273,7 @@ class HTTPServer(
     }
 
     private fun convertible(src: KType, dst: KType): Boolean {
-
-        if (isAssignable(dst, src)) {
-            return true
-        }
-
-        findConversionPath(src, dst)
-            ?: return false
-
-        return true
+        return findConversionPath(src, dst) != null
     }
 
     private fun checkConvertible(src: KType, dst: KType) {
@@ -289,22 +282,12 @@ class HTTPServer(
         throw Exception("unsupported conversion from '$src' to '$dst'")
     }
 
-    private fun <D> convert(value: Any, src: KType, dst: KType): D {
-
-        if (isAssignable(dst, src)) {
-            return value as D
-        }
+    private fun convert(value: Any, src: KType, dst: KType): Any {
 
         val path = findConversionPath(src, dst)
             ?: throw Exception("unsupported conversion from '$src' to '$dst'")
 
-        var current = value
-
-        for ((_, _, converter) in path) {
-            current = converter.convert(current)
-        }
-
-        return current as D
+        return path.convert(value)
     }
 
     private fun handle(channel: SocketChannel) {
@@ -455,7 +438,7 @@ class HTTPServer(
                 value,
                 type,
                 typeOf<HTTPResult<*>>(),
-            )
+            ) as HTTPResult<*>
         } catch (s: Signal) {
             return s.generate()
         } catch (t: Throwable) {
