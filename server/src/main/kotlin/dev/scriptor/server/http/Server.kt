@@ -99,10 +99,10 @@ class Server(
         }
     }
 
-    fun register(name: String, interval: Long, callee: Runnable) {
+    fun register(name: String, delay: Long, period: Long, callee: Runnable) {
         val task = timerTask { callee.run() }
         tasks[name] = task
-        timer.scheduleAtFixedRate(task, interval, interval)
+        timer.scheduleAtFixedRate(task, delay, period)
     }
 
     fun cancel(name: String) {
