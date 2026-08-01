@@ -20,11 +20,14 @@ import java.util.*
 import java.util.concurrent.*
 import java.util.logging.Logger
 import kotlin.concurrent.timerTask
-import kotlin.reflect.*
+import kotlin.reflect.KCallable
+import kotlin.reflect.KParameter
 import kotlin.reflect.KParameter.Kind.*
+import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.typeOf
 
 class Server(
     val log: Logger,
@@ -192,9 +195,7 @@ class Server(
 
                 @OptIn(ExperimentalContextParameters::class)
                 CONTEXT -> {
-                    val klass = parameter.type.classifier
-
-                    arguments[index] = when (klass) {
+                    arguments[index] = when (parameter.type.classifier) {
                         Logger::class -> log
                         Provider::class -> provider
                         ConversionPath::class -> {
@@ -204,8 +205,7 @@ class Server(
                             provider[src to dst]
                         }
 
-                        is KClass<*> -> provider[klass]
-                        else -> throw UnsupportedOperationException()
+                        else -> provider[parameter.type]
                     }
                 }
 

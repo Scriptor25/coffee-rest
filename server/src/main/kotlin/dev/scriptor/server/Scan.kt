@@ -25,11 +25,9 @@ fun scan(server: Server, packageName: String? = null) {
             }
 
             klass.hasAnnotation<Context>() -> {
-                val name = klass.findAnnotation<Context>()!!.name
-
                 val instance = klass.createInstance()
 
-                server.provider[name] = instance
+                server.provider += instance
             }
 
             klass.hasAnnotation<Endpoint>() -> {

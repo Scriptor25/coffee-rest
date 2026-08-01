@@ -5,15 +5,15 @@ import dev.scriptor.server.converter.ConversionStep
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.type.isAssignable
 import java.util.*
-import kotlin.reflect.KClass
 import kotlin.reflect.KType
+import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 
 class Provider {
 
     private val conversionSteps = mutableListOf<ConversionStep>()
     private val conversionPaths = mutableMapOf<Pair<KType, KType>, ConversionPath<Any, Any>>()
-    private val contexts = mutableMapOf<KClass<*>, Any>()
+    private val contexts = mutableListOf<Any>()
     private val named = mutableMapOf<String, Any?>()
 
     operator fun set(key: Pair<KType, KType>, converter: Converter<Any, Any>) {
@@ -67,12 +67,12 @@ class Provider {
     operator fun contains(key: Pair<KType, KType>): Boolean = get(key) != null
 
     operator fun plusAssign(value: Any) {
-        contexts[value::class] = value
+        contexts += value
     }
 
-    operator fun get(klass: KClass<*>): Any? = contexts[klass]
+    operator fun get(type: KType): Any? = contexts.find { isAssignable(type, it::class.starProjectedType) }
 
-    operator fun contains(klass: KClass<*>): Boolean = klass in contexts
+    operator fun contains(type: KType): Boolean = contexts.any { isAssignable(type, it::class.starProjectedType) }
 
     operator fun <T> set(name: String, value: T) {
         named[name] = value
