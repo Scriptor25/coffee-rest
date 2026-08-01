@@ -7,6 +7,7 @@ import dev.scriptor.server.type.isAssignable
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
+import kotlin.reflect.typeOf
 
 class Provider {
 
@@ -80,4 +81,11 @@ class Provider {
     operator fun <T> get(name: String): T = named[name] as T
 
     operator fun contains(name: String): Boolean = name in named
+}
+
+inline fun <reified S : Any, reified D : Any> Provider.convert(): ConversionPath<S, D>? {
+    val src = typeOf<S>()
+    val dst = typeOf<D>()
+
+    return this[src to dst] as? ConversionPath<S, D>
 }
