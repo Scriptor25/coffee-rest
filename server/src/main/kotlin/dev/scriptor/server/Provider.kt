@@ -5,20 +5,21 @@ import dev.scriptor.server.converter.ConversionStep
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.type.isAssignable
 import java.util.*
+import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
 class Provider {
 
     private val conversionSteps = mutableListOf<ConversionStep>()
-    private val conversionPaths = mutableMapOf<Pair<KType, KType>, ConversionPath>()
-
-    private val injectedValues = mutableMapOf<String, Any?>()
+    private val conversionPaths = mutableMapOf<Pair<KType, KType>, ConversionPath<Any, Any>>()
+    private val contexts = mutableMapOf<KClass<*>, Any>()
+    private val named = mutableMapOf<String, Any?>()
 
     operator fun set(key: Pair<KType, KType>, converter: Converter<Any, Any>) {
         conversionSteps += ConversionStep(key.first, key.second, converter)
     }
 
-    operator fun get(key: Pair<KType, KType>): ConversionPath? {
+    operator fun get(key: Pair<KType, KType>): ConversionPath<Any, Any>? {
         if (key in conversionPaths) {
             return conversionPaths[key]
         }
@@ -40,7 +41,7 @@ class Provider {
             if (!visited.add(current.type)) continue
 
             if (isAssignable(key.second, current.type)) {
-                val path = ConversionPath(current.path)
+                val path = ConversionPath<Any, Any>(current.path)
                 conversionPaths[key] = path
                 return path
             }
@@ -64,11 +65,19 @@ class Provider {
 
     operator fun contains(key: Pair<KType, KType>): Boolean = get(key) != null
 
-    operator fun set(name: String, value: Any?) {
-        injectedValues[name] = value
+    operator fun plusAssign(value: Any) {
+        contexts[value::class] = value
     }
 
-    operator fun get(name: String): Any? = injectedValues[name]
+    operator fun get(klass: KClass<*>): Any? = contexts[klass]
 
-    operator fun contains(name: String): Boolean = name in injectedValues
+    operator fun contains(klass: KClass<*>): Boolean = klass in contexts
+
+    operator fun <T> set(name: String, value: T) {
+        named[name] = value
+    }
+
+    operator fun <T> get(name: String): T = named[name] as T
+
+    operator fun contains(name: String): Boolean = name in named
 }

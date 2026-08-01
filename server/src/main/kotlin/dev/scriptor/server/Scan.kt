@@ -19,13 +19,12 @@ fun scan(server: Server, packageName: String? = null) {
                 val src = superclass.arguments[0].type!!
                 val dst = superclass.arguments[1].type!!
 
-                val instance = klass.createInstance() as Converter<Any, Any>
+                val instance = klass.createInstance()
 
-                server.provider[src to dst] = instance
+                server.provider[src to dst] = instance as Converter<Any, Any>
             }
 
             klass.hasAnnotation<Context>() -> {
-
                 val name = klass.findAnnotation<Context>()!!.name
 
                 val instance = klass.createInstance()
@@ -34,20 +33,18 @@ fun scan(server: Server, packageName: String? = null) {
             }
 
             klass.hasAnnotation<Endpoint>() -> {
-
                 val endpoint = klass.findAnnotation<Endpoint>()!!.path
 
                 val instance = klass.createInstance()
 
                 for (callee in klass.declaredMembers) {
-                    val resource = callee.findAnnotation<Resource>()
-                    if (resource != null) {
-                        server.registerRoute(instance, callee, endpoint, resource)
-                    }
+                    val resource = callee.findAnnotation<Resource>() ?: continue
+
+                    server.register(instance, callee, endpoint, resource)
                 }
             }
         }
     }
 
-    server.finalizeRoutes()
+    server.check()
 }

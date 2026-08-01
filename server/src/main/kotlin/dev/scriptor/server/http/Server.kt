@@ -7,6 +7,7 @@ import dev.scriptor.server.address.normalizeIpv6
 import dev.scriptor.server.address.normalizeName
 import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
+import dev.scriptor.server.converter.ConversionPath
 import dev.scriptor.server.result.Result
 import dev.scriptor.server.result.UnitResult
 import java.io.IOException
@@ -19,14 +20,11 @@ import java.util.*
 import java.util.concurrent.*
 import java.util.logging.Logger
 import kotlin.concurrent.timerTask
-import kotlin.reflect.KCallable
-import kotlin.reflect.KParameter
+import kotlin.reflect.*
 import kotlin.reflect.KParameter.Kind.*
-import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
-import kotlin.reflect.typeOf
 
 class Server(
     val log: Logger,
@@ -72,7 +70,7 @@ class Server(
         timer.cancel()
     }
 
-    fun registerRoute(
+    fun register(
         instance: Any,
         callee: KCallable<*>,
         endpoint: String,
@@ -90,7 +88,7 @@ class Server(
         routes.computeIfAbsent(resource.method) { mutableListOf() } += route
     }
 
-    fun finalizeRoutes() {
+    fun check() {
         for ((_, entries) in routes) {
             for ((_, callee) in entries) {
                 checkConvertible(callee.returnType, typeOf<Result>())
@@ -98,13 +96,13 @@ class Server(
         }
     }
 
-    fun registerTask(name: String, interval: Long, callee: Runnable) {
+    fun register(name: String, interval: Long, callee: Runnable) {
         val task = timerTask { callee.run() }
         tasks[name] = task
         timer.scheduleAtFixedRate(task, interval, interval)
     }
 
-    fun cancelTask(name: String) {
+    fun cancel(name: String) {
         val task = tasks.remove(name) ?: return
         task.cancel()
     }
@@ -146,7 +144,7 @@ class Server(
         val path = provider[src to dst]
             ?: throw Exception("unsupported conversion from '$src' to '$dst'")
 
-        return path.convert(value)
+        return context(provider) { path.convert(value) }
     }
 
     private fun handle(channel: SocketChannel) {
@@ -194,9 +192,19 @@ class Server(
 
                 @OptIn(ExperimentalContextParameters::class)
                 CONTEXT -> {
-                    arguments[index] = when (parameter.type.classifier) {
+                    val klass = parameter.type.classifier
+
+                    arguments[index] = when (klass) {
                         Logger::class -> log
                         Provider::class -> provider
+                        ConversionPath::class -> {
+                            val src = parameter.type.arguments[0].type!!
+                            val dst = parameter.type.arguments[1].type!!
+
+                            provider[src to dst]
+                        }
+
+                        is KClass<*> -> provider[klass]
                         else -> throw UnsupportedOperationException()
                     }
                 }
