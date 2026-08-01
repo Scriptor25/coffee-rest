@@ -1,12 +1,12 @@
 package dev.scriptor.server.annotation
 
-import dev.scriptor.server.http.HTTPMethod
+import dev.scriptor.server.http.Method
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY_SETTER)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Resource(
     val path: String,
-    val method: HTTPMethod = HTTPMethod.GET,
+    val method: Method = Method.GET,
     val accept: String = "*/*",
-    val result: String = "*/*"
+    val result: String = "*/*",
 )

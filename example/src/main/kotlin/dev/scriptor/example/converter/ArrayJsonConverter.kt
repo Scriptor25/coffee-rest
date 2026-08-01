@@ -6,6 +6,6 @@ import org.json.JSONArray
 class ArrayJsonConverter : Converter<Array<*>, JSONArray> {
 
     override fun convert(value: Array<*>): JSONArray {
-        return JSONArray(value)
+        return JSONArray(value.asList())
     }
 }

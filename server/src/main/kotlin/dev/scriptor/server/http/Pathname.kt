@@ -3,7 +3,7 @@ package dev.scriptor.server.http
 import java.nio.file.Path
 import java.util.regex.Pattern
 
-class HTTPRoute(path: Path) : Comparable<HTTPRoute> {
+class Pathname(path: Path) : Comparable<Pathname> {
 
     data class Parameter(val index: Int, val collecting: Boolean)
 
@@ -140,7 +140,7 @@ class HTTPRoute(path: Path) : Comparable<HTTPRoute> {
         return value.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
     }
 
-    override fun compareTo(other: HTTPRoute): Int {
+    override fun compareTo(other: Pathname): Int {
         if (this.priority != other.priority) {
             return this.priority.compareTo(other.priority)
         }

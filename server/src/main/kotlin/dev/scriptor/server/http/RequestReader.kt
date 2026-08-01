@@ -4,17 +4,17 @@ import dev.scriptor.server.BufferedReadableByteChannel
 import dev.scriptor.server.ParameterList
 import java.net.URI
 
-class HTTPRequestMessageReader(
+class RequestReader(
     private val channel: BufferedReadableByteChannel,
 ) {
-    fun read(): HTTPRequestMessage? {
+    fun read(): Request? {
         var line = channel.readLine() ?: return null
 
         line = line.trim { it <= ' ' }
         if (line.isEmpty()) return null
 
         val request: Array<String> = line.split("\\s+".toRegex()).toTypedArray()
-        val method = HTTPMethod.valueOf(request[0])
+        val method = Method.valueOf(request[0])
         val uri = URI.create(request[1])
         val path = uri.path
         val protocol: String = request[2]
@@ -58,13 +58,13 @@ class HTTPRequestMessageReader(
             chunked = false
         }
 
-        return HTTPRequestMessage(
+        return Request(
             method,
             path,
             ParameterList(queryMap),
             protocol,
             headers,
-            HTTPMessageBody(channel, 0L, count, chunked),
+            MessageBody(channel, 0L, count, chunked),
         )
     }
 }

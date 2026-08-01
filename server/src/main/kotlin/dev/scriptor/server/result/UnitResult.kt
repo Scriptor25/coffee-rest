@@ -1,8 +1,8 @@
-package dev.scriptor.server.http.result
+package dev.scriptor.server.result
 
 import dev.scriptor.server.ParameterList
 
-class HTTPResultUnit : HTTPResult<Unit> {
+class UnitResult : Result {
 
     constructor(
         statusCode: Int = 204,

@@ -1,10 +1,9 @@
 package dev.scriptor.server.converter
 
-import dev.scriptor.server.http.result.HTTPResult
-import dev.scriptor.server.http.result.HTTPResultChannel
+import dev.scriptor.server.result.ChannelResult
 import java.nio.channels.ReadableByteChannel
 
-class ChannelResultConverter : Converter<ReadableByteChannel, HTTPResult<*>> {
+class ChannelResultConverter : ResultConverter<ReadableByteChannel, ChannelResult> {
 
-    override fun convert(value: ReadableByteChannel): HTTPResult<*> = HTTPResultChannel(value = value)
+    override fun convert(value: ReadableByteChannel) = ChannelResult(value = value)
 }

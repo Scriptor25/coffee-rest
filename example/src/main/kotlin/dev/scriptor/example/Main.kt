@@ -1,6 +1,6 @@
 package dev.scriptor.example
 
-import dev.scriptor.server.http.HTTPServer
+import dev.scriptor.server.http.Server
 import dev.scriptor.server.scan
 import java.util.logging.*
 
@@ -22,12 +22,11 @@ fun main() {
     log.useParentHandlers = false
     log.addHandler(handler)
 
-    val server = HTTPServer(log, "0.0.0.0", 8080)
+    val server = Server(log)
 
-    server.use {
+    server.use { server ->
         scan(server, "dev.scriptor")
 
-        it.inject("log", log)
-        it.start()
+        server.start()
     }
 }

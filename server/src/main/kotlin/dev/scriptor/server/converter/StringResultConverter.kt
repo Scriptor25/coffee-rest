@@ -1,9 +1,8 @@
 package dev.scriptor.server.converter
 
-import dev.scriptor.server.http.result.HTTPResult
-import dev.scriptor.server.http.result.HTTPResultString
+import dev.scriptor.server.result.StringResult
 
-class StringResultConverter : Converter<String, HTTPResult<*>> {
+class StringResultConverter : ResultConverter<String, StringResult> {
 
-    override fun convert(value: String): HTTPResult<*> = HTTPResultString(value = value)
+    override fun convert(value: String) = StringResult(value = value)
 }

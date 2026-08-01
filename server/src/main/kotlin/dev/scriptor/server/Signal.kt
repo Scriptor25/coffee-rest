@@ -1,6 +1,6 @@
 package dev.scriptor.server
 
-import dev.scriptor.server.http.result.*
+import dev.scriptor.server.result.*
 import java.io.InputStream
 import java.nio.channels.ReadableByteChannel
 
@@ -11,12 +11,12 @@ open class Signal(
     val content: Any? = null,
 ) : Throwable("$code - $text") {
 
-    fun generate(): HTTPResult<*> {
+    fun generate(): Result {
         val headers = ParameterList(headers)
 
         return when (content) {
             null ->
-                HTTPResultString(
+                StringResult(
                     code,
                     text,
                     "text/plain",
@@ -25,14 +25,14 @@ open class Signal(
                 )
 
             is Unit ->
-                HTTPResultUnit(
+                UnitResult(
                     code,
                     text,
                     headers,
                 )
 
             is String ->
-                HTTPResultString(
+                StringResult(
                     code,
                     text,
                     "text/plain",
@@ -41,7 +41,7 @@ open class Signal(
                 )
 
             is InputStream ->
-                HTTPResultStream(
+                StreamResult(
                     code,
                     text,
                     "application/octet-stream",
@@ -50,7 +50,7 @@ open class Signal(
                 )
 
             is ReadableByteChannel ->
-                HTTPResultChannel(
+                ChannelResult(
                     code,
                     text,
                     "application/octet-stream",
@@ -114,8 +114,8 @@ class NonAuthoritativeInformationSignal(headers: ParameterList = ParameterList()
 /**
  * 204 - No Content
  */
-class NoContentSignal(headers: ParameterList = ParameterList(), content: Any? = null) :
-    Signal(204, "No Content", headers, content)
+class NoContentSignal(headers: ParameterList = ParameterList()) :
+    Signal(204, "No Content", headers, Unit)
 
 /**
  * 205 - Reset Content

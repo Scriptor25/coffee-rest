@@ -1,10 +1,10 @@
-package dev.scriptor.server.http.result
+package dev.scriptor.server.result
 
 import dev.scriptor.server.ParameterList
 import java.nio.channels.Channels
 import java.nio.channels.ReadableByteChannel
 
-class HTTPResultString : HTTPResult<String> {
+class StringResult : Result {
 
     private companion object {
 

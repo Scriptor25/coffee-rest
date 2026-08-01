@@ -1,9 +1,8 @@
 package dev.scriptor.server.converter
 
-import dev.scriptor.server.http.result.HTTPResult
-import dev.scriptor.server.http.result.HTTPResultUnit
+import dev.scriptor.server.result.UnitResult
 
-class UnitResultConverter : Converter<Unit, HTTPResult<*>> {
+class UnitResultConverter : ResultConverter<Unit, UnitResult> {
 
-    override fun convert(value: Unit): HTTPResult<*> = HTTPResultUnit()
+    override fun convert(value: Unit) = UnitResult()
 }

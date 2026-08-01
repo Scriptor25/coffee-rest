@@ -4,77 +4,50 @@ import dev.scriptor.server.annotation.Context
 import dev.scriptor.server.annotation.Endpoint
 import dev.scriptor.server.annotation.Resource
 import dev.scriptor.server.converter.Converter
-import dev.scriptor.server.http.HTTPServer
+import dev.scriptor.server.http.Server
 import dev.scriptor.server.scanner.Scanner
 import kotlin.reflect.full.*
 
-fun scan(
-    server: HTTPServer,
-    packageName: String? = null,
-) {
-    val scanner = Scanner(packageName)
+fun scan(server: Server, packageName: String? = null) {
+    for (klass in Scanner(packageName)) {
+        when {
+            klass.isFinal && klass.isSubclassOf(Converter::class) -> {
+                val superclass = klass
+                    .allSupertypes
+                    .find { it.classifier == Converter::class }!!
 
-    scanner
-        .filter { it != Converter::class && it.isSubclassOf(Converter::class) }
-        .forEach { klass ->
-            val instance: Converter<*, *>
-            try {
-                instance = klass.createInstance() as Converter<*, *>
-            } catch (e: Exception) {
-                server.log.trace(e)
-                return@forEach
+                val src = superclass.arguments[0].type!!
+                val dst = superclass.arguments[1].type!!
+
+                val instance = klass.createInstance() as Converter<Any, Any>
+
+                server.provider[src to dst] = instance
             }
 
-            val superclass = klass
-                .allSupertypes
-                .find { it.classifier == Converter::class }!!
+            klass.hasAnnotation<Context>() -> {
 
-            val src = superclass.arguments[0].type!!
-            val dst = superclass.arguments[1].type!!
+                val name = klass.findAnnotation<Context>()!!.name
 
-            server.registerConverter(src, dst, instance)
+                val instance = klass.createInstance()
 
-            server.log.config("converter [ $src -> $dst ]")
-        }
-
-    scanner
-        .filter { it.hasAnnotation<Context>() }
-        .forEach { klass ->
-            val instance: Any
-            try {
-                instance = klass.createInstance()
-            } catch (e: Exception) {
-                server.log.trace(e)
-                return@forEach
+                server.provider[name] = instance
             }
 
-            val context = klass.findAnnotation<Context>()!!
+            klass.hasAnnotation<Endpoint>() -> {
 
-            server.registerContext(context.value, instance)
-        }
+                val endpoint = klass.findAnnotation<Endpoint>()!!.path
 
-    scanner
-        .filter { it.hasAnnotation<Endpoint>() }
-        .forEach { klass ->
-            val instance: Any
-            try {
-                instance = klass.createInstance()
-            } catch (e: Exception) {
-                server.log.trace(e)
-                return@forEach
-            }
+                val instance = klass.createInstance()
 
-            val endpoint = klass.findAnnotation<Endpoint>()!!
-
-            for (member in klass.members) {
-                val resource = member.findAnnotation<Resource>()
-                if (resource != null) {
-                    val route = server.registerRoute(instance, member, endpoint, resource)
-
-                    server.log.config("route [ $route ]")
+                for (callee in klass.declaredMembers) {
+                    val resource = callee.findAnnotation<Resource>()
+                    if (resource != null) {
+                        server.registerRoute(instance, callee, endpoint, resource)
+                    }
                 }
             }
-
-            server.registerEndpoint(instance)
         }
+    }
+
+    server.finalizeRoutes()
 }

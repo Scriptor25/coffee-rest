@@ -1,27 +1,25 @@
-package dev.scriptor.server.http.result
+package dev.scriptor.server.result
 
 import dev.scriptor.server.ParameterList
-import java.io.InputStream
-import java.nio.channels.Channels
+import java.nio.channels.ReadableByteChannel
 
-class HTTPResultStream : HTTPResult<InputStream> {
+class ChannelResult : Result {
 
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
         contentType: String = "application/octet-stream",
         headers: ParameterList = ParameterList(),
-        value: InputStream? = null,
+        value: ReadableByteChannel? = null,
+        position: Long = 0L,
         count: Long = -1L,
     ) : super(
         statusCode,
         statusText,
         contentType,
         headers,
-        if (value != null)
-            Channels.newChannel(value)
-        else null,
-        0L,
+        value,
+        position,
         count,
     )
 }

@@ -1,9 +1,9 @@
-package dev.scriptor.server.http.result
+package dev.scriptor.server.result
 
 import dev.scriptor.server.ParameterList
 import java.nio.channels.ReadableByteChannel
 
-abstract class HTTPResult<T> {
+open class Result {
 
     val statusCode: Int
     val statusText: String

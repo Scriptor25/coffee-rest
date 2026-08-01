@@ -1,6 +1,6 @@
 package dev.scriptor.server.http
 
-enum class HTTPMethod {
+enum class Method {
     CONNECT,
     DELETE,
     GET,

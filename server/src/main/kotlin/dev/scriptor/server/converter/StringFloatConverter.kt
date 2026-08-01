@@ -2,5 +2,5 @@ package dev.scriptor.server.converter
 
 class StringFloatConverter : Converter<String, Float> {
 
-    override fun convert(value: String): Float = value.toFloat()
+    override fun convert(value: String) = value.toFloat()
 }

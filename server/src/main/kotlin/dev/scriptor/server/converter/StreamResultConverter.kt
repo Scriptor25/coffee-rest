@@ -1,10 +1,9 @@
 package dev.scriptor.server.converter
 
-import dev.scriptor.server.http.result.HTTPResult
-import dev.scriptor.server.http.result.HTTPResultStream
+import dev.scriptor.server.result.StreamResult
 import java.io.InputStream
 
-class StreamResultConverter : Converter<InputStream, HTTPResult<*>> {
+class StreamResultConverter : ResultConverter<InputStream, StreamResult> {
 
-    override fun convert(value: InputStream): HTTPResult<*> = HTTPResultStream(value = value)
+    override fun convert(value: InputStream) = StreamResult(value = value)
 }

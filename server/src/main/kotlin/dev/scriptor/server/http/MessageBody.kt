@@ -7,7 +7,7 @@ import java.nio.channels.FileChannel
 import java.nio.channels.ReadableByteChannel
 import java.nio.channels.WritableByteChannel
 
-data class HTTPMessageBody(
+data class MessageBody(
     val channel: ReadableByteChannel,
     val position: Long,
     val count: Long,
