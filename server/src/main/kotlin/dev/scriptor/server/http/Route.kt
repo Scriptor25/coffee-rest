@@ -1,10 +1,10 @@
 package dev.scriptor.server.http
 
-import kotlin.reflect.KCallable
+import dev.scriptor.server.reflect.Callable
 
 data class Route(
     val instance: Any,
-    val callee: KCallable<*>,
+    val callee: Callable,
     val pathname: Pathname,
     val method: Method,
     val accept: String,
