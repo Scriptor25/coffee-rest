@@ -40,3 +40,5 @@ build/
 
 *.local
 *.jks
+
+dependency-reduced-pom.xml
