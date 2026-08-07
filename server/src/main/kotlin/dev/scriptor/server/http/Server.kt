@@ -142,12 +142,12 @@ class Server(
         throw Exception("unsupported conversion from '$src' to '$dst'")
     }
 
-    private fun convert(value: Any, src: KType, dst: KType): Any {
+    private fun convert(value: Any?, src: KType, dst: KType): Any? {
 
         val path = provider[src to dst]
             ?: throw Exception("unsupported conversion from '$src' to '$dst'")
 
-        return context(provider) { path.convert(value) }
+        return context(provider) { path(value) }
     }
 
     private fun handle(channel: SocketChannel) {

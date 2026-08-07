@@ -21,7 +21,7 @@ fun scan(server: Server, packageName: String? = null) {
 
                 val instance = klass.createInstance()
 
-                server.provider[src to dst] = instance as Converter<Any, Any>
+                server.provider[src to dst] = instance as Converter<Any?, Any?>
             }
 
             klass.hasAnnotation<Context>() -> {
@@ -35,7 +35,7 @@ fun scan(server: Server, packageName: String? = null) {
 
                 val instance = klass.createInstance()
 
-                for (callee in klass.declaredMembers) {
+                for (callee in klass.memberFunctions) {
                     val resource = callee.findAnnotation<Resource>() ?: continue
 
                     server.register(instance, callee, endpoint, resource)

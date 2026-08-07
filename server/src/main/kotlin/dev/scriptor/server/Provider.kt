@@ -4,7 +4,6 @@ import dev.scriptor.server.converter.ConversionPath
 import dev.scriptor.server.converter.ConversionStep
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.type.isAssignable
-import java.util.*
 import kotlin.reflect.KType
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
@@ -12,15 +11,15 @@ import kotlin.reflect.typeOf
 class Provider {
 
     private val conversionSteps = mutableListOf<ConversionStep>()
-    private val conversionPaths = mutableMapOf<Pair<KType, KType>, ConversionPath<Any, Any>>()
+    private val conversionPaths = mutableMapOf<Pair<KType, KType>, ConversionPath<Any?, Any?>>()
     private val contexts = mutableListOf<Any>()
     private val named = mutableMapOf<String, Any?>()
 
-    operator fun set(key: Pair<KType, KType>, converter: Converter<Any, Any>) {
+    operator fun set(key: Pair<KType, KType>, converter: Converter<Any?, Any?>) {
         conversionSteps += ConversionStep(key.first, key.second, converter)
     }
 
-    operator fun get(key: Pair<KType, KType>): ConversionPath<Any, Any>? {
+    operator fun get(key: Pair<KType, KType>): ConversionPath<Any?, Any?>? {
         if (key in conversionPaths) {
             return conversionPaths[key]
         }
@@ -42,7 +41,7 @@ class Provider {
             if (!visited.add(current.type)) continue
 
             if (isAssignable(key.second, current.type)) {
-                val path = ConversionPath<Any, Any>(current.path)
+                val path = ConversionPath<Any?, Any?>(current.path)
                 conversionPaths[key] = path
                 return path
             }
@@ -83,7 +82,7 @@ class Provider {
     operator fun contains(name: String): Boolean = name in named
 }
 
-inline fun <reified S : Any, reified D : Any> Provider.convert(): ConversionPath<S, D>? {
+inline fun <reified S, reified D> Provider.convert(): ConversionPath<S, D>? {
     val src = typeOf<S>()
     val dst = typeOf<D>()
 

@@ -4,8 +4,6 @@ import dev.scriptor.server.annotation.Endpoint
 import dev.scriptor.server.annotation.PathParameter
 import dev.scriptor.server.annotation.Resource
 import org.json.JSONObject
-import java.util.*
-import java.util.stream.Collectors
 
 @Endpoint("/blog")
 class BlogRest {
@@ -37,7 +35,7 @@ class BlogRest {
         </head>
         <body>
             <h1>${slug[slug.size - 1]}</h1>
-            <ul>${Arrays.stream(slug).map { "<li>${it}</li>" }.collect(Collectors.joining())}</ul>
+            ${slug.joinToString("", "<ul>", "</ul>") { "<li>${it}</li>" }}
         </body>
         </html>
     """.trimIndent()

@@ -5,17 +5,14 @@ import dev.scriptor.server.scan
 import java.util.logging.*
 
 fun main() {
-    val log = Logger.getLogger("custom")
-    log.level = Level.CONFIG
+    val log = Logger.getLogger("example")
+    log.level = Level.ALL
 
     val handler = ConsoleHandler()
     handler.level = log.level
     handler.formatter = object : Formatter() {
-
-        override fun format(record: LogRecord?): String? {
-            if (record == null) return null
-
-            return "[${record.level}][${record.instant}] ${record.message}\n"
+        override fun format(record: LogRecord): String {
+            return "[${record.loggerName}][${record.level}][${record.instant}] ${record.message}\n"
         }
     }
 

@@ -9,7 +9,6 @@ import org.json.JSONObject
 class JsonResultConverter : Converter<JSONObject, Result> {
 
     context(provider: Provider)
-    override fun convert(value: JSONObject): Result {
-        return StringResult(contentType = "application/json", value = value.toString())
-    }
+    override fun convert(value: JSONObject): Result =
+        StringResult(contentType = "application/json", value = value.toString())
 }
