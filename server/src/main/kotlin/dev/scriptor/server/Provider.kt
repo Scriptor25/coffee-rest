@@ -77,7 +77,7 @@ class Provider {
         named[name] = value
     }
 
-    operator fun <T> get(name: String): T = named[name] as T
+    operator fun <T> get(name: String): T? = named[name] as? T
 
     operator fun contains(name: String): Boolean = name in named
 }
