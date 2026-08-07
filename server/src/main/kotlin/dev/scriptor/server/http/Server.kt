@@ -8,6 +8,7 @@ import dev.scriptor.server.address.normalizeName
 import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.converter.ConversionPath
+import dev.scriptor.server.reflect.*
 import dev.scriptor.server.result.Result
 import dev.scriptor.server.result.UnitResult
 import java.io.IOException
@@ -20,14 +21,6 @@ import java.util.*
 import java.util.concurrent.*
 import java.util.logging.Logger
 import kotlin.concurrent.timerTask
-import kotlin.reflect.KCallable
-import kotlin.reflect.KParameter
-import kotlin.reflect.KParameter.Kind.*
-import kotlin.reflect.KType
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.hasAnnotation
-import kotlin.reflect.full.starProjectedType
-import kotlin.reflect.typeOf
 
 class Server(
     val log: Logger,
@@ -75,7 +68,7 @@ class Server(
 
     fun register(
         instance: Any,
-        callee: KCallable<*>,
+        callee: Callable,
         endpoint: String,
         resource: Resource,
     ) {
@@ -136,13 +129,13 @@ class Server(
         running = false
     }
 
-    private fun checkConvertible(src: KType, dst: KType) {
+    private fun checkConvertible(src: Type, dst: Type) {
         if (src to dst in provider) return
 
         throw Exception("unsupported conversion from '$src' to '$dst'")
     }
 
-    private fun convert(value: Any, src: KType, dst: KType): Any {
+    private fun convert(value: Any, src: Type, dst: Type): Any {
 
         val path = provider[src to dst]
             ?: throw Exception("unsupported conversion from '$src' to '$dst'")
@@ -184,32 +177,43 @@ class Server(
     private fun getArguments(
         request: Request,
         route: Route,
-        parameters: List<KParameter>,
+        parameters: List<Parameter>,
         arguments: Array<Any?>,
     ) {
         for ((index, parameter) in parameters.withIndex()) {
-            when (parameter.kind) {
-                INSTANCE -> {
+            when (parameter) {
+                is InstanceParameter -> {
                     arguments[index] = route.instance
                 }
 
-                @OptIn(ExperimentalContextParameters::class)
-                CONTEXT -> {
+                is ContextParameter -> {
                     arguments[index] = when (parameter.type.classifier) {
                         Logger::class -> log
                         Provider::class -> provider
                         ConversionPath::class -> {
-                            val src = parameter.type.arguments[0].type!!
-                            val dst = parameter.type.arguments[1].type!!
+                            val src = parameter.type.arguments[0]
+                            val dst = parameter.type.arguments[1]
 
-                            provider[src to dst]
+                            val srcType: Type = when (src) {
+                                is StarProjection -> typeOf<Nothing>()
+                                is TypeProjection -> src.type
+                                else -> error("unsupported projection $src")
+                            }
+
+                            val dstType: Type = when (dst) {
+                                is StarProjection -> typeOf<Any?>()
+                                is TypeProjection -> dst.type
+                                else -> error("unsupported projection $dst")
+                            }
+
+                            provider[srcType to dstType]
                         }
 
                         else -> provider[parameter.type]
                     }
                 }
 
-                VALUE -> {
+                is ValueParameter -> {
                     val typename: String
                     val value: Any?
 
@@ -278,7 +282,7 @@ class Server(
                     }
                 }
 
-                EXTENSION_RECEIVER -> throw UnsupportedOperationException()
+                else -> throw UnsupportedOperationException()
             }
         }
     }
@@ -311,7 +315,7 @@ class Server(
             val type = route.callee.returnType
 
             try {
-                value = route.callee.call(*arguments)
+                value = route.callee.call(arguments)
             } catch (e: InvocationTargetException) {
                 throw e.targetException
             }

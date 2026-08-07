@@ -1,36 +1,35 @@
 package dev.scriptor.server.type
 
-import kotlin.reflect.*
-import kotlin.reflect.full.createType
-import kotlin.reflect.full.isSubclassOf
+import dev.scriptor.server.reflect.*
 
-fun isAssignable(dst: KType, src: KType): Boolean {
+fun isAssignable(dst: Type, src: Type): Boolean {
 
     if (dst == src) {
         return true
     }
 
-    if (!dst.isMarkedNullable && src.isMarkedNullable) {
+    if (!dst.nullable && src.nullable) {
         return false
     }
 
     val dstClassifier = dst.classifier
-
-    if (dstClassifier is KTypeParameter) {
+    if (dstClassifier is TypeParameter) {
         return satisfiesBounds(src, dstClassifier)
     }
 
-    val dstClass = dstClassifier as? KClass<*> ?: return false
-
-    val resolved = resolveSupertype(src, dstClass) ?: return false
-
-    val srcClassifier = resolved.classifier
-
-    if (srcClassifier !is KClass<*>) {
+    if (dstClassifier !is BaseClass) {
         return false
     }
 
-    if (!srcClassifier.isSubclassOf(dstClass)) {
+    val resolved = resolveSupertype(src, dstClassifier)
+        ?: return false
+
+    val srcClassifier = resolved.classifier
+    if (srcClassifier !is BaseClass) {
+        return false
+    }
+
+    if (!srcClassifier.isSubclassOf(dstClassifier)) {
         return false
     }
 
@@ -43,32 +42,41 @@ fun isAssignable(dst: KType, src: KType): Boolean {
 
     for ((dstArgument, srcArgument) in dstArguments.zip(srcArguments)) {
 
-        if (dstArgument.type == null) {
+        if (dstArgument is StarProjection) {
+            // convert to anything -> ok
             continue
         }
 
-        if (srcArgument.type == null) {
+        if (srcArgument is StarProjection) {
+            // convert from anything -> not ok
             return false
         }
 
-        val dstType = dstArgument.type!!
-        val srcType = srcArgument.type!!
+        if (dstArgument !is TypeProjection || srcArgument !is TypeProjection) {
+            // this point shall never be reached
+            return false
+        }
 
-        when (dstArgument.variance ?: KVariance.INVARIANT) {
+        val dstType = dstArgument.type
+        val srcType = srcArgument.type
 
-            KVariance.INVARIANT -> {
+        // TODO: check if this is right
+
+        when (dstArgument.variance) {
+
+            Variance.INVARIANT -> {
                 if (dstType != srcType) {
                     return false
                 }
             }
 
-            KVariance.OUT -> {
+            Variance.OUT -> {
                 if (!isAssignable(dstType, srcType)) {
                     return false
                 }
             }
 
-            KVariance.IN -> {
+            Variance.IN -> {
                 if (!isAssignable(srcType, dstType)) {
                     return false
                 }
@@ -79,20 +87,24 @@ fun isAssignable(dst: KType, src: KType): Boolean {
     return true
 }
 
-private fun satisfiesBounds(type: KType, parameter: KTypeParameter): Boolean =
+private fun satisfiesBounds(type: Type, parameter: TypeParameter): Boolean =
     parameter.upperBounds.all { isAssignable(it, type) }
 
-private fun resolveSupertype(type: KType, target: KClass<*>): KType? {
-    val classifier = type.classifier as? KClass<*> ?: return null
+private fun resolveSupertype(type: Type, target: BaseClass): Type? {
+    val classifier = type.classifier as? BaseClass ?: return null
 
     if (classifier == target) {
         return type
     }
 
     val mapping = classifier
-        .typeParameters
+        .parameters
         .zip(type.arguments)
-        .associate { (parameter, argument) -> parameter to argument.type }
+        .associate { (parameter, argument) ->
+            if (argument is TypeProjection)
+                parameter to argument.type
+            else parameter to null
+        }
 
     for (supertype in classifier.supertypes) {
         val substituted = substitute(
@@ -113,32 +125,27 @@ private fun resolveSupertype(type: KType, target: KClass<*>): KType? {
     return null
 }
 
-private fun substitute(type: KType, mapping: Map<KTypeParameter, KType?>): KType {
-    val classifier = type.classifier
+private fun substitute(type: Type, mapping: Map<TypeParameter, Type?>): Type {
+    return when (val classifier = type.classifier) {
+        is TypeParameter -> mapping[classifier] ?: type
 
-    if (classifier is KTypeParameter) {
-        return mapping[classifier] ?: type
+        is BaseClass ->
+            if (type.arguments.isEmpty()) type
+            else classifier.createType(
+                type.arguments.map { argument ->
+                    when (argument) {
+                        is StarProjection -> StarProjection()
+                        is TypeProjection -> TypeProjection(
+                            argument.variance,
+                            substitute(argument.type, mapping),
+                        )
+
+                        else -> error("unsupported projection $argument")
+                    }
+                },
+                type.nullable,
+            )
+
+        else -> error("unsupported classifier $classifier")
     }
-
-    val klass = classifier as? KClass<*> ?: return type
-
-    if (type.arguments.isEmpty()) {
-        return type
-    }
-
-    return klass.createType(
-        arguments = type.arguments.map { argument ->
-
-            val argumentType = argument.type
-
-            if (argumentType == null)
-                KTypeProjection.STAR
-            else
-                KTypeProjection(
-                    argument.variance,
-                    substitute(argumentType, mapping),
-                )
-        },
-        nullable = type.isMarkedNullable,
-    )
 }

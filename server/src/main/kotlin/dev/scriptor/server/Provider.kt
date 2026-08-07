@@ -3,35 +3,35 @@ package dev.scriptor.server
 import dev.scriptor.server.converter.ConversionPath
 import dev.scriptor.server.converter.ConversionStep
 import dev.scriptor.server.converter.Converter
+import dev.scriptor.server.reflect.Type
 import dev.scriptor.server.type.isAssignable
 import java.util.*
-import kotlin.reflect.KType
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 
 class Provider {
 
     private val conversionSteps = mutableListOf<ConversionStep>()
-    private val conversionPaths = mutableMapOf<Pair<KType, KType>, ConversionPath<Any, Any>>()
+    private val conversionPaths = mutableMapOf<Pair<Type, Type>, ConversionPath<Any, Any>>()
     private val contexts = mutableListOf<Any>()
     private val named = mutableMapOf<String, Any?>()
 
-    operator fun set(key: Pair<KType, KType>, converter: Converter<Any, Any>) {
+    operator fun set(key: Pair<Type, Type>, converter: Converter<Any?, Any?>) {
         conversionSteps += ConversionStep(key.first, key.second, converter)
     }
 
-    operator fun get(key: Pair<KType, KType>): ConversionPath<Any, Any>? {
+    operator fun get(key: Pair<Type, Type>): ConversionPath<Any, Any>? {
         if (key in conversionPaths) {
             return conversionPaths[key]
         }
 
         data class Node(
-            val type: KType,
+            val type: Type,
             val path: List<ConversionStep>,
         )
 
         val queue = ArrayDeque<Node>()
-        val visited = HashSet<KType>()
+        val visited = HashSet<Type>()
 
         queue.add(Node(key.first, emptyList()))
 
@@ -64,15 +64,15 @@ class Provider {
         return null
     }
 
-    operator fun contains(key: Pair<KType, KType>): Boolean = get(key) != null
+    operator fun contains(key: Pair<Type, Type>): Boolean = get(key) != null
 
     operator fun plusAssign(value: Any) {
         contexts += value
     }
 
-    operator fun get(type: KType): Any? = contexts.find { isAssignable(type, it::class.starProjectedType) }
+    operator fun get(type: Type): Any? = contexts.find { isAssignable(type, it::class.starProjectedType) }
 
-    operator fun contains(type: KType): Boolean = contexts.any { isAssignable(type, it::class.starProjectedType) }
+    operator fun contains(type: Type): Boolean = contexts.any { isAssignable(type, it::class.starProjectedType) }
 
     operator fun <T> set(name: String, value: T) {
         named[name] = value
