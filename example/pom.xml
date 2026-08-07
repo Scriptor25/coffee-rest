@@ -12,6 +12,8 @@
 
     <artifactId>example</artifactId>
 
+    <packaging>jar</packaging>
+
     <dependencies>
         <dependency>
             <groupId>dev.scriptor</groupId>
@@ -50,4 +52,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>
