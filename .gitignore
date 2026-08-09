@@ -53,3 +53,9 @@ gradle-app.setting
 !gradle-wrapper.properties
 .gradletasknamecache
 
+
+# Ignore Gradle build output directory
+build
+
+# Ignore Kotlin plugin data
+.kotlin
