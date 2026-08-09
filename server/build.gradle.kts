@@ -1,17 +1,19 @@
 plugins {
-    kotlin("jvm")
-    `java-library`
-}
+    kotlin("multiplatform")
 
-java {
-    withSourcesJar()
-}
-
-dependencies {
-    implementation(kotlin("stdlib"))
-    implementation(kotlin("reflect"))
+    id("com.google.devtools.ksp")
 }
 
 kotlin {
-    jvmToolchain(25)
+    applyDefaultHierarchyTemplate()
+
+    linuxX64()
+
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(project(":type-system"))
+            }
+        }
+    }
 }

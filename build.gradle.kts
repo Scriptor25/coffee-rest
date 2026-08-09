@@ -1,5 +1,7 @@
 plugins {
-    kotlin("jvm") version "2.4.0" apply false
+    kotlin("multiplatform") version "2.4.0" apply false
+
+    id("com.google.devtools.ksp") version "2.3.10" apply false
 }
 
 group = "dev.scriptor.coffee-rest"

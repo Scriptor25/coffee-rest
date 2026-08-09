@@ -1,3 +1,2 @@
 [libraries]
 json = "org.json:json:20260522"
-annotations = "org.jetbrains:annotations:26.1.0"
