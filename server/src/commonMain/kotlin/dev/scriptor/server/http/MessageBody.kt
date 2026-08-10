@@ -1,59 +1,95 @@
 package dev.scriptor.server.http
 
-import dev.scriptor.stdlib.io.MutableBuffer
-import dev.scriptor.stdlib.io.ReadableChannel
-import dev.scriptor.stdlib.io.WriteableChannel
-import dev.scriptor.stdlib.io.write
+import dev.scriptor.io.channels.FileChannel
+import dev.scriptor.io.channels.ReadableByteChannel
+import dev.scriptor.io.channels.WritableByteChannel
+import dev.scriptor.io.MutableBuffer
 
 data class MessageBody(
-    val channel: ReadableChannel,
+    val channel: ReadableByteChannel,
     val position: Long,
     val count: Long,
     val chunked: Boolean,
 ) : AutoCloseable {
 
-    fun write(destination: WriteableChannel) {
+    fun write(destination: WritableByteChannel) {
         if (!chunked) {
-            val limit = channel.size - position
+            return when (channel) {
+                is FileChannel -> {
+                    val limit = channel.size - position
 
-            var pos = position
-            var rem =
-                if (count < 0L) limit
-                else minOf(count, limit)
+                    var pos = position
+                    var rem =
+                        if (count < 0L) limit
+                        else minOf(count, limit)
 
-            while (rem > 0L) {
-                val n = channel.transferTo(destination, rem)
-                if (n < 0L) break
-                if (n == 0L) continue
+                    while (rem > 0L) {
+                        val transferred = channel.transferTo(destination, pos, rem)
+                        if (transferred < 0L) break
+                        if (transferred == 0L) continue
 
-                pos += n
-                rem -= n
+                        pos += transferred
+                        rem -= transferred
+                    }
+                }
+
+                else -> {
+                    val buffer = MutableBuffer.allocate(8192L)
+
+                    var rem = count
+
+                    while (rem > 0L || count < 0L) {
+                        buffer.clear()
+
+                        if (rem > 0L) {
+                            buffer.limit = minOf(buffer.capacity, rem)
+                        }
+
+                        val read = channel.read(buffer)
+                        if (read < 0L) break
+                        if (read == 0L) continue
+
+                        buffer.flip()
+
+                        while (buffer.remaining != 0L) {
+                            val written = destination.write(buffer)
+                            if (written < 0L) error("unexpected end of stream")
+                        }
+
+                        if (rem > 0L) {
+                            rem -= read
+                        }
+                    }
+                }
             }
-
-            return
         }
 
-        val buffer = MutableBuffer(8192)
+        val buffer = MutableBuffer.allocate(8192L)
+        val writer = destination.writer()
 
         while (true) {
             buffer.clear()
 
-            val n = channel.read(buffer)
-            if (n < 0L) break
-            if (n == 0L) continue
+            val read = channel.read(buffer)
+            if (read < 0L) break
+            if (read == 0L) continue
 
             buffer.flip()
 
-            destination.write("${n.toHexString()}\r\n")
+            writer.write("${read.toHexString()}\r\n")
+            writer.flush()
 
-            while (buffer.remaining != 0) {
-                destination.write(buffer)
+            while (buffer.remaining != 0L) {
+                val written = destination.write(buffer)
+                if (written < 0L) error("unexpected end of stream")
             }
 
-            destination.write("\r\n")
+            writer.write("\r\n")
+            writer.flush()
         }
 
-        destination.write("0\r\n\r\n")
+        writer.write("0\r\n\r\n")
+        writer.flush()
     }
 
     override fun close() {

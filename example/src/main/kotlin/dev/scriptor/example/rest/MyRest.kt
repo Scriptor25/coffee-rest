@@ -4,11 +4,11 @@ import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.http.Method.POST
 import dev.scriptor.server.result.UnitResult
+import dev.scriptor.server.util.Log
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
-import java.util.logging.Logger
 
 @Endpoint("/my")
 class MyRest {
@@ -24,7 +24,7 @@ class MyRest {
         "text/plain",
         "text/plain",
     )
-    context(log: Logger)
+    context(log: Log)
     fun postMessage(
         @PathParameter from: String,
         @PathParameter to: String,
@@ -38,7 +38,7 @@ class MyRest {
     }
 
     @Resource("/random-quote", result = "text/html")
-    context(log: Logger)
+    context(log: Log)
     fun getRandomQuote(): String {
         val url = URI("https://dummyjson.com/quotes/random").toURL()
         val connection = url.openConnection() as HttpURLConnection

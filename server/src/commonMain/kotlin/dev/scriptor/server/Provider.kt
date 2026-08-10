@@ -81,11 +81,11 @@ class Provider {
         return name in named
     }
 
-    operator fun get(name: String): Any? {
+    fun getNamed(name: String): Any? {
         return named[name]
     }
 
-    operator fun set(name: String, value: Any?) {
+    fun setNamed(name: String, value: Any?) {
         named[name] = value
     }
 
@@ -98,7 +98,11 @@ class Provider {
     }
 
     inline operator fun <reified T> get(name: String): T {
-        return get(name) as T
+        return getNamed(name) as T
+    }
+
+    inline operator fun <reified T> set(name: String, value: T) {
+        setNamed(name, value)
     }
 
     inline fun <reified S, reified D> converter(): Conversion<S, D>? {

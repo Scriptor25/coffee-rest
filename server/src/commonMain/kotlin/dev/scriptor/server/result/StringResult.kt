@@ -1,8 +1,8 @@
 package dev.scriptor.server.result
 
+import dev.scriptor.io.channels.ReadableBufferChannel
+import dev.scriptor.io.channels.ReadableByteChannel
 import dev.scriptor.server.ParameterList
-import dev.scriptor.stdlib.io.BufferChannel
-import dev.scriptor.stdlib.io.ReadableChannel
 
 class StringResult : Result {
 
@@ -10,17 +10,17 @@ class StringResult : Result {
 
         data class CountChannel(
             val count: Long,
-            val channel: ReadableChannel?,
+            val channel: ReadableByteChannel?,
         )
 
         fun create(value: String?): CountChannel {
             val count: Long
-            val channel: ReadableChannel?
+            val channel: ReadableByteChannel?
             if (value != null) {
                 val array = value.encodeToByteArray()
 
                 count = array.size.toLong()
-                channel = BufferChannel(array)
+                channel = ReadableBufferChannel(array)
             } else {
                 count = 0L
                 channel = null

@@ -1,10 +1,10 @@
 package dev.scriptor.server
 
+import dev.scriptor.io.channels.ReadableByteChannel
 import dev.scriptor.server.result.ChannelResult
 import dev.scriptor.server.result.Result
 import dev.scriptor.server.result.StringResult
 import dev.scriptor.server.result.UnitResult
-import dev.scriptor.stdlib.io.ReadableChannel
 
 open class Signal(
     val code: Int,
@@ -42,7 +42,7 @@ open class Signal(
                     content,
                 )
 
-            is ReadableChannel ->
+            is ReadableByteChannel ->
                 ChannelResult(
                     code,
                     text,

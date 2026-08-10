@@ -7,12 +7,12 @@ import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.KSAnnotated
 
 class TypeProcessor(
-    private val codeGenerator: CodeGenerator,
-    private val logger: KSPLogger,
+    private val gen: CodeGenerator,
+    private val log: KSPLogger,
 ) : SymbolProcessor {
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        logger.info("TypeProcessor is running!")
+        log.info("TypeProcessor is running!")
         return emptyList()
     }
 }

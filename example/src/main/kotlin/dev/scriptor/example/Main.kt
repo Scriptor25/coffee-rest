@@ -1,29 +1,12 @@
 package dev.scriptor.example
 
 import dev.scriptor.server.http.Server
-import dev.scriptor.server.scan
-import java.util.logging.*
+import dev.scriptor.server.util.Log
 
 fun main() {
-    val log = Logger.getLogger("example")
-    log.level = Level.ALL
-
-    val handler = ConsoleHandler()
-    handler.level = log.level
-    handler.formatter = object : Formatter() {
-        override fun format(record: LogRecord): String {
-            return "[${record.loggerName}][${record.level}][${record.instant}] ${record.message}\n"
-        }
-    }
-
-    log.useParentHandlers = false
-    log.addHandler(handler)
+    val log = Log.create("example", Log.Level.ALL)
 
     val server = Server(log)
 
-    server.use { server ->
-        scan(server, "dev.scriptor")
-
-        server.start()
-    }
+    server.use { server -> server.start() }
 }

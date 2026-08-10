@@ -1,5 +1,8 @@
 package dev.scriptor.reflect
 
+import kotlin.jvm.JvmInline
+
+@JvmInline
 value class ClassId(val value: String) {
     override fun toString(): String {
         return value

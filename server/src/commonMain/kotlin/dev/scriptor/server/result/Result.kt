@@ -1,7 +1,7 @@
 package dev.scriptor.server.result
 
 import dev.scriptor.server.ParameterList
-import dev.scriptor.stdlib.io.ReadableChannel
+import dev.scriptor.io.channels.ReadableByteChannel
 
 open class Result {
 
@@ -12,7 +12,7 @@ open class Result {
 
     val headers: ParameterList
 
-    val channel: ReadableChannel?
+    val channel: ReadableByteChannel?
 
     val position: Long
     val count: Long
@@ -22,7 +22,7 @@ open class Result {
         statusText: String = "OK",
         contentType: String = "*/*",
         headers: ParameterList = ParameterList(),
-        channel: ReadableChannel? = null,
+        channel: ReadableByteChannel? = null,
         position: Long = 0L,
         count: Long = -1L,
     ) {

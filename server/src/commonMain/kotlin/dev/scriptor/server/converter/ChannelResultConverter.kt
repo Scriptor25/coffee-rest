@@ -2,10 +2,10 @@ package dev.scriptor.server.converter
 
 import dev.scriptor.server.Provider
 import dev.scriptor.server.result.ChannelResult
-import dev.scriptor.stdlib.io.ReadableChannel
+import dev.scriptor.io.channels.ReadableByteChannel
 
-class ChannelResultConverter : Converter<ReadableChannel, ChannelResult> {
+class ChannelResultConverter : Converter<ReadableByteChannel, ChannelResult> {
 
     context(provider: Provider)
-    override fun convert(value: ReadableChannel): ChannelResult = ChannelResult(value = value)
+    override fun convert(value: ReadableByteChannel): ChannelResult = ChannelResult(value = value)
 }

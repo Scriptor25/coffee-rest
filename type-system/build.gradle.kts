@@ -3,11 +3,6 @@ plugins {
 }
 
 kotlin {
-    applyDefaultHierarchyTemplate()
-
+    jvm()
     linuxX64()
-
-    sourceSets {
-        commonMain
-    }
 }

@@ -1,12 +1,13 @@
 package dev.scriptor.server.http
 
+import dev.scriptor.computeIfAbsent
+import dev.scriptor.io.Path
+import dev.scriptor.io.channels.BufferedReadableByteChannel
+import dev.scriptor.net.URI
 import dev.scriptor.server.ParameterList
-import dev.scriptor.stdlib.computeIfAbsent
-import dev.scriptor.stdlib.io.BufferedReadableChannel
-import dev.scriptor.stdlib.net.URI
 
 class RequestReader(
-    private val channel: BufferedReadableChannel,
+    private val channel: BufferedReadableByteChannel,
 ) {
     fun read(): Request? {
         var line = channel.readLine() ?: return null
@@ -16,8 +17,8 @@ class RequestReader(
 
         val request: Array<String> = line.split("\\s+".toRegex()).toTypedArray()
         val method = Method.valueOf(request[0])
-        val uri = URI(request[1])
-        val path = uri.path
+        val uri = URI.parse(request[1])
+        val path = Path.parse(uri.pathname)
         val protocol: String = request[2]
 
         val queryMap = mutableMapOf<String, MutableList<String>>()

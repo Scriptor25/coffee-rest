@@ -1,19 +1,18 @@
 package dev.scriptor.server.http
 
-import dev.scriptor.stdlib.io.Path
-
+import dev.scriptor.io.Path
 
 class PathExpression(path: Path) : Comparable<PathExpression> {
 
     private data class Parameter(val index: Int, val collecting: Boolean)
 
-    private val path: Path = path.toAbsolutePath()
+    private val path = path.toAbsolutePath()
 
     private val priority: Int
     private val index: Int
 
     private val expression: Regex
-    private val parameters: MutableMap<String, Parameter> = HashMap()
+    private val parameters = mutableMapOf<String, Parameter>()
 
     init {
         val pathname = this.path.toString().lowercase()
@@ -114,8 +113,16 @@ class PathExpression(path: Path) : Comparable<PathExpression> {
         index = staticFirst
     }
 
+    fun matches(path: Path): Boolean {
+        return matches(path.toString())
+    }
+
     fun matches(path: String): Boolean {
         return expression.matches(path.lowercase())
+    }
+
+    fun get(path: Path, name: String): Any? {
+        return get(path.toString(), name)
     }
 
     fun get(path: String, name: String): Any? {

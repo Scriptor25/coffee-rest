@@ -1,6 +1,6 @@
 package dev.scriptor.server
 
-import dev.scriptor.stdlib.computeIfAbsent
+import dev.scriptor.computeIfAbsent
 
 class ParameterList : Iterable<Map.Entry<String, List<String>>> {
 

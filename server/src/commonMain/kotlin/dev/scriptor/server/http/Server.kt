@@ -1,49 +1,39 @@
 package dev.scriptor.server.http
 
+import dev.scriptor.computeIfAbsent
+import dev.scriptor.io.*
+import dev.scriptor.io.channels.*
+import dev.scriptor.net.InetSocketAddress
+import dev.scriptor.time.Duration
+import dev.scriptor.util.Timer
+import dev.scriptor.util.TimerTask
 import dev.scriptor.reflect.Type
 import dev.scriptor.server.*
-import dev.scriptor.server.address.AddressType.*
-import dev.scriptor.server.address.normalizeIpv4
-import dev.scriptor.server.address.normalizeIpv6
-import dev.scriptor.server.address.normalizeName
-import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.result.Result
 import dev.scriptor.server.result.UnitResult
-import dev.scriptor.stdlib.Logger
-import dev.scriptor.stdlib.computeIfAbsent
-import dev.scriptor.stdlib.io.*
-import dev.scriptor.stdlib.sys.Thread
-import dev.scriptor.stdlib.task.Timer
-import dev.scriptor.stdlib.task.TimerTask
+import dev.scriptor.server.util.Log
+import dev.scriptor.sys.Thread
 
 class Server(
-    val logger: Logger,
+    val log: Log,
     val provider: Provider = Provider(),
     val hostname: String = "0.0.0.0",
     val port: Int = 8080,
 ) : AutoCloseable {
 
-    private val server = ServerSocketChannel()
+    private val server = ServerSocketChannel.open()
 
     private val routes = mutableMapOf<Method, MutableList<Route>>()
 
-    private val timer = Timer()
+    private val timer = Timer(daemon = true)
     private val tasks = mutableMapOf<String, TimerTask>()
 
     private var running: Boolean = false
 
     init {
-        val addressType = parseAddressType(hostname)
-        val normalized = when (addressType) {
-            INVALID -> error("invalid hostname '$hostname'")
-            IPV4 -> normalizeIpv4(hostname)
-            IPV6 -> normalizeIpv6(hostname)
-            NAME -> normalizeName(hostname)
-        }
+        server.bind(InetSocketAddress(hostname, port))
 
-        server.bind(INetSocketAddress(normalized, port))
-
-        logger.info("server listening on ${if (':' in normalized) "[$normalized]" else normalized}:$port")
+        log.info("server listening on $hostname:$port")
     }
 
     override fun close() {
@@ -71,15 +61,17 @@ class Server(
 
     fun register(
         name: String,
-        delay: Long,
-        period: Long,
+        delay: Duration,
+        period: Duration? = null,
         callback: () -> Unit,
     ) {
-        tasks[name] = timer.schedule(
-            callback,
+        val task = TimerTask.from(callback)
+        timer.scheduleFixed(
+            task,
             delay,
             period,
         )
+        tasks[name] = task
     }
 
     fun cancel(name: String) {
@@ -90,7 +82,7 @@ class Server(
     fun spin() {
         val socket = server.accept()
 
-        Thread { socket.use(this::handle) }.start()
+        Thread.create { socket.use(this::handle) }
     }
 
     fun start() {
@@ -106,7 +98,7 @@ class Server(
     }
 
     private fun handle(channel: SocketChannel) {
-        val reader = RequestReader(BufferedReadableChannel(channel))
+        val reader = RequestReader(BufferedReadableByteChannel(channel))
 
         do while (handle(channel, reader.read() ?: break))
     }
@@ -164,13 +156,13 @@ class Server(
         } catch (s: Signal) {
             return s.generate()
         } catch (t: Throwable) {
-            logger.severe(t.stackTraceToString())
+            log.error(t.stackTraceToString())
             return InternalServerErrorSignal().generate()
         }
     }
 
     private fun handle(channel: SocketChannel, request: Request): Boolean {
-        logger.info("${request.method} ${request.path} ${request.protocol}")
+        log.info("${request.method} ${request.path} ${request.protocol}")
 
         val keepAlive = request.headers["connection"]?.lowercase() != "close"
 
