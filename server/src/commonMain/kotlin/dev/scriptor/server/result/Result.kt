@@ -1,7 +1,7 @@
 package dev.scriptor.server.result
 
-import dev.scriptor.server.ParameterList
 import dev.scriptor.io.channels.ReadableByteChannel
+import dev.scriptor.server.ParameterList
 
 open class Result {
 

@@ -1,8 +1,8 @@
 package dev.scriptor.server.converter
 
+import dev.scriptor.io.channels.ReadableByteChannel
 import dev.scriptor.server.Provider
 import dev.scriptor.server.result.ChannelResult
-import dev.scriptor.io.channels.ReadableByteChannel
 
 class ChannelResultConverter : Converter<ReadableByteChannel, ChannelResult> {
 

@@ -11,4 +11,6 @@ value class ClassId(val value: String) {
     companion object {
         val Any = ClassId("kotlin.Any")
     }
+
+    operator fun invoke(): Class = getClass(this)
 }

@@ -4,7 +4,7 @@ import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.annotation.Endpoint
 import dev.scriptor.server.annotation.PathParameter
 import dev.scriptor.server.annotation.Resource
-import dev.scriptor.server.util.Log
+import dev.scriptor.util.Log
 import java.io.InputStream
 
 @Endpoint("/")

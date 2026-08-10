@@ -1,18 +1,19 @@
 package dev.scriptor.server.http
 
 import dev.scriptor.computeIfAbsent
-import dev.scriptor.io.*
-import dev.scriptor.io.channels.*
+import dev.scriptor.io.Path
+import dev.scriptor.io.channels.BufferedReadableByteChannel
+import dev.scriptor.io.channels.ServerSocketChannel
+import dev.scriptor.io.channels.SocketChannel
 import dev.scriptor.net.InetSocketAddress
-import dev.scriptor.time.Duration
-import dev.scriptor.util.Timer
-import dev.scriptor.util.TimerTask
-import dev.scriptor.reflect.Type
 import dev.scriptor.server.*
 import dev.scriptor.server.result.Result
 import dev.scriptor.server.result.UnitResult
-import dev.scriptor.server.util.Log
 import dev.scriptor.sys.Thread
+import dev.scriptor.util.Log
+import dev.scriptor.util.Timer
+import dev.scriptor.util.TimerTask
+import kotlin.time.Duration
 
 class Server(
     val log: Log,
@@ -44,18 +45,18 @@ class Server(
     }
 
     fun register(
-        callback: (Provider, Request) -> Result,
         method: Method,
         path: Path,
         accept: String,
         result: String,
+        callback: (Provider, Request) -> Result,
     ) {
         routes.computeIfAbsent(method) { mutableListOf() } += Route(
-            callback,
             PathExpression(path),
             method,
             accept,
             result,
+            callback,
         )
     }
 
@@ -82,7 +83,7 @@ class Server(
     fun spin() {
         val socket = server.accept()
 
-        Thread.create { socket.use(this::handle) }
+        Thread { socket.use(this::handle) }
     }
 
     fun start() {

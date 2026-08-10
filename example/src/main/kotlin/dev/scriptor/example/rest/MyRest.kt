@@ -4,7 +4,7 @@ import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.http.Method.POST
 import dev.scriptor.server.result.UnitResult
-import dev.scriptor.server.util.Log
+import dev.scriptor.util.Log
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection

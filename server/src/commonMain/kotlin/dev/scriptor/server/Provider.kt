@@ -6,9 +6,11 @@ import dev.scriptor.reflect.isAssignable
 import dev.scriptor.server.converter.Conversion
 import dev.scriptor.server.converter.ConversionStep
 
+typealias ConverterFn = context(Provider)(Any?) -> Any?
+
 class Provider {
 
-    private val converters = mutableMapOf<Pair<Type, Type>, (Any?) -> Any?>()
+    private val converters = mutableMapOf<Pair<Type, Type>, ConverterFn>()
     private val conversions = mutableMapOf<Pair<Type, Type>, Conversion<Any?, Any?>>()
     private val contexts = mutableMapOf<Type, Any?>()
     private val named = mutableMapOf<String, Any?>()
@@ -61,7 +63,7 @@ class Provider {
         return null
     }
 
-    operator fun set(key: Pair<Type, Type>, converter: (Any?) -> Any?) {
+    operator fun set(key: Pair<Type, Type>, converter: ConverterFn) {
         converters[key] = converter
     }
 
@@ -89,10 +91,6 @@ class Provider {
         named[name] = value
     }
 
-    inline operator fun <reified S, reified D> invoke(crossinline converter: (S) -> D) {
-        set(getType<S>() to getType<D>()) { converter(it as S) }
-    }
-
     inline fun <reified T> register(value: T) {
         set(getType<T>(), value)
     }
@@ -105,18 +103,32 @@ class Provider {
         setNamed(name, value)
     }
 
-    inline fun <reified S, reified D> converter(): Conversion<S, D>? {
+    inline operator fun <reified S, reified D> invoke(crossinline converter: context(Provider)(S) -> D) {
         val src = getType<S>()
         val dst = getType<D>()
 
-        return this[src to dst] as? Conversion<S, D>
+        set(src to dst) { converter(it as S) }
     }
 
-    inline fun <reified S, reified D> convert(value: S): D {
+    inline fun <reified S, reified D> invoke(): Conversion<S, D>? {
         val src = getType<S>()
         val dst = getType<D>()
 
-        val path = this[src to dst] as? Conversion<S, D>
+        return get(src to dst) as? Conversion<S, D>
+    }
+
+    operator fun invoke(src: Type, dst: Type, value: Any?): Any? {
+        val path = get(src to dst)
+            ?: error("unsupported conversion from $src to $dst")
+
+        return path(value)
+    }
+
+    inline operator fun <reified S, reified D> invoke(value: S): D {
+        val src = getType<S>()
+        val dst = getType<D>()
+
+        val path = get(src to dst) as? Conversion<S, D>
             ?: error("unsupported conversion from $src to $dst")
 
         return path(value)

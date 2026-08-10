@@ -4,11 +4,11 @@ import dev.scriptor.server.Provider
 import dev.scriptor.server.result.Result
 
 data class Route(
-    val callback: (Provider, Request) -> Result,
     val path: PathExpression,
     val method: Method,
     val accept: String,
-    val result: String
+    val result: String,
+    val callback: (Provider, Request) -> Result,
 ) : Comparable<Route> {
 
     override fun compareTo(other: Route): Int {

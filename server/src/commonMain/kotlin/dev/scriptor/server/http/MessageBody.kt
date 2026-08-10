@@ -1,9 +1,9 @@
 package dev.scriptor.server.http
 
+import dev.scriptor.io.MutableBuffer
 import dev.scriptor.io.channels.FileChannel
 import dev.scriptor.io.channels.ReadableByteChannel
 import dev.scriptor.io.channels.WritableByteChannel
-import dev.scriptor.io.MutableBuffer
 
 data class MessageBody(
     val channel: ReadableByteChannel,
@@ -34,7 +34,7 @@ data class MessageBody(
                 }
 
                 else -> {
-                    val buffer = MutableBuffer.allocate(8192L)
+                    val buffer = MutableBuffer.allocate(8192)
 
                     var rem = count
 
@@ -42,18 +42,18 @@ data class MessageBody(
                         buffer.clear()
 
                         if (rem > 0L) {
-                            buffer.limit = minOf(buffer.capacity, rem)
+                            buffer.limit = minOf(buffer.capacity.toLong(), rem).toInt()
                         }
 
                         val read = channel.read(buffer)
-                        if (read < 0L) break
-                        if (read == 0L) continue
+                        if (read < 0) break
+                        if (read == 0) continue
 
                         buffer.flip()
 
-                        while (buffer.remaining != 0L) {
+                        while (buffer.remaining != 0) {
                             val written = destination.write(buffer)
-                            if (written < 0L) error("unexpected end of stream")
+                            if (written < 0) error("unexpected end of stream")
                         }
 
                         if (rem > 0L) {
@@ -64,7 +64,7 @@ data class MessageBody(
             }
         }
 
-        val buffer = MutableBuffer.allocate(8192L)
+        val buffer = MutableBuffer.allocate(8192)
         val writer = destination.writer()
 
         while (true) {
@@ -72,14 +72,14 @@ data class MessageBody(
 
             val read = channel.read(buffer)
             if (read < 0L) break
-            if (read == 0L) continue
+            if (read == 0) continue
 
             buffer.flip()
 
             writer.write("${read.toHexString()}\r\n")
             writer.flush()
 
-            while (buffer.remaining != 0L) {
+            while (buffer.remaining != 0) {
                 val written = destination.write(buffer)
                 if (written < 0L) error("unexpected end of stream")
             }

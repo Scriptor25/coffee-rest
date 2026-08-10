@@ -9,8 +9,8 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                implementation(project(":std"))
                 implementation(project(":type-system"))
-                implementation("com.squareup.okio:okio:3.18.1")
             }
         }
     }

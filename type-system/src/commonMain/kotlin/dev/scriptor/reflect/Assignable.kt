@@ -22,9 +22,9 @@ private fun isAssignable(dst: ClassReference, src: Type): Boolean {
     val src = resolveSupertype(src, dst.id)
         ?: return false
 
-    val srcClass = src.id.getClass()
+    val srcCls = src.id()
 
-    if (!srcClass.isSubclassOf(dst.id)) {
+    if (!srcCls.isSubclassOf(dst.id)) {
         return false
     }
 
@@ -88,13 +88,13 @@ private fun resolveSupertype(type: Type, target: ClassId): ClassReference? {
         return type
     }
 
-    val clazz = type.id.getClass()
+    val cls = type.id()
 
-    val mapping = clazz.parameters
+    val mapping = cls.parameters
         .zip(type.arguments)
         .associate { (parameter, argument) -> parameter to argument }
 
-    for (supertype in clazz.supertypes) {
+    for (supertype in cls.supertypes) {
         val substituted = substitute(
             supertype,
             mapping,

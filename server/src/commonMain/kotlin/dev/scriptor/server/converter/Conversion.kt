@@ -2,7 +2,6 @@ package dev.scriptor.server.converter
 
 import dev.scriptor.server.Provider
 
-@Suppress("UNCHECKED_CAST")
 class Conversion<in S, out D>(private val path: List<ConversionStep>) {
 
     context(_: Provider)

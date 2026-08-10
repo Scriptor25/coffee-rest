@@ -18,18 +18,16 @@ class RequestReader(
         val request: Array<String> = line.split("\\s+".toRegex()).toTypedArray()
         val method = Method.valueOf(request[0])
         val uri = URI.parse(request[1])
-        val path = Path.parse(uri.pathname)
+        val path = Path(uri.pathname)
         val protocol: String = request[2]
 
         val queryMap = mutableMapOf<String, MutableList<String>>()
 
-        if (uri.query != null) {
-            val params = uri.query.split("&+".toRegex()).toTypedArray()
-            for (param in params) {
-                if ("=" in param) {
-                    val pair = param.split("=".toRegex(), 2).toTypedArray()
-                    queryMap.computeIfAbsent(pair[0].lowercase()) { mutableListOf() }.add(pair[1])
-                }
+        val query = uri.query.split("&+".toRegex()).toTypedArray()
+        for (param in query) {
+            if ("=" in param) {
+                val (key, value) = param.split("=".toRegex(), 2).toTypedArray()
+                queryMap.computeIfAbsent(key.lowercase()) { mutableListOf() }.add(value)
             }
         }
 

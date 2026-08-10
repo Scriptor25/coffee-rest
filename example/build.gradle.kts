@@ -11,6 +11,8 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
 
+    implementation(project(":std"))
+    implementation(project(":type-system"))
     implementation(project(":server"))
 
     implementation(libs.json)

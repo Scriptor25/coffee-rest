@@ -6,8 +6,11 @@ data class Class(
     val supertypes: List<ClassReference>,
 ) {
     fun isSubclassOf(parent: ClassId): Boolean {
-        return id == parent || supertypes.any { it.id.getClass().isSubclassOf(parent) }
+        return id == parent || supertypes.any { it.id().isSubclassOf(parent) }
     }
+
+    val starProjectedType: ClassReference
+        get() = ClassReference(id, parameters.map { StarProjection }, false)
 
     override fun toString(): String {
         return buildString {
