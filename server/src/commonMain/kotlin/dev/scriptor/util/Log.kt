@@ -1,4 +1,4 @@
-package dev.scriptor.server.util
+package dev.scriptor.util
 
 interface Log {
 
