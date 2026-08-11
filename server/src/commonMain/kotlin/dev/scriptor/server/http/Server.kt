@@ -67,11 +67,14 @@ class Server(
         callback: () -> Unit,
     ) {
         val task = TimerTask.from(callback)
-        timer.scheduleFixed(
-            task,
-            delay,
-            period,
-        )
+        if (period == null)
+            timer.schedule(task, delay)
+        else
+            timer.scheduleFixed(
+                task,
+                delay,
+                period,
+            )
         tasks[name] = task
     }
 

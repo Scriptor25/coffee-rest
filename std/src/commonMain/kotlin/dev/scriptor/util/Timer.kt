@@ -13,9 +13,9 @@ interface Timer {
 
     fun schedule(task: TimerTask, delay: Duration, period: Duration? = null)
 
-    fun scheduleFixed(task: TimerTask, instant: Instant, period: Duration? = null)
+    fun scheduleFixed(task: TimerTask, instant: Instant, period: Duration)
 
-    fun scheduleFixed(task: TimerTask, delay: Duration, period: Duration? = null)
+    fun scheduleFixed(task: TimerTask, delay: Duration, period: Duration)
 }
 
 fun Timer(name: String? = null, daemon: Boolean = false): Timer {
