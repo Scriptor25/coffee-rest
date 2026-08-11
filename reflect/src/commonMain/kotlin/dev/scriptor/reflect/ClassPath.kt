@@ -2,13 +2,7 @@ package dev.scriptor.reflect
 
 import kotlin.reflect.KClass
 
-internal object ClassPath {
-    val classes: Map<ClassId, Class> = mapOf(
-        // generated
-    )
-}
-
-fun getClass(id: ClassId): Class = ClassPath.classes[id] ?: error("undefined class $id")
+fun getClass(id: ClassId): Class = TODO("generate class metadata at compile time")[id] ?: error("undefined class $id")
 
 fun getClass(classifier: KClass<*>): Class {
     val name = classifier.qualifiedName

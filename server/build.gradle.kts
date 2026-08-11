@@ -10,7 +10,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":std"))
-                implementation(project(":type-system"))
+                implementation(project(":reflect"))
             }
         }
     }

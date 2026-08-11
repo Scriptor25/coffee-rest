@@ -5,7 +5,7 @@ plugins {
     id("com.google.devtools.ksp") version "2.3.10" apply false
 }
 
-group = "dev.scriptor.coffee-rest"
+group = "dev.scriptor"
 version = "1.0.0"
 
 subprojects {

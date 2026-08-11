@@ -1,7 +1,12 @@
 rootProject.name = "coffee-rest-parent"
 
-include(":std")
-include(":server")
-include(":example")
-include(":type-system")
-include(":type-system-ksp")
+include(
+    ":reflect",
+    ":reflect-plugin",
+    ":reflect-plugin-gradle",
+    ":std",
+    ":server",
+    ":example",
+)
+
+project(":server").name = "coffee-rest"

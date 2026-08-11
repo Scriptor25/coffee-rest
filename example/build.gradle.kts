@@ -1,6 +1,8 @@
 plugins {
     kotlin("jvm")
     application
+
+    // id("dev.scriptor.reflect")
 }
 
 application {
@@ -12,8 +14,8 @@ dependencies {
     implementation(kotlin("reflect"))
 
     implementation(project(":std"))
-    implementation(project(":type-system"))
-    implementation(project(":server"))
+    implementation(project(":reflect"))
+    implementation(project(":coffee-rest"))
 
     implementation(libs.json)
 }
