@@ -1,0 +1,2 @@
+[libraries]
+json = "org.json:json:20260522"

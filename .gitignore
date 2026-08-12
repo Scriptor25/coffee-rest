@@ -41,4 +41,21 @@ build/
 *.local
 *.jks
 
+### Maven ###
 dependency-reduced-pom.xml
+
+### Gradle ###
+.gradle
+/build/
+!/src/**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+
+
+# Ignore Gradle build output directory
+build
+
+# Ignore Kotlin plugin data
+.kotlin

@@ -4,8 +4,8 @@ import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.annotation.Endpoint
 import dev.scriptor.server.annotation.PathParameter
 import dev.scriptor.server.annotation.Resource
+import dev.scriptor.util.Log
 import java.io.InputStream
-import java.util.logging.Logger
 
 @Endpoint("/")
 class RootRest {
@@ -16,7 +16,7 @@ class RootRest {
             ?: throw NotFoundSignal()
 
     @Resource("/[slug+]")
-    context(log: Logger)
+    context(log: Log)
     fun getSomething(@PathParameter slug: Array<String>) {
         log.info(slug.contentToString())
     }
