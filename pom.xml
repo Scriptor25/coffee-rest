@@ -11,6 +11,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>reflect</module>
         <module>server</module>
         <module>example</module>
     </modules>
@@ -23,15 +24,20 @@
 
         <kotlin.compiler.jvmTarget>25</kotlin.compiler.jvmTarget>
         <kotlin.code.style>official</kotlin.code.style>
-        <kotlin.version>2.4.0</kotlin.version>
+        <kotlin.version>2.4.10</kotlin.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>dev.scriptor</groupId>
+                <artifactId>reflect</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.scriptor</groupId>
                 <artifactId>coffee-rest</artifactId>
-                <version>1.0.0</version>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -77,5 +83,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

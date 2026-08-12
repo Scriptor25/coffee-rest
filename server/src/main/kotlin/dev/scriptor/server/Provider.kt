@@ -1,36 +1,54 @@
 package dev.scriptor.server
 
-import dev.scriptor.server.converter.ConversionPath
+import dev.scriptor.reflect.Type
+import dev.scriptor.reflect.getClass
+import dev.scriptor.reflect.getType
+import dev.scriptor.reflect.isAssignable
+import dev.scriptor.server.converter.AnyConverterFn
+import dev.scriptor.server.converter.Conversion
 import dev.scriptor.server.converter.ConversionStep
-import dev.scriptor.server.converter.Converter
-import dev.scriptor.server.type.isAssignable
+import dev.scriptor.server.converter.ConverterFn
+import kotlin.reflect.KClass
 import kotlin.reflect.KType
-import kotlin.reflect.full.starProjectedType
-import kotlin.reflect.typeOf
 
 class Provider {
 
-    private val conversionSteps = mutableListOf<ConversionStep>()
-    private val conversionPaths = mutableMapOf<Pair<KType, KType>, ConversionPath<Any?, Any?>>()
-    private val contexts = mutableListOf<Any>()
+    private val converters = mutableMapOf<Pair<Type, Type>, AnyConverterFn>()
+    private val conversions = mutableMapOf<Pair<Type, Type>, Conversion>()
+    private val contexts = mutableMapOf<Type, Any>()
     private val named = mutableMapOf<String, Any?>()
 
-    operator fun set(key: Pair<KType, KType>, converter: Converter<Any?, Any?>) {
-        conversionSteps += ConversionStep(key.first, key.second, converter)
+    fun register(src: Type, dst: Type, converter: AnyConverterFn) {
+        converters[src to dst] = converter
     }
 
-    operator fun get(key: Pair<KType, KType>): ConversionPath<Any?, Any?>? {
-        if (key in conversionPaths) {
-            return conversionPaths[key]
+    fun register(type: Type, value: Any) {
+        contexts[type] = value
+    }
+
+    fun register(name: String, value: Any?) {
+        named[name] = value
+    }
+
+    fun hasConversion(src: Type, dst: Type): Boolean {
+        return getConversion(src, dst) != null
+    }
+
+    fun getConversion(src: Type, dst: Type): AnyConverterFn? {
+        val key = src to dst
+
+        if (key in conversions) {
+            val convert = conversions[key]!!
+            return { convert(it) }
         }
 
         data class Node(
-            val type: KType,
+            val type: Type,
             val path: List<ConversionStep>,
         )
 
         val queue = ArrayDeque<Node>()
-        val visited = HashSet<KType>()
+        val visited = HashSet<Type>()
 
         queue.add(Node(key.first, emptyList()))
 
@@ -41,20 +59,20 @@ class Provider {
             if (!visited.add(current.type)) continue
 
             if (isAssignable(key.second, current.type)) {
-                val path = ConversionPath<Any?, Any?>(current.path)
-                conversionPaths[key] = path
-                return path
+                val convert = Conversion(current.path)
+                conversions[key] = convert
+                return { convert(it) }
             }
 
-            val edges = conversionSteps.filter { isAssignable(it.src, current.type) }
+            val edges = converters.filter { isAssignable(it.key.first, current.type) }
 
-            for ((_, next, converter) in edges) {
+            for ((key, value) in edges) {
                 queue += Node(
-                    next,
+                    key.second,
                     current.path + ConversionStep(
                         current.type,
-                        next,
-                        converter,
+                        key.second,
+                        value,
                     )
                 )
             }
@@ -63,28 +81,130 @@ class Provider {
         return null
     }
 
-    operator fun contains(key: Pair<KType, KType>): Boolean = get(key) != null
-
-    operator fun plusAssign(value: Any) {
-        contexts += value
+    fun hasContext(type: Type): Boolean {
+        return contexts.any { isAssignable(type, it.key) }
     }
 
-    operator fun get(type: KType): Any? = contexts.find { isAssignable(type, it::class.starProjectedType) }
-
-    operator fun contains(type: KType): Boolean = contexts.any { isAssignable(type, it::class.starProjectedType) }
-
-    operator fun <T> set(name: String, value: T) {
-        named[name] = value
+    fun getContext(type: Type): Any? {
+        return contexts
+            .filter { isAssignable(type, it.key) }
+            .values
+            .firstOrNull()
     }
 
-    operator fun <T> get(name: String): T? = named[name] as? T
+    fun hasNamed(name: String): Boolean {
+        return name in named
+    }
 
-    operator fun contains(name: String): Boolean = name in named
-}
+    fun getNamed(name: String): Any? {
+        return named[name]
+    }
 
-inline fun <reified S, reified D> Provider.convert(): ConversionPath<S, D>? {
-    val src = typeOf<S>()
-    val dst = typeOf<D>()
+    operator fun set(key: Pair<Type, Type>, value: AnyConverterFn) {
+        register(key.first, key.second, value)
+    }
 
-    return this[src to dst] as? ConversionPath<S, D>
+    operator fun set(key: Type, value: Any) {
+        register(key, value)
+    }
+
+    operator fun set(key: KType, value: Any) {
+        val type = getType(key)
+
+        register(type, value)
+    }
+
+    operator fun set(key: KClass<*>, value: Any) {
+        val type = getClass(key).createType()
+
+        register(type, value)
+    }
+
+    operator fun set(key: String, value: Any?) {
+        register(key, value)
+    }
+
+    operator fun contains(key: Pair<Type, Type>): Boolean {
+        return hasConversion(key.first, key.second)
+    }
+
+    operator fun contains(key: Type): Boolean {
+        return hasContext(key)
+    }
+
+    operator fun contains(key: String): Boolean {
+        return hasNamed(key)
+    }
+
+    operator fun get(key: Pair<Type, Type>): AnyConverterFn? {
+        return getConversion(key.first, key.second)
+    }
+
+    operator fun get(key: Type): Any? {
+        return getContext(key)
+    }
+
+    operator fun get(key: KType): Any? {
+        val type = getType(key)
+
+        return getContext(type)
+    }
+
+    operator fun get(key: String): Any? {
+        return getNamed(key)
+    }
+
+    inline fun <reified S, reified D> registerT(noinline value: ConverterFn<S, D>) {
+        val src = getType<S>()
+        val dst = getType<D>()
+
+        register(src, dst, value as AnyConverterFn)
+    }
+
+    inline fun <reified T : Any> registerT(value: T) {
+        val type = getType<T>()
+
+        register(type, value)
+    }
+
+    inline fun <reified S, reified D> hasConversionT(): Boolean {
+        val src = getType<S>()
+        val dst = getType<D>()
+
+        return hasConversion(src, dst)
+    }
+
+    inline fun <reified T> hasContextT(): Boolean {
+        val type = getType<T>()
+
+        return hasContext(type)
+    }
+
+    inline fun <reified S, reified D> getConversionT(): ConverterFn<S, D>? {
+        val src = getType<S>()
+        val dst = getType<D>()
+
+        val convert = getConversion(src, dst) ?: return null
+
+        return { convert(it) as D }
+    }
+
+    inline fun <reified T> getContextT(): T? {
+        val type = getType<T>()
+
+        return getContext(type) as? T
+    }
+
+    inline fun <reified T> getNamedT(key: String): T? {
+        return getNamed(key) as? T
+    }
+
+    inline operator fun <reified S, reified D> invoke(value: S): D {
+        val src = getType<S>()
+        val dst = getType<D>()
+
+        val convert = getConversion(src, dst) ?: error("no conversion path from $src to $dst")
+
+        return convert(value) as D
+    }
 }

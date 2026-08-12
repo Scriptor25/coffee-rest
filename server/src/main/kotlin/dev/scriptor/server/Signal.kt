@@ -58,7 +58,7 @@ open class Signal(
                     content,
                 )
 
-            else -> throw Error("invalid signal content $content")
+            else -> error("invalid signal content $content")
         }
     }
 }

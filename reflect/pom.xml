@@ -10,20 +10,7 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>example</artifactId>
+    <artifactId>reflect</artifactId>
 
     <packaging>jar</packaging>
-
-    <dependencies>
-        <dependency>
-            <groupId>dev.scriptor</groupId>
-            <artifactId>coffee-rest</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20260522</version>
-        </dependency>
-    </dependencies>
 </project>

@@ -1,5 +1,6 @@
 package dev.scriptor.server
 
+import dev.scriptor.reflect.getType
 import dev.scriptor.server.annotation.Context
 import dev.scriptor.server.annotation.Endpoint
 import dev.scriptor.server.annotation.Resource
@@ -19,15 +20,15 @@ fun scan(server: Server, packageName: String? = null) {
                 val src = superclass.arguments[0].type!!
                 val dst = superclass.arguments[1].type!!
 
-                val instance = klass.createInstance()
+                val instance = klass.createInstance() as Converter<Any?, Any?>
 
-                server.provider[src to dst] = instance as Converter<Any?, Any?>
+                server.provider[getType(src) to getType(dst)] = { instance(it) }
             }
 
             klass.hasAnnotation<Context>() -> {
                 val instance = klass.createInstance()
 
-                server.provider += instance
+                server.provider[instance::class] = instance
             }
 
             klass.hasAnnotation<Endpoint>() -> {

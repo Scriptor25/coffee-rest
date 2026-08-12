@@ -1,5 +1,7 @@
 package dev.scriptor.server.http
 
+import dev.scriptor.reflect.Type
+import dev.scriptor.reflect.getType
 import dev.scriptor.server.*
 import dev.scriptor.server.address.AddressType.*
 import dev.scriptor.server.address.normalizeIpv4
@@ -7,7 +9,7 @@ import dev.scriptor.server.address.normalizeIpv6
 import dev.scriptor.server.address.normalizeName
 import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
-import dev.scriptor.server.converter.ConversionPath
+import dev.scriptor.server.converter.ConverterFn
 import dev.scriptor.server.result.Result
 import dev.scriptor.server.result.UnitResult
 import java.io.IOException
@@ -23,7 +25,6 @@ import kotlin.concurrent.timerTask
 import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
 import kotlin.reflect.KParameter.Kind.*
-import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
@@ -57,7 +58,7 @@ class Server(
     init {
         val addressType = parseAddressType(hostname)
         val normalized = when (addressType) {
-            INVALID -> throw Error("invalid hostname '$hostname'")
+            INVALID -> error("invalid hostname '$hostname'")
             IPV4 -> normalizeIpv4(hostname)
             IPV6 -> normalizeIpv6(hostname)
             NAME -> normalizeName(hostname)
@@ -94,7 +95,7 @@ class Server(
     fun check() {
         for ((_, entries) in routes) {
             for ((_, callee) in entries) {
-                checkConvertible(callee.returnType, typeOf<Result>())
+                checkConvertible(getType(callee.returnType), getType<Result>())
             }
         }
     }
@@ -136,18 +137,18 @@ class Server(
         running = false
     }
 
-    private fun checkConvertible(src: KType, dst: KType) {
+    private fun checkConvertible(src: Type, dst: Type) {
         if (src to dst in provider) return
 
-        throw Exception("unsupported conversion from '$src' to '$dst'")
+        error("unsupported conversion from $src to $dst")
     }
 
-    private fun convert(value: Any?, src: KType, dst: KType): Any? {
+    private fun convert(value: Any?, src: Type, dst: Type): Any? {
 
-        val path = provider[src to dst]
-            ?: throw Exception("unsupported conversion from '$src' to '$dst'")
+        val convert = provider[src to dst]
+            ?: error("unsupported conversion from $src to $dst")
 
-        return context(provider) { path(value) }
+        return context(provider) { convert(value) }
     }
 
     private fun handle(channel: SocketChannel) {
@@ -198,11 +199,11 @@ class Server(
                     arguments[index] = when (parameter.type.classifier) {
                         Logger::class -> log
                         Provider::class -> provider
-                        ConversionPath::class -> {
+                        ConverterFn::class -> {
                             val src = parameter.type.arguments[0].type!!
                             val dst = parameter.type.arguments[1].type!!
 
-                            provider[src to dst]
+                            provider[getType(src) to getType(dst)]
                         }
 
                         else -> provider[parameter.type]
@@ -251,7 +252,7 @@ class Server(
                             value = request.body
                         }
 
-                        else -> throw UnsupportedOperationException()
+                        else -> error("$parameter is missing annotation")
                     }
 
                     if (value == null) {
@@ -269,8 +270,8 @@ class Server(
                     try {
                         arguments[index] = convert(
                             value,
-                            type,
-                            parameter.type,
+                            getType(type),
+                            getType(parameter.type),
                         )
                     } catch (e: Exception) {
                         log.severe(e.stackTraceToString())
@@ -278,7 +279,7 @@ class Server(
                     }
                 }
 
-                EXTENSION_RECEIVER -> throw UnsupportedOperationException()
+                EXTENSION_RECEIVER -> error("$parameter not supported")
             }
         }
     }
@@ -316,14 +317,10 @@ class Server(
                 throw e.targetException
             }
 
-            if (value == null) {
-                throw UnsupportedOperationException()
-            }
-
             val result = convert(
                 value,
-                type,
-                typeOf<Result>(),
+                getType(type),
+                getType<Result>(),
             ) as Result
 
             return Result(

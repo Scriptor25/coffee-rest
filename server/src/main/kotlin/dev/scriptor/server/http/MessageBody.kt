@@ -1,6 +1,5 @@
 package dev.scriptor.server.http
 
-import java.io.EOFException
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
 import java.nio.channels.FileChannel
@@ -103,7 +102,7 @@ data class MessageBody(
             buffer.limit(minOf(buffer.capacity().toLong(), rem).toInt())
 
             val n = channel.read(buffer)
-            if (n < 0) throw EOFException()
+            if (n < 0) error("unexpected end of file")
 
             rem -= n.toLong()
         }

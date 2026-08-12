@@ -1,9 +1,9 @@
 package dev.scriptor.server.converter
 
-import kotlin.reflect.KType
+import dev.scriptor.reflect.Type
 
 data class ConversionStep(
-    val src: KType,
-    val dst: KType,
-    val converter: Converter<Any?, Any?>,
+    val src: Type,
+    val dst: Type,
+    val converter: ConverterFn<Any?, Any?>,
 )

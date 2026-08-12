@@ -2,6 +2,9 @@ package dev.scriptor.server.converter
 
 import dev.scriptor.server.Provider
 
+typealias ConverterFn<S, D> = context(Provider) (S) -> D
+typealias AnyConverterFn = ConverterFn<Any?, Any?>
+
 interface Converter<in S, out D> {
 
     context(provider: Provider)

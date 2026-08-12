@@ -1,6 +1,5 @@
 package dev.scriptor.server
 
-import java.io.EOFException
 import java.nio.ByteBuffer
 import java.nio.channels.ReadableByteChannel
 
@@ -35,7 +34,7 @@ class BufferedReadableByteChannel(
                 '\r'.code -> {
                     val next = read()
                     if (next != '\n'.code) {
-                        throw EOFException("expected lf after cr")
+                        error("expected lf after cr")
                     }
                     return line.toString()
                 }
