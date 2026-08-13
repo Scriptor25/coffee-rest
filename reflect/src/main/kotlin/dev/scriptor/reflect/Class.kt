@@ -191,6 +191,47 @@ data class Class(
                 variance = KVariance.OUT
             }
         }
+
+        /** Iterable<out T> */
+        val Iterable = createAny(ClassId.Iterable) {
+            val t = TypeParameterId("T")
+
+            parameter(t) {
+                variance = KVariance.OUT
+            }
+        }
+
+        /** Collection<out E> : Iterable<E> */
+        val Collection = createAny(ClassId.Collection) {
+            val e = TypeParameterId("E")
+
+            parameter(e) {
+                variance = KVariance.OUT
+            }
+
+            supertype(ClassId.Iterable) {
+                argument {
+                    variance = KVariance.INVARIANT
+                    type = TypeParameterReference.create(e, ClassId.Collection)
+                }
+            }
+        }
+
+        /** List<out E> : Collection<E> */
+        val List = createAny(ClassId.List) {
+            val e = TypeParameterId("E")
+
+            parameter(e) {
+                variance = KVariance.OUT
+            }
+
+            supertype(ClassId.Collection) {
+                argument {
+                    variance = KVariance.INVARIANT
+                    type = TypeParameterReference.create(e, ClassId.List)
+                }
+            }
+        }
     }
 
     fun isSubclassOf(parent: ClassId): Boolean {

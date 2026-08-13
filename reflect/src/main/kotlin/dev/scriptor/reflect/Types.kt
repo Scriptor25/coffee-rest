@@ -2,20 +2,20 @@ package dev.scriptor.reflect
 
 import kotlin.reflect.KVariance
 
+private val assignableMap = mutableMapOf<Pair<Type, Type>, Boolean>()
+
 fun isAssignable(dst: Type, src: Type): Boolean {
-
-    if (dst == src) {
-        return true
+    if (dst to src in assignableMap) {
+        return assignableMap[dst to src]!!
     }
 
-    if (!dst.nullable && src.nullable) {
-        return false
-    }
-
-    return when (dst) {
+    val result = dst == src || (dst.nullable || !src.nullable) && when (dst) {
         is ClassReference -> isAssignable(dst, src)
         is TypeParameterReference -> satisfiesBounds(src, dst)
     }
+
+    assignableMap[dst to src] = result
+    return result
 }
 
 private fun isAssignable(dst: ClassReference, src: Type): Boolean {
@@ -79,36 +79,47 @@ private fun satisfiesBounds(type: Type, parameter: TypeParameterReference): Bool
     return parameter().upperbounds.all { isAssignable(it, type) }
 }
 
+private val supertypeMap = mutableMapOf<Pair<Type, ClassId>, ClassReference?>()
+
 private fun resolveSupertype(type: Type, target: ClassId): ClassReference? {
-    if (type !is ClassReference) {
-        return null
+    if (type to target in supertypeMap) {
+        return supertypeMap[type to target]
     }
 
-    if (type.id == target) {
-        return type
+    val result = when (type) {
+        is ClassReference ->
+            if (type.id == target) type
+            else {
+                val cls = type.id()
+
+                val mapping = cls.parameters
+                    .zip(type.arguments)
+                    .associate { (parameter, argument) -> parameter.id to argument }
+
+                var result: ClassReference? = null
+
+                for (supertype in cls.supertypes) {
+                    val substituted = substitute(
+                        supertype,
+                        mapping,
+                    )
+
+                    result = resolveSupertype(
+                        substituted,
+                        target,
+                    ) ?: continue
+
+                    break
+                }
+
+                result
+            }
+
+        else -> null
     }
 
-    val cls = type.id()
-
-    val mapping = cls.parameters
-        .zip(type.arguments)
-        .associate { (parameter, argument) -> parameter.id to argument }
-
-    for (supertype in cls.supertypes) {
-        val substituted = substitute(
-            supertype,
-            mapping,
-        )
-
-        val result = resolveSupertype(
-            substituted,
-            target,
-        ) ?: continue
-
-        return result
-    }
-
-    return null
+    supertypeMap[type to target] = result
+    return result
 }
 
 private fun substitute(type: Type, mapping: Map<TypeParameterId, Projection>): Type {

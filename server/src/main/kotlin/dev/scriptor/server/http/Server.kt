@@ -29,6 +29,7 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
+import kotlin.time.measureTime
 
 class Server(
     val log: Logger,
@@ -46,8 +47,8 @@ class Server(
 
     private val queue: BlockingQueue<Runnable> = ArrayBlockingQueue(256)
     private val executor: Executor = ThreadPoolExecutor(
-        10,
-        10,
+        16,
+        256,
         100,
         TimeUnit.MILLISECONDS,
         queue
@@ -154,7 +155,14 @@ class Server(
     private fun handle(channel: SocketChannel) {
         val reader = RequestReader(BufferedReadableByteChannel(channel))
 
-        do while (handle(channel, reader.read() ?: break))
+        var ok = true
+        while (ok) {
+            val request = reader.read() ?: break
+
+            val delta = measureTime { ok = handle(channel, request) }
+
+            log.fine("request time $delta")
+        }
     }
 
     private fun getOptions(request: Request): Result {

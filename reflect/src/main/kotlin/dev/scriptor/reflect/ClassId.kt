@@ -31,6 +31,10 @@ value class ClassId(val value: String) {
         val Throwable = ClassId("kotlin.Throwable")
         val Comparable = ClassId("kotlin.Comparable")
         val Function = ClassId("kotlin.Function")
+
+        val Iterable = ClassId("kotlin.collections.Iterable")
+        val Collection = ClassId("kotlin.collections.Collection")
+        val List = ClassId("kotlin.collections.List")
     }
 
     override fun toString(): String = value

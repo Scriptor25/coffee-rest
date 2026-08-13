@@ -31,6 +31,10 @@ private val map = mutableMapOf(
     ClassId.Throwable to Class.Throwable,
     ClassId.Comparable to Class.Comparable,
     ClassId.Function to Class.Function,
+
+    ClassId.Iterable to Class.Iterable,
+    ClassId.Collection to Class.Collection,
+    ClassId.List to Class.List,
 )
 
 fun getClass(id: ClassId): Class {
@@ -63,7 +67,7 @@ fun getClass(id: ClassId): Class {
 }
 
 fun getClass(classifier: KClass<*>): Class {
-    val name = classifier.qualifiedName
+    val name = classifier.javaObjectType.canonicalName
         ?: error("class $classifier does not have a qualified name")
 
     return getClass(ClassId(name))
