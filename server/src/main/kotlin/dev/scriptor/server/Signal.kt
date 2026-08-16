@@ -15,23 +15,30 @@ open class Signal(
         val headers = ParameterList(headers)
 
         return when (content) {
-            null ->
-                StringResult(
-                    code,
-                    text,
-                    "text/plain",
-                    headers,
-                    message,
-                )
+            null -> {
+                val message = message
 
-            is Unit ->
+                if (message == null)
+                    UnitResult(code, text, headers)
+                else
+                    StringResult(
+                        code,
+                        text,
+                        "text/plain",
+                        headers,
+                        message,
+                    )
+            }
+
+            is Unit -> {
                 UnitResult(
                     code,
                     text,
                     headers,
                 )
+            }
 
-            is String ->
+            is String -> {
                 StringResult(
                     code,
                     text,
@@ -39,8 +46,9 @@ open class Signal(
                     headers,
                     content,
                 )
+            }
 
-            is InputStream ->
+            is InputStream -> {
                 StreamResult(
                     code,
                     text,
@@ -48,8 +56,9 @@ open class Signal(
                     headers,
                     content,
                 )
+            }
 
-            is ReadableByteChannel ->
+            is ReadableByteChannel -> {
                 ChannelResult(
                     code,
                     text,
@@ -57,8 +66,11 @@ open class Signal(
                     headers,
                     content,
                 )
+            }
 
-            else -> error("invalid signal content $content")
+            else -> {
+                error("invalid signal content $content")
+            }
         }
     }
 }

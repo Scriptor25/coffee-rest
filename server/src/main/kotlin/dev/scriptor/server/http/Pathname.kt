@@ -1,29 +1,23 @@
 package dev.scriptor.server.http
 
 import java.nio.file.Path
-import java.util.regex.Pattern
 
 class Pathname(path: Path) : Comparable<Pathname> {
 
     data class Parameter(val index: Int, val collecting: Boolean)
 
-    private val path: Path = path.toAbsolutePath()
+    private val path = path.toAbsolutePath().normalize()
 
     private val priority: Int
     private val index: Int
 
-    private val pattern: Pattern
-    private val parameters: MutableMap<String, Parameter> = HashMap()
+    private val regex: Regex
+    private val parameters = mutableMapOf<String, Parameter>()
 
-    constructor(endpoint: String, resource: String) : this(Path.of(endpoint, resource))
+    private val input = """([^\[]+)|\[([^]]*)]""".toRegex()
 
     init {
-        val pathname = this.path.toString().lowercase()
-
-        val matcher = Pattern.compile("\\[(.*?)]").matcher(pathname)
         val route = StringBuilder().append("^")
-
-        var end = 0
 
         var segmentCount = 0
 
@@ -34,76 +28,67 @@ class Pathname(path: Path) : Comparable<Pathname> {
         var parameterCount = 0
         var collectingCount = 0
 
-        while (matcher.find()) {
-            val staticPart = pathname.substring(end, matcher.start())
+        val pathname = this.path.toString().lowercase()
 
-            if (staticPart.isNotEmpty()) {
-                route.append(Pattern.quote(staticPart))
+        for (match in input.findAll(pathname)) {
+            val group1 = match.groups[1]
+            val group2 = match.groups[2]
 
-                val parts = staticPart.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                for (part in parts) {
-                    if (part.isNotEmpty()) {
-                        staticChars += part.length
-                        staticCount++
+            when {
+                group1 != null -> {
+                    val value = group1.value
 
-                        if (staticFirst == Int.MAX_VALUE) {
-                            staticFirst = segmentCount
+                    route.append(Regex.escape(value))
+
+                    value
+                        .split("/+".toRegex())
+                        .map(String::trim)
+                        .filter(String::isNotEmpty)
+                        .forEach {
+                            staticChars += it.length
+                            staticCount++
+
+                            if (staticFirst == Int.MAX_VALUE) {
+                                staticFirst = segmentCount
+                            }
+
+                            segmentCount++
                         }
-
-                        segmentCount++
-                    }
                 }
-            }
 
-            val parameter = matcher.group(1).trim { it <= ' ' }
+                group2 != null -> {
+                    val name = group2.value
 
-            val collecting: Boolean
-            if (parameter.isNotEmpty()) {
-                collecting = parameter.endsWith("+")
+                    val collecting: Boolean
+                    if (name.isNotEmpty()) {
+                        collecting = name.endsWith("+")
 
-                val name =
-                    if (collecting) parameter.substring(0, parameter.length - 1)
-                    else parameter
+                        val name =
+                            if (collecting) name.substring(0, name.length - 1)
+                            else name
 
-                parameters[name.lowercase()] = Parameter(parameterCount, collecting)
-            } else {
-                collecting = false
-            }
-
-            route.append(if (collecting) "(.*)" else "([^\\/]+)")
-
-            if (collecting) {
-                collectingCount++
-            }
-
-            parameterCount++
-            segmentCount++
-
-            end = matcher.end()
-        }
-
-        val tail = pathname.substring(end)
-        if (tail.isNotEmpty()) route.append(Pattern.quote(tail))
-        route.append("$")
-
-        if (tail.isNotEmpty()) {
-            val parts = tail.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-
-            for (part in parts) {
-                if (part.isNotEmpty()) {
-                    staticChars += part.length
-                    staticCount++
-
-                    if (staticFirst == Int.MAX_VALUE) {
-                        staticFirst = segmentCount
+                        parameters[name.lowercase()] = Parameter(parameterCount, collecting)
+                    } else {
+                        collecting = false
                     }
 
+                    val last = match.range.endExclusive == pathname.length
+
+                    route.append(if (collecting) if (last) "(.*)" else "(.+)" else "([^\\/]+)")
+
+                    if (collecting) {
+                        collectingCount++
+                    }
+
+                    parameterCount++
                     segmentCount++
                 }
             }
         }
 
-        pattern = Pattern.compile(route.toString())
+        route.append("$")
+
+        regex = route.toString().toRegex(RegexOption.IGNORE_CASE)
 
         var score = 0
 
@@ -116,28 +101,20 @@ class Pathname(path: Path) : Comparable<Pathname> {
         index = staticFirst
     }
 
-    fun matches(path: String): Boolean {
-        return pattern.matcher(path.lowercase()).matches()
+    operator fun contains(path: String): Boolean {
+        return regex.matches(path)
     }
 
-    fun get(path: String, name: String): Any? {
-        if (name !in parameters) {
-            return null
-        }
+    operator fun get(path: String, name: String): Any? {
+        val parameter = parameters[name] ?: return null
+        val match = regex.matchEntire(path) ?: return null
+        val value = match.groupValues[parameter.index + 1]
 
-        val matcher = pattern.matcher(path)
-        if (!matcher.matches()) {
-            return null
-        }
-
-        val parameter = parameters[name]!!
-
-        val value = matcher.group(parameter.index + 1)
         if (!parameter.collecting) {
             return value
         }
 
-        return value.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        return value.split("/+".toRegex()).toTypedArray()
     }
 
     override fun compareTo(other: Pathname): Int {

@@ -15,6 +15,11 @@ class ResponseWriter(
     }
 
     fun write(response: Response) {
+        if (response.protocol == Version.HTTP_0_9) {
+            response.body?.write(channel)
+            return
+        }
+
         val writer = Channels.newWriter(channel, Charsets.UTF_8)
 
         writer.write("${response.protocol} ${response.statusCode} ${response.statusText}\r\n")

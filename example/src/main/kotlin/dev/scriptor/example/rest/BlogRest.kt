@@ -1,14 +1,14 @@
 package dev.scriptor.example.rest
 
-import dev.scriptor.server.annotation.Endpoint
+import dev.scriptor.server.annotation.Controller
+import dev.scriptor.server.annotation.Get
 import dev.scriptor.server.annotation.PathParameter
-import dev.scriptor.server.annotation.Resource
 import org.json.JSONObject
 
-@Endpoint("/blog")
+@Controller("/blog")
 class BlogRest {
 
-    @Resource("/", result = "text/html")
+    @Get("/", result = "text/html")
     fun getList(): String = """
         <!DOCTYPE html>
         <html>
@@ -26,7 +26,7 @@ class BlogRest {
         </html>
     """.trimIndent()
 
-    @Resource("/[slug+]", result = "text/html")
+    @Get("/[slug+]", result = "text/html")
     fun getArticle(@PathParameter slug: Array<String>): String = """
         <!DOCTYPE html>
         <html>
@@ -40,7 +40,7 @@ class BlogRest {
         </html>
     """.trimIndent()
 
-    @Resource("/[slug+]/metadata", result = "application/json")
+    @Get("/[slug+]/metadata", result = "application/json")
     fun getArticleMetadata(@PathParameter slug: Array<String>): JSONObject {
         val json = JSONObject()
         json.put("title", slug[slug.size - 1])
@@ -49,7 +49,7 @@ class BlogRest {
         return json
     }
 
-    @Resource("/[slug+]/metadata/text", result = "text/plain")
+    @Get("/[slug+]/metadata/text", result = "text/plain")
     fun getArticleMetadataText(@PathParameter slug: Array<String>): String {
         return "title: ${slug[slug.size - 1]}, slug: ${slug.contentToString()}"
     }

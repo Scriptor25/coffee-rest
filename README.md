@@ -1,15 +1,15 @@
 # Coffee Rest - Kotlin (JVM) HTTP Rest Server
 
 ```kotlin
-@Endpoint("/")
+@Controller("/")
 class HelloWorldRest {
 
-    @Resource("/")
+    @Get("/")
     fun getHelloWorld(): String {
         return "Hello World!"
     }
 
-    @Resource("/something", POST)
+    @Post("/something")
     context(body: JSONObject)
     fun postSomething(): HTTPResultUnit {
         // do something with `body` ...

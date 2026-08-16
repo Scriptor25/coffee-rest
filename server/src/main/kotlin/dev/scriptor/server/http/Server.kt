@@ -16,12 +16,14 @@ import java.io.IOException
 import java.lang.AutoCloseable
 import java.lang.reflect.InvocationTargetException
 import java.net.InetSocketAddress
+import java.nio.channels.SeekableByteChannel
 import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.util.*
 import java.util.concurrent.*
 import java.util.logging.Logger
 import kotlin.concurrent.timerTask
+import kotlin.io.path.Path
 import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
 import kotlin.reflect.KParameter.Kind.*
@@ -40,7 +42,7 @@ class Server(
 
     private val server = ServerSocketChannel.open()
 
-    private val routes = mutableMapOf<Method, MutableList<Route>>()
+    private val routes = mutableMapOf<Method, MutableList<RouteMetadata>>()
 
     private val timer = Timer()
     private val tasks = mutableMapOf<String, TimerTask>()
@@ -76,21 +78,21 @@ class Server(
     }
 
     fun register(
-        instance: Any,
+        instance: Any?,
         callee: KCallable<*>,
-        endpoint: String,
-        resource: Resource,
+        base: String,
+        route: Route,
     ) {
-        val route = Route(
+        val metadata = RouteMetadata(
             instance,
             callee,
-            Pathname(endpoint, resource.path),
-            resource.method,
-            resource.accept,
-            resource.result
+            Pathname(Path(base, route.path)),
+            route.method,
+            route.accept,
+            route.result
         )
 
-        routes.computeIfAbsent(resource.method) { mutableListOf() } += route
+        routes.computeIfAbsent(route.method) { mutableListOf() } += metadata
     }
 
     fun check() {
@@ -172,7 +174,7 @@ class Server(
 
         headers["access-control-allow-methods"] =
             routes
-                .filter { (_, value) -> value.any { it.pathname.matches(request.path) } }
+                .filter { (_, value) -> value.any { request.path in it.pathname } }
                 .map { it.key }
                 .plusElement(Method.OPTIONS)
                 .joinToString(", ")
@@ -192,7 +194,7 @@ class Server(
 
     private fun getArguments(
         request: Request,
-        route: Route,
+        route: RouteMetadata,
         parameters: List<KParameter>,
         arguments: Array<Any?>,
     ) {
@@ -227,7 +229,7 @@ class Server(
                             val name = parameter.findAnnotation<PathParameter>()!!.value.ifEmpty { parameter.name!! }
 
                             typename = "path $name"
-                            value = route.pathname.get(request.path, name)
+                            value = route.pathname[request.path, name]
                         }
 
                         parameter.hasAnnotation<QueryParameter>() -> {
@@ -297,7 +299,7 @@ class Server(
         val candidate = routes
             .computeIfAbsent(request.method) { mutableListOf() }
             .stream()
-            .filter { it.pathname.matches(request.path) }
+            .filter { request.path in it.pathname }
             .max(Comparator.naturalOrder())
 
         if (candidate.isEmpty) {
@@ -334,11 +336,11 @@ class Server(
             return Result(
                 result.statusCode,
                 result.statusText,
-                if (route.result == "*/*") result.contentType else route.result,
+                if (route.result == "*/*")
+                    result.contentType
+                else route.result,
                 result.headers,
                 result.channel,
-                result.position,
-                result.count,
             )
         } catch (s: Signal) {
             return s.generate()
@@ -351,7 +353,12 @@ class Server(
     private fun handle(channel: SocketChannel, request: Request): Boolean {
         log.info("${request.method} ${request.path} ${request.protocol}")
 
-        val keepAlive = request.headers["connection"]?.lowercase() != "close"
+        val connection = request.headers["connection"]?.lowercase()
+        val keepAlive = when (request.protocol) {
+            Version.HTTP_0_9 -> false
+            Version.HTTP_1_0 -> connection == "keep-alive"
+            Version.HTTP_1_1 -> connection != "close"
+        }
 
         val result = when (request.method) {
             Method.OPTIONS -> getOptions(request)
@@ -366,23 +373,27 @@ class Server(
                 headers["content-type"] = result.contentType
             }
 
-            var chunked = false
-            if ("content-length" !in headers && "transfer-encoding" !in headers) {
-                chunked = result.count < 0
+            val length = when (val c = result.channel) {
+                is SeekableByteChannel -> c.size() - c.position()
+                is RangeReadableByteChannel -> c.remaining
+                else -> -1L
+            }
 
+            val chunked = if ("transfer-encoding" in headers) {
+                headers["transfer-encoding"] == "chunked"
+            } else {
+                length < 0L
+            }
+
+            if ("content-length" !in headers && "transfer-encoding" !in headers) {
                 if (chunked) {
                     headers["transfer-encoding"] = "chunked"
                 } else {
-                    headers["content-length"] = result.count.toString()
+                    headers["content-length"] = length.toString()
                 }
             }
 
-            body = MessageBody(
-                result.channel,
-                result.position,
-                result.count,
-                chunked,
-            )
+            body = MessageBody(result.channel, chunked)
         } else {
             body = null
         }
@@ -392,7 +403,7 @@ class Server(
         }
 
         val response = Response(
-            "HTTP/1.1",
+            request.protocol,
             result.statusCode,
             result.statusText,
             headers,

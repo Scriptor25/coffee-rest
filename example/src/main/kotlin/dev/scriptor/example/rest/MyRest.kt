@@ -2,7 +2,6 @@ package dev.scriptor.example.rest
 
 import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.annotation.*
-import dev.scriptor.server.http.Method.POST
 import dev.scriptor.server.result.UnitResult
 import org.json.JSONObject
 import java.io.InputStream
@@ -10,20 +9,15 @@ import java.net.HttpURLConnection
 import java.net.URI
 import java.util.logging.Logger
 
-@Endpoint("/my")
+@Controller("/my")
 class MyRest {
 
-    @Resource("/hello", result = "text/html")
+    @Get("/hello", result = "text/html")
     fun getHello(): InputStream =
         ClassLoader.getSystemResourceAsStream("hello.html")
             ?: throw NotFoundSignal()
 
-    @Resource(
-        "/message/[from]/[to]",
-        POST,
-        "text/plain",
-        "text/plain",
-    )
+    @Post("/message/[from]/[to]", "text/plain", "text/plain")
     context(log: Logger)
     fun postMessage(
         @PathParameter from: String,
@@ -37,7 +31,7 @@ class MyRest {
         return UnitResult(201, "Message Sent")
     }
 
-    @Resource("/random-quote", result = "text/html")
+    @Get("/random-quote", result = "text/html")
     context(log: Logger)
     fun getRandomQuote(): String {
         val url = URI("https://dummyjson.com/quotes/random").toURL()
@@ -68,7 +62,7 @@ class MyRest {
         """.trimIndent()
     }
 
-    @Resource("/fib([n])", result = "text/plain")
+    @Get("/fib([n])", result = "text/plain")
     fun getFib(@PathParameter n: Int): Int {
         var a = 0
         var b = 1

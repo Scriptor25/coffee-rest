@@ -2,16 +2,16 @@ package dev.scriptor.server.http
 
 import kotlin.reflect.KCallable
 
-data class Route(
-    val instance: Any,
+data class RouteMetadata(
+    val instance: Any?,
     val callee: KCallable<*>,
     val pathname: Pathname,
     val method: Method,
     val accept: String,
     val result: String
-) : Comparable<Route> {
+) : Comparable<RouteMetadata> {
 
-    override fun compareTo(other: Route): Int {
+    override fun compareTo(other: RouteMetadata): Int {
         return this.pathname.compareTo(other.pathname)
     }
 

@@ -1,6 +1,6 @@
 package dev.scriptor.server
 
-class ParameterList : Iterable<Map.Entry<String, List<String>>> {
+class ParameterList {
 
     private val map: MutableMap<String, MutableList<String>>
 
@@ -13,6 +13,13 @@ class ParameterList : Iterable<Map.Entry<String, List<String>>> {
             .mapKeys { it.key.lowercase() }
             .mapValues { it.value.toMutableList() }
             .toMutableMap()
+    }
+
+    constructor(pairs: List<Pair<String, String>>) {
+        this.map = mutableMapOf()
+        for ((key, value) in pairs) {
+            this.map.computeIfAbsent(key.lowercase()) { mutableListOf() }.add(value)
+        }
     }
 
     constructor(vararg pairs: Pair<String, String>) {
@@ -40,5 +47,5 @@ class ParameterList : Iterable<Map.Entry<String, List<String>>> {
 
     fun getAll(key: String): List<String> = map[key.lowercase()].orEmpty()
 
-    override fun iterator(): Iterator<Map.Entry<String, List<String>>> = map.iterator()
+    operator fun iterator() = map.iterator()
 }

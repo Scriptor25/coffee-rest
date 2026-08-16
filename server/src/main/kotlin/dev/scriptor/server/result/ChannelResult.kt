@@ -10,16 +10,12 @@ class ChannelResult : Result {
         statusText: String = "OK",
         contentType: String = "application/octet-stream",
         headers: ParameterList = ParameterList(),
-        value: ReadableByteChannel? = null,
-        position: Long = 0L,
-        count: Long = -1L,
+        value: ReadableByteChannel,
     ) : super(
         statusCode,
         statusText,
         contentType,
         headers,
         value,
-        position,
-        count,
     )
 }

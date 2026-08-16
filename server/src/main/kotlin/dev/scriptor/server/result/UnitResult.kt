@@ -14,7 +14,5 @@ class UnitResult : Result {
         "*/*",
         headers,
         null,
-        0L,
-        0L,
     )
 }
