@@ -12,11 +12,11 @@ fun getType(type: KType): Type {
     }
 }
 
-fun getType(id: ClassId, type: KType): Type {
+fun getType(cls: ClassId, type: KType): Type {
     val nullable = type.isMarkedNullable
 
     return when (val classifier = type.classifier) {
-        is KTypeParameter -> getType(id, classifier, nullable)
+        is KTypeParameter -> getType(cls, classifier, nullable)
         is KClass<*> -> getType(classifier, type.arguments, nullable)
 
         else -> error("unsupported classifier $classifier")
