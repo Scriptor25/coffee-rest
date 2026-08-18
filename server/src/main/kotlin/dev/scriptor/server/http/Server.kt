@@ -56,6 +56,9 @@ class Server(
         queue
     )
 
+    private var next = 0L
+    private val nextHeap = mutableSetOf<Long>()
+
     private var running: Boolean = false
 
     init {
@@ -88,8 +91,8 @@ class Server(
             callee,
             Pathname(Path(base, route.path)),
             route.method,
-            route.accept,
-            route.result
+            route.accept.ifEmpty { null },
+            route.result.ifEmpty { null },
         )
 
         routes.computeIfAbsent(route.method) { mutableListOf() } += metadata
@@ -157,14 +160,27 @@ class Server(
     private fun handle(channel: SocketChannel) {
         val reader = RequestReader(BufferedReadableByteChannel(channel))
 
-        var ok = true
-        while (ok) {
+        val id = if (nextHeap.isNotEmpty()) {
+            val key = nextHeap.min()
+            nextHeap.remove(key)
+            key
+        } else next++
+
+        log.fine("#$id connect")
+
+        var alive = true
+        while (alive) {
             val request = reader.read() ?: break
 
-            val delta = measureTime { ok = handle(channel, request) }
+            log.info("#$id $request")
 
-            log.fine("request time $delta")
+            val delta = measureTime { alive = handle(channel, request) }
+
+            log.fine("#$id $delta (${if (alive) "keep-alive" else "close"})")
         }
+
+        log.fine("#$id disconnect")
+        nextHeap.add(id)
     }
 
     private fun getOptions(request: Request): Result {
@@ -184,10 +200,37 @@ class Server(
 
         val headers = ParameterList(
             "access-control-allow-origin" to "*",
-            "access-control-allow-methods" to (methods + Method.OPTIONS).joinToString(", "),
+            "access-control-allow-methods" to (methods + Method.HEAD + Method.OPTIONS).joinToString(", "),
             "access-control-allow-headers" to (request.headers["access-control-request-headers"] ?: "*"),
             "access-control-max-age" to "3600",
         )
+
+        return NoContentSignal(headers).generate()
+    }
+
+    private fun getHeaders(request: Request): Result {
+
+        val candidates = routes
+            .computeIfAbsent(Method.GET) { mutableListOf() }
+            .filter {
+                when (val target = request.target) {
+                    is OriginRequestTarget -> target.path in it.pathname
+                    else -> false
+                }
+            }
+
+        val route = candidates.maxOrNull()
+            ?: return NotFoundSignal().generate()
+
+        val headers = ParameterList()
+
+        if (route.accept != null) {
+            headers["accept"] = route.accept
+        }
+
+        if (route.result != null) {
+            headers["content-type"] = route.result
+        }
 
         return NoContentSignal(headers).generate()
     }
@@ -302,12 +345,16 @@ class Server(
             .filter {
                 when (val target = request.target) {
                     is OriginRequestTarget -> target.path in it.pathname
-                    is AuthorityRequestTarget -> true
                     else -> false
                 }
             }
 
-        val route = candidates.maxOrNull() ?: return NotFoundSignal().generate()
+        if (request.method == Method.HEAD && candidates.isEmpty()) {
+            return getHeaders(request)
+        }
+
+        val route = candidates.maxOrNull()
+            ?: return NotFoundSignal().generate()
 
         val parameters = route.callee.parameters
         val arguments = arrayOfNulls<Any>(parameters.size)
@@ -344,9 +391,7 @@ class Server(
             return Result(
                 result.statusCode,
                 result.statusText,
-                if (route.result == "*/*")
-                    result.contentType
-                else route.result,
+                route.result ?: result.contentType,
                 result.headers,
                 result.channel,
             )
@@ -359,8 +404,6 @@ class Server(
     }
 
     private fun handle(channel: SocketChannel, request: Request): Boolean {
-        log.info("$request")
-
         val connection = request.headers["connection"]?.lowercase()
         val keepAlive = when (request.protocol) {
             Version.HTTP_0_9 -> false
@@ -388,7 +431,7 @@ class Server(
 
         if (result.channel != null) {
             if ("content-type" !in headers) {
-                headers["content-type"] = result.contentType
+                headers["content-type"] = result.contentType ?: "*/*"
             }
 
             val length = when (val c = result.channel) {

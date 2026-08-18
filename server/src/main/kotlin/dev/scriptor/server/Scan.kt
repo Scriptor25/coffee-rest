@@ -70,22 +70,22 @@ private fun scan(server: Server, base: String, instance: Any?, function: KFuncti
             is Delete -> Route(
                 annotation.path,
                 Method.DELETE,
-                annotation.accept,
+                "",
                 annotation.result,
             )
 
             is Get -> Route(
                 annotation.path,
                 Method.GET,
-                annotation.accept,
+                "",
                 annotation.result,
             )
 
             is Head -> Route(
                 annotation.path,
                 Method.HEAD,
-                annotation.accept,
-                annotation.result,
+                "",
+                "",
             )
 
             is Patch -> Route(

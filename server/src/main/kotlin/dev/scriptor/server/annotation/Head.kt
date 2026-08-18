@@ -8,6 +8,4 @@ package dev.scriptor.server.annotation
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Head(
     val path: String,
-    val accept: String = "*/*",
-    val result: String = "*/*",
 )

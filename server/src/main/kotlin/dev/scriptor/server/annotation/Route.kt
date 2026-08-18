@@ -11,6 +11,6 @@ import dev.scriptor.server.http.Method
 annotation class Route(
     val path: String,
     val method: Method = Method.GET,
-    val accept: String = "*/*",
-    val result: String = "*/*",
+    val accept: String = "",
+    val result: String = "",
 )

@@ -118,10 +118,10 @@ class Pathname(path: Path) : Comparable<Pathname> {
     }
 
     override fun compareTo(other: Pathname): Int {
-        if (this.priority != other.priority) {
-            return this.priority.compareTo(other.priority)
+        if (priority != other.priority) {
+            return priority.compareTo(other.priority)
         }
-        return other.index.compareTo(this.index)
+        return other.index.compareTo(index)
     }
 
     override fun toString(): String {

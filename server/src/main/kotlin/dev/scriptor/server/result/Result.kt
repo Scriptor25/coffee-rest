@@ -8,7 +8,7 @@ open class Result {
     val statusCode: Int
     val statusText: String
 
-    val contentType: String
+    val contentType: String?
 
     val headers: ParameterList
 
@@ -17,7 +17,7 @@ open class Result {
     constructor(
         statusCode: Int = 200,
         statusText: String = "OK",
-        contentType: String = "*/*",
+        contentType: String? = null,
         headers: ParameterList = ParameterList(),
         channel: ReadableByteChannel?,
     ) {

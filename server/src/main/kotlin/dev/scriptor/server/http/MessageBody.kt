@@ -57,7 +57,8 @@ data class MessageBody(
 
                 buffer.flip()
 
-                writer.write("${count.toString(0x10)}\r\n")
+                writer.write(count.toString(0x10))
+                writer.write("\r\n")
                 writer.flush()
 
                 while (buffer.hasRemaining()) {

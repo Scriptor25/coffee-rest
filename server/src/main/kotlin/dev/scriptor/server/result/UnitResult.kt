@@ -11,7 +11,7 @@ class UnitResult : Result {
     ) : super(
         statusCode,
         statusText,
-        "*/*",
+        null,
         headers,
         null,
     )

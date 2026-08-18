@@ -8,6 +8,6 @@ package dev.scriptor.server.annotation
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Put(
     val path: String,
-    val accept: String = "*/*",
-    val result: String = "*/*",
+    val accept: String = "",
+    val result: String = "",
 )

@@ -7,12 +7,12 @@ data class RouteMetadata(
     val callee: KCallable<*>,
     val pathname: Pathname,
     val method: Method,
-    val accept: String,
-    val result: String
+    val accept: String?,
+    val result: String?,
 ) : Comparable<RouteMetadata> {
 
     override fun compareTo(other: RouteMetadata): Int {
-        return this.pathname.compareTo(other.pathname)
+        return pathname.compareTo(other.pathname)
     }
 
     override fun toString(): String {

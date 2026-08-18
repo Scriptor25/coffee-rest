@@ -2,7 +2,6 @@ package dev.scriptor.example.rest
 
 import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.annotation.*
-import dev.scriptor.server.result.UnitResult
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -17,18 +16,17 @@ class MyRest {
         ClassLoader.getSystemResourceAsStream("hello.html")
             ?: throw NotFoundSignal()
 
-    @Post("/message/[from]/[to]", "text/plain", "text/plain")
+    @Post("/message/[from]/[to]", accept = "text/plain")
     context(log: Logger)
     fun postMessage(
         @PathParameter from: String,
         @PathParameter to: String,
         @Header("content-length") contentLength: Int,
         @Body body: InputStream,
-    ): UnitResult {
+    ) {
         val bytes = body.readNBytes(contentLength)
         val message = bytes.decodeToString()
         log.info("message (from $from to $to): $message")
-        return UnitResult(201, "Message Sent")
     }
 
     @Get("/random-quote", result = "text/html")
