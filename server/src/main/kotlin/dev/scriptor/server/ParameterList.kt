@@ -42,7 +42,15 @@ class ParameterList {
     operator fun contains(key: String): Boolean = map[key.lowercase()].orEmpty().isNotEmpty()
 
     fun append(key: String, value: String) {
+        add(key, value)
+    }
+
+    fun add(key: String, value: String) {
         map.computeIfAbsent(key.lowercase()) { mutableListOf() }.add(value)
+    }
+
+    fun addAll(key: String, values: List<String>) {
+        map.computeIfAbsent(key.lowercase()) { mutableListOf() }.addAll(values)
     }
 
     fun getAll(key: String): List<String> = map[key.lowercase()].orEmpty()

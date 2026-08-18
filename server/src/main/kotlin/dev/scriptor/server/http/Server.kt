@@ -11,7 +11,6 @@ import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.converter.ConverterFn
 import dev.scriptor.server.result.Result
-import dev.scriptor.server.result.UnitResult
 import java.io.IOException
 import java.lang.AutoCloseable
 import java.lang.reflect.InvocationTargetException
@@ -31,6 +30,7 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
+import kotlin.time.Clock
 import kotlin.time.measureTime
 
 class Server(
@@ -168,32 +168,33 @@ class Server(
     }
 
     private fun getOptions(request: Request): Result {
-        val headers = ParameterList()
 
-        headers["access-control-allow-origin"] = "*"
-
-        headers["access-control-allow-methods"] =
-            routes
-                .filter { (_, value) -> value.any { request.path in it.pathname } }
+        val methods = when (val target = request.target) {
+            is OriginRequestTarget -> routes
+                .filterValues { values -> values.any { target.path in it.pathname } }
                 .map { it.key }
-                .plusElement(Method.OPTIONS)
-                .joinToString(", ")
+                .toSet()
 
-        request.headers["access-control-request-headers"]?.let {
-            headers["access-control-allow-headers"] = it
+            is AsteriskRequestTarget -> routes
+                .map { it.key }
+                .toSet()
+
+            else -> error("unsupported request target '$target'")
         }
 
-        headers["access-control-max-age"] = "3600"
-
-        return UnitResult(
-            204,
-            "No Content",
-            headers,
+        val headers = ParameterList(
+            "access-control-allow-origin" to "*",
+            "access-control-allow-methods" to (methods + Method.OPTIONS).joinToString(", "),
+            "access-control-allow-headers" to (request.headers["access-control-request-headers"] ?: "*"),
+            "access-control-max-age" to "3600",
         )
+
+        return NoContentSignal(headers).generate()
     }
 
     private fun getArguments(
         request: Request,
+        path: String,
         route: RouteMetadata,
         parameters: List<KParameter>,
         arguments: Array<Any?>,
@@ -229,7 +230,7 @@ class Server(
                             val name = parameter.findAnnotation<PathParameter>()!!.value.ifEmpty { parameter.name!! }
 
                             typename = "path $name"
-                            value = route.pathname[request.path, name]
+                            value = route.pathname[path, name]
                         }
 
                         parameter.hasAnnotation<QueryParameter>() -> {
@@ -296,23 +297,30 @@ class Server(
 
     private fun getResult(request: Request): Result {
 
-        val candidate = routes
+        val candidates = routes
             .computeIfAbsent(request.method) { mutableListOf() }
-            .stream()
-            .filter { request.path in it.pathname }
-            .max(Comparator.naturalOrder())
+            .filter {
+                when (val target = request.target) {
+                    is OriginRequestTarget -> target.path in it.pathname
+                    is AuthorityRequestTarget -> true
+                    else -> false
+                }
+            }
 
-        if (candidate.isEmpty) {
-            return NotFoundSignal().generate()
-        }
+        val route = candidates.maxOrNull() ?: return NotFoundSignal().generate()
 
-        val route = candidate.get()
         val parameters = route.callee.parameters
         val arguments = arrayOfNulls<Any>(parameters.size)
+
+        val path = when (val target = request.target) {
+            is OriginRequestTarget -> target.path
+            else -> "/"
+        }
 
         try {
             getArguments(
                 request,
+                path,
                 route,
                 parameters,
                 arguments,
@@ -351,7 +359,7 @@ class Server(
     }
 
     private fun handle(channel: SocketChannel, request: Request): Boolean {
-        log.info("${request.method} ${request.path} ${request.protocol}")
+        log.info("$request")
 
         val connection = request.headers["connection"]?.lowercase()
         val keepAlive = when (request.protocol) {
@@ -361,12 +369,22 @@ class Server(
         }
 
         val result = when (request.method) {
+            Method.CONNECT -> MethodNotAllowedSignal().generate()
             Method.OPTIONS -> getOptions(request)
             else -> getResult(request)
         }
 
         val headers = ParameterList(result.headers)
         val body: MessageBody?
+
+        if ("date" !in headers) {
+            val now = Clock.System.now()
+            headers["date"] = now.toHTTP()
+        }
+
+        if ("server" !in headers) {
+            headers["server"] = "coffee-rest/1.0.0"
+        }
 
         if (result.channel != null) {
             if ("content-type" !in headers) {
@@ -396,10 +414,6 @@ class Server(
             body = MessageBody(result.channel, chunked)
         } else {
             body = null
-        }
-
-        if ("access-control-allow-origin" !in headers) {
-            headers["access-control-allow-origin"] = "*"
         }
 
         val response = Response(

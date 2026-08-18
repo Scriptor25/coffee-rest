@@ -67,13 +67,6 @@ private fun scan(server: Server, base: String, instance: Any?, function: KFuncti
         route = when (annotation) {
             is Route -> annotation
 
-            is Connect -> Route(
-                annotation.path,
-                Method.CONNECT,
-                annotation.accept,
-                annotation.result,
-            )
-
             is Delete -> Route(
                 annotation.path,
                 Method.DELETE,
@@ -95,13 +88,6 @@ private fun scan(server: Server, base: String, instance: Any?, function: KFuncti
                 annotation.result,
             )
 
-            is Options -> Route(
-                annotation.path,
-                Method.OPTIONS,
-                annotation.accept,
-                annotation.result,
-            )
-
             is Patch -> Route(
                 annotation.path,
                 Method.PATCH,
@@ -119,13 +105,6 @@ private fun scan(server: Server, base: String, instance: Any?, function: KFuncti
             is Put -> Route(
                 annotation.path,
                 Method.PUT,
-                annotation.accept,
-                annotation.result,
-            )
-
-            is Trace -> Route(
-                annotation.path,
-                Method.TRACE,
                 annotation.accept,
                 annotation.result,
             )
