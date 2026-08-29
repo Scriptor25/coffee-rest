@@ -15,7 +15,7 @@ class RootRest {
         ClassLoader.getSystemResourceAsStream("favicon.svg")
             ?: throw NotFoundSignal()
 
-    @Get("/[slug+]")
+    @Get("/something/[slug+]")
     context(log: Logger)
     fun getSomething(@PathParameter slug: Array<String>) {
         log.info(slug.contentToString())

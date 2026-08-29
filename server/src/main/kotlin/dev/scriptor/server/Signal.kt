@@ -8,7 +8,7 @@ sealed class Signal(
     val code: Int,
     val text: String,
     val headers: ParameterList,
-    val content: Any?,
+    val content: Any? = null,
 ) : Throwable("$code - $text") {
 
     fun generate(): Result {
@@ -19,6 +19,7 @@ sealed class Signal(
                 code,
                 text,
                 headers,
+                content !is Unit,
             )
 
             is String -> StringResult(
@@ -55,56 +56,75 @@ sealed class Signal(
 /**
  * 100 - 199
  */
-sealed class InformationSignal(code: Int, text: String, headers: ParameterList, content: Any?) :
-    Signal(code, text, headers, content)
+sealed class InformationSignal(
+    code: Int,
+    text: String,
+    headers: ParameterList,
+) : Signal(code, text, headers, Unit)
 
 /**
  * 200 - 299
  */
-sealed class SuccessSignal(code: Int, text: String, headers: ParameterList, content: Any?) :
-    Signal(code, text, headers, content)
+sealed class SuccessSignal(
+    code: Int,
+    text: String,
+    headers: ParameterList,
+    content: Any?,
+) : Signal(code, text, headers, content)
 
 /**
  * 300 - 399
  */
-sealed class RedirectSignal(code: Int, text: String, headers: ParameterList, content: Any?) :
-    Signal(code, text, headers, content)
+sealed class RedirectSignal(
+    code: Int,
+    text: String,
+    headers: ParameterList,
+    content: Any?,
+) : Signal(code, text, headers, content)
 
 /**
  * 400 - 499
  */
-sealed class ClientErrorSignal(code: Int, text: String, headers: ParameterList, content: Any?) :
-    Signal(code, text, headers, content)
+sealed class ClientErrorSignal(
+    code: Int,
+    text: String,
+    headers: ParameterList,
+    content: Any?,
+) : Signal(code, text, headers, content)
 
 /**
  * 500 - 599
  */
-sealed class ServerErrorSignal(code: Int, text: String, headers: ParameterList, content: Any?) :
-    Signal(code, text, headers, content)
+sealed class ServerErrorSignal(
+    code: Int,
+    text: String,
+    headers: ParameterList,
+    content: Any?,
+) : Signal(code, text, headers, content)
 
 /**
  * 100 - Continue
  */
-class ContinueSignal(headers: ParameterList = ParameterList(), content: Any? = null) :
-    InformationSignal(100, "Continue", headers, content)
+class ContinueSignal(headers: ParameterList = ParameterList()) :
+    InformationSignal(100, "Continue", headers)
 
 /**
  * 101 - Switching Protocols
  */
-class SwitchingProtocolsSignal(headers: ParameterList = ParameterList(), content: Any? = null) :
-    InformationSignal(101, "Switching Protocols", headers, content)
+class SwitchingProtocolsSignal(headers: ParameterList = ParameterList()) :
+    InformationSignal(101, "Switching Protocols", headers)
 
 /**
  * 102 - Processing
  */
-class ProcessingSignal(headers: ParameterList = ParameterList(), content: Any? = null) :
-    InformationSignal(102, "Processing", headers, content)
+class ProcessingSignal(headers: ParameterList = ParameterList()) :
+    InformationSignal(102, "Processing", headers)
 
 /**
  * 103 - Early Hints
  */
-class EarlyHintsSignal(headers: ParameterList = ParameterList(), content: Any? = null) :
-    InformationSignal(103, "Early Hints", headers, content)
+class EarlyHintsSignal(headers: ParameterList = ParameterList()) :
+    InformationSignal(103, "Early Hints", headers)
 
 /**
  * 200 - OK
@@ -193,8 +213,8 @@ class SeeOtherSignal(headers: ParameterList = ParameterList(), content: Any? = n
 /**
  * 304 - Not Modified
  */
-class NotModifiedSignal(headers: ParameterList = ParameterList(), content: Any? = null) :
-    RedirectSignal(304, "Not Modified", headers, content)
+class NotModifiedSignal(headers: ParameterList = ParameterList()) :
+    RedirectSignal(304, "Not Modified", headers, Unit)
 
 /**
  * 307 - Temporary Redirect

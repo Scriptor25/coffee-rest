@@ -8,9 +8,11 @@ class UnitResult : Result {
         statusCode: Int = 204,
         statusText: String = "No Content",
         headers: ParameterList = ParameterList(),
+        contentLength: Boolean = false,
     ) : super(
         statusCode,
         statusText,
+        contentLength,
         null,
         headers,
         null,

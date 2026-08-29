@@ -17,6 +17,7 @@ class StreamResult : Result {
     ) : super(
         statusCode,
         statusText,
+        true,
         contentType,
         headers,
         when {

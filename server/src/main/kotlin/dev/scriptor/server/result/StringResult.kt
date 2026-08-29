@@ -30,6 +30,7 @@ class StringResult : Result {
     ) : super(
         statusCode,
         statusText,
+        true,
         contentType,
         headers,
         channel(value),

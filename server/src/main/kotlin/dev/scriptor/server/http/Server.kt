@@ -391,6 +391,7 @@ class Server(
             return Result(
                 result.statusCode,
                 result.statusText,
+                result.contentLength,
                 route.result ?: result.contentType,
                 result.headers,
                 result.channel,
@@ -457,6 +458,15 @@ class Server(
             body = MessageBody(result.channel, chunked)
         } else {
             body = null
+
+            if (
+                "content-length" !in headers
+                && "transfer-encoding" !in headers
+                && result.contentLength
+                && request.method != Method.HEAD
+            ) {
+                headers["content-length"] = "0"
+            }
         }
 
         val response = Response(

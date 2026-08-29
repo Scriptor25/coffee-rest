@@ -14,6 +14,7 @@ class ChannelResult : Result {
     ) : super(
         statusCode,
         statusText,
+        true,
         contentType,
         headers,
         value,

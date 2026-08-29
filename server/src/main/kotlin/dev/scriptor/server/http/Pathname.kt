@@ -72,7 +72,7 @@ class Pathname(path: Path) : Comparable<Pathname> {
                         collecting = false
                     }
 
-                    val last = match.range.endExclusive == pathname.length
+                    val last = (match.range.last + 1) == pathname.length
 
                     route.append(if (collecting) if (last) "(.*)" else "(.+)" else "([^\\/]+)")
 
