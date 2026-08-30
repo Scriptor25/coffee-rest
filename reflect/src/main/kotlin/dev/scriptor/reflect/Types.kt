@@ -5,7 +5,7 @@ import kotlin.reflect.KVariance
 private val assignableMap = mutableMapOf<Pair<Type, Type>, Boolean>()
 
 fun isAssignable(dst: Type, src: Type): Boolean {
-    if (dst to src in assignableMap) {
+    if ((dst to src) in assignableMap) {
         return assignableMap[dst to src]!!
     }
 
@@ -41,8 +41,8 @@ private fun isAssignable(dst: ClassReference, src: Type): Boolean {
             is StarProjection -> continue
 
             is TypeProjection -> when (srcArgument) {
-                // '*' cannot assign to anything
-                is StarProjection -> return false
+                // '*' can assign to anything
+                is StarProjection -> return true
 
                 is TypeProjection -> {
                     val dstType = dstArgument.type

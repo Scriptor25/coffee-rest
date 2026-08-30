@@ -48,7 +48,7 @@ class Provider {
         )
 
         val queue = ArrayDeque<Node>()
-        val visited = HashSet<Type>()
+        val visited = mutableSetOf<Type>()
 
         queue.add(Node(key.first, emptyList()))
 
@@ -203,7 +203,8 @@ class Provider {
         val src = getType<S>()
         val dst = getType<D>()
 
-        val convert = getConversion(src, dst) ?: error("no conversion path from $src to $dst")
+        val convert = getConversion(src, dst)
+            ?: error("no conversion path from $src to $dst")
 
         return convert(value) as D
     }

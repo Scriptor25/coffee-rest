@@ -3,18 +3,15 @@ package dev.scriptor.server.http
 import dev.scriptor.reflect.Type
 import dev.scriptor.reflect.getType
 import dev.scriptor.server.*
-import dev.scriptor.server.address.AddressType.*
-import dev.scriptor.server.address.normalizeIpv4
-import dev.scriptor.server.address.normalizeIpv6
-import dev.scriptor.server.address.normalizeName
-import dev.scriptor.server.address.parseAddressType
 import dev.scriptor.server.annotation.*
 import dev.scriptor.server.converter.ConverterFn
 import dev.scriptor.server.result.Result
 import java.io.IOException
 import java.lang.AutoCloseable
 import java.lang.reflect.InvocationTargetException
+import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.SocketAddress
 import java.nio.channels.SeekableByteChannel
 import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
@@ -27,18 +24,16 @@ import kotlin.reflect.KCallable
 import kotlin.reflect.KParameter
 import kotlin.reflect.KParameter.Kind.*
 import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.measureTime
 
-class Server(
-    val log: Logger,
-    val provider: Provider = Provider(),
-    val hostname: String = "0.0.0.0",
-    val port: Int = 8080,
-) : AutoCloseable {
+class Server : AutoCloseable {
+
+    val log: Logger
+    val provider: Provider
 
     private val server = ServerSocketChannel.open()
 
@@ -61,18 +56,49 @@ class Server(
 
     private var running: Boolean = false
 
-    init {
-        val addressType = parseAddressType(hostname)
-        val normalized = when (addressType) {
-            INVALID -> error("invalid hostname '$hostname'")
-            IPV4 -> normalizeIpv4(hostname)
-            IPV6 -> normalizeIpv6(hostname)
-            NAME -> normalizeName(hostname)
-        }
+    constructor(
+        log: Logger,
+        provider: Provider = Provider(),
+        port: Int,
+    ) : this(
+        log,
+        provider,
+        InetSocketAddress(port),
+    )
 
-        server.bind(InetSocketAddress(normalized, port))
+    constructor(
+        log: Logger,
+        provider: Provider = Provider(),
+        addr: InetAddress?,
+        port: Int,
+    ) : this(
+        log,
+        provider,
+        InetSocketAddress(addr, port),
+    )
 
-        log.info("server listening on ${if (':' in normalized) "[$normalized]" else normalized}:$port")
+    constructor(
+        log: Logger,
+        provider: Provider = Provider(),
+        hostname: String,
+        port: Int,
+    ) : this(
+        log,
+        provider,
+        InetSocketAddress(hostname, port),
+    )
+
+    constructor(
+        log: Logger,
+        provider: Provider = Provider(),
+        local: SocketAddress? = null,
+    ) {
+        this.log = log
+        this.provider = provider
+
+        server.bind(local)
+
+        log.info("server listening on http:/${server.localAddress}")
     }
 
     override fun close() {
@@ -106,14 +132,22 @@ class Server(
         }
     }
 
-    fun register(name: String, delay: Long, period: Long, callee: Runnable) {
-        val task = timerTask { callee.run() }
+    fun register(name: String, delay: Duration, period: Duration, callee: context(Server) () -> Unit) {
+        val task = timerTask { context(this) { callee() } }
+
         tasks[name] = task
-        timer.scheduleAtFixedRate(task, delay, period)
+
+        timer.scheduleAtFixedRate(
+            task,
+            delay.inWholeMilliseconds,
+            period.inWholeMilliseconds,
+        )
     }
 
     fun cancel(name: String) {
-        val task = tasks.remove(name) ?: return
+        val task = tasks.remove(name)
+            ?: return
+
         task.cancel()
     }
 
@@ -150,7 +184,6 @@ class Server(
     }
 
     private fun convert(value: Any?, src: Type, dst: Type): Any? {
-
         val convert = provider[src to dst]
             ?: error("unsupported conversion from $src to $dst")
 
@@ -268,16 +301,21 @@ class Server(
                     val typename: String
                     val value: Any?
 
+                    val pathParameter = parameter.findAnnotation<PathParameter>()
+                    val queryParameter = parameter.findAnnotation<QueryParameter>()
+                    val headerParameter = parameter.findAnnotation<Header>()
+                    val bodyParameter = parameter.findAnnotation<Body>()
+
                     when {
-                        parameter.hasAnnotation<PathParameter>() -> {
-                            val name = parameter.findAnnotation<PathParameter>()!!.value.ifEmpty { parameter.name!! }
+                        pathParameter != null -> {
+                            val name = pathParameter.value.ifEmpty { parameter.name!! }
 
                             typename = "path $name"
                             value = route.pathname[path, name]
                         }
 
-                        parameter.hasAnnotation<QueryParameter>() -> {
-                            val name = parameter.findAnnotation<QueryParameter>()!!.value.ifEmpty { parameter.name!! }
+                        queryParameter != null -> {
+                            val name = queryParameter.value.ifEmpty { parameter.name!! }
                             val values = request.query.getAll(name)
 
                             typename = "query $name"
@@ -288,8 +326,8 @@ class Server(
                                     values.firstOrNull()
                         }
 
-                        parameter.hasAnnotation<Header>() -> {
-                            val name = parameter.findAnnotation<Header>()!!.value.ifEmpty { parameter.name!! }
+                        headerParameter != null -> {
+                            val name = headerParameter.value.ifEmpty { parameter.name!! }
                             val values = request.headers.getAll(name)
 
                             typename = "header $name"
@@ -300,7 +338,7 @@ class Server(
                                     values.firstOrNull()
                         }
 
-                        parameter.hasAnnotation<Body>() -> {
+                        bodyParameter != null -> {
                             typename = "body"
 
                             value = request.body
