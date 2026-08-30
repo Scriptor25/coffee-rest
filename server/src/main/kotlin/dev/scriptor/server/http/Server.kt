@@ -132,8 +132,8 @@ class Server : AutoCloseable {
         }
     }
 
-    fun register(name: String, delay: Duration, period: Duration, callee: context(Server) () -> Unit) {
-        val task = timerTask { context(this) { callee() } }
+    fun register(name: String, delay: Duration, period: Duration, callee: Server.() -> Unit) {
+        val task = timerTask { callee() }
 
         tasks[name] = task
 
