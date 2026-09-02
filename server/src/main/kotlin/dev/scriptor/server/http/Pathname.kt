@@ -105,16 +105,16 @@ class Pathname(path: Path) : Comparable<Pathname> {
         return regex.matches(path)
     }
 
-    operator fun get(path: String, name: String): Any? {
-        val parameter = parameters[name] ?: return null
-        val match = regex.matchEntire(path) ?: return null
+    operator fun get(path: String, name: String): List<String> {
+        val parameter = parameters[name] ?: return emptyList()
+        val match = regex.matchEntire(path) ?: return emptyList()
         val value = match.groupValues[parameter.index + 1]
 
         if (!parameter.collecting) {
-            return value
+            return listOf(value)
         }
 
-        return value.split("/+".toRegex()).toTypedArray()
+        return value.split("/+".toRegex())
     }
 
     override fun compareTo(other: Pathname): Int {

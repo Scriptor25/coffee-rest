@@ -13,6 +13,7 @@
     <modules>
         <module>reflect</module>
         <module>server</module>
+        <module>server-jvm</module>
         <module>example</module>
     </modules>
 
@@ -37,6 +38,11 @@
             <dependency>
                 <groupId>dev.scriptor</groupId>
                 <artifactId>coffee-rest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.scriptor</groupId>
+                <artifactId>coffee-rest-jvm</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

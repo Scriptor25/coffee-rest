@@ -1,7 +1,12 @@
 package dev.scriptor.example.rest
 
 import dev.scriptor.server.NotFoundSignal
-import dev.scriptor.server.annotation.*
+import dev.scriptor.server.jvm.annotation.Body
+import dev.scriptor.server.jvm.annotation.Controller
+import dev.scriptor.server.jvm.annotation.Get
+import dev.scriptor.server.jvm.annotation.Header
+import dev.scriptor.server.jvm.annotation.PathParameter
+import dev.scriptor.server.jvm.annotation.Post
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -48,6 +53,7 @@ class MyRest {
             <!DOCTYPE html>
             <html>
             <head>
+                <meta charset="utf-8">
                 <title>${author} | Random Quote</title>
             </head>
             <body>
@@ -61,10 +67,10 @@ class MyRest {
     }
 
     @Get("/fib([n])", result = "text/plain")
-    fun getFib(@PathParameter n: Int): Int {
-        var a = 0
-        var b = 1
-        for (i in 0 until n) {
+    fun getFib(@PathParameter n: Long): Long {
+        var a = 0L
+        var b = 1L
+        for (i in 0L until n) {
             val c = a + b
             a = b
             b = c

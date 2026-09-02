@@ -10,28 +10,33 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>example</artifactId>
+    <artifactId>coffee-rest-jvm</artifactId>
 
     <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
             <groupId>dev.scriptor</groupId>
-            <artifactId>reflect</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>dev.scriptor</groupId>
             <artifactId>coffee-rest</artifactId>
         </dependency>
-        <dependency>
-            <groupId>dev.scriptor</groupId>
-            <artifactId>coffee-rest-jvm</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20260522</version>
-        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.4.0</version>
+
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -1,7 +1,7 @@
 package dev.scriptor.example
 
 import dev.scriptor.server.http.Server
-import dev.scriptor.server.scan
+import dev.scriptor.server.jvm.scan
 import java.net.InetAddress
 import java.util.logging.*
 
