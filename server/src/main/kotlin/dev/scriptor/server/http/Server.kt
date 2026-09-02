@@ -488,6 +488,10 @@ class Server : AutoCloseable {
             headers["server"] = "coffee-rest/1.0.0"
         }
 
+        if ("access-control-allow-origin" !in headers) {
+            headers["access-control-allow-origin"] = "*"
+        }
+
         if (result.channel != null) {
             if ("content-type" !in headers) {
                 headers["content-type"] = result.contentType ?: "*/*"
