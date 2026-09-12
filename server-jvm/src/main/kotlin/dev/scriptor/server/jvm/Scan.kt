@@ -23,6 +23,23 @@ fun scan(server: Server, packageName: String? = null) {
         instances += instance
     }
 
+    finalizeInstances(server.provider, instances)
+
+    server.check()
+}
+
+fun scanConverters(provider: Provider, packageName: String? = null) {
+    val instances = mutableListOf<Any>()
+
+    for (klass in Scanner(packageName)) {
+        val instance = scanConverter(provider, klass) ?: continue
+        instances += instance
+    }
+
+    finalizeInstances(provider, instances)
+}
+
+private fun finalizeInstances(provider: Provider, instances: List<Any>) {
     for (instance in instances) {
         val klass = instance::class
 
@@ -34,15 +51,15 @@ fun scan(server: Server, packageName: String? = null) {
                     when (annotation) {
                         is Inject -> {
                             val type = getType(property.returnType)
-                            hasValue = type in server.provider
-                            value = server.provider[type]
+                            hasValue = type in provider
+                            value = provider[type]
                             break
                         }
 
                         is InjectNamed -> {
                             val name = annotation.value
-                            hasValue = name in server.provider
-                            value = server.provider[name]
+                            hasValue = name in provider
+                            value = provider[name]
                             break
                         }
                     }
@@ -60,11 +77,9 @@ fun scan(server: Server, packageName: String? = null) {
             }
         }
     }
-
-    server.check()
 }
 
-private fun scan(server: Server, klass: KClass<*>): Any? {
+private fun scanConverter(provider: Provider, klass: KClass<*>): Any? {
     if (klass.isFinal && klass.isSubclassOf(Converter::class)) {
         val klass = klass as KClass<Converter<Any?, Any?>>
 
@@ -77,16 +92,25 @@ private fun scan(server: Server, klass: KClass<*>): Any? {
         val src = fst.type ?: typeOf<Any?>()
         val dst = snd.type ?: typeOf<Any?>()
 
-        val instance = createInstance(klass, server.provider)
+        val instance = createInstance(provider, klass)
 
-        server.provider[getType(src) to getType(dst)] = { instance.invoke(it) }
+        provider[getType(src) to getType(dst)] = { instance.invoke(it) }
         return instance
+    }
+
+    return null
+}
+
+private fun scan(server: Server, klass: KClass<*>): Any? {
+    when (val converter = scanConverter(server.provider, klass)) {
+        null -> {}
+        else -> return converter
     }
 
     for (annotation in klass.annotations) {
         when (annotation) {
             is Context -> {
-                val instance = createInstance(klass, server.provider)
+                val instance = createInstance(server.provider, klass)
 
                 server.provider[klass] = instance
                 return instance
@@ -94,7 +118,7 @@ private fun scan(server: Server, klass: KClass<*>): Any? {
 
             is Controller -> {
                 val base = annotation.path
-                val instance = createInstance(klass, server.provider)
+                val instance = createInstance(server.provider, klass)
 
                 for (function in klass.memberFunctions) {
                     scan(server, base, instance, function)
@@ -112,7 +136,7 @@ private fun scan(server: Server, klass: KClass<*>): Any? {
     return null
 }
 
-private fun <T : Any> createInstance(klass: KClass<T>, provider: Provider): T {
+private fun <T : Any> createInstance(provider: Provider, klass: KClass<T>): T {
     return when (val c = klass.primaryConstructor) {
         null -> klass.createInstance()
 
