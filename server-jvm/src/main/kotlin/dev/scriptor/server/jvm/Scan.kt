@@ -28,11 +28,11 @@ fun scan(server: Server, packageName: String? = null) {
     server.check()
 }
 
-fun scanConverters(provider: Provider, packageName: String? = null) {
+fun scan(provider: Provider, packageName: String? = null) {
     val instances = mutableListOf<Any>()
 
     for (klass in Scanner(packageName)) {
-        val instance = scanConverter(provider, klass) ?: continue
+        val instance = scan(provider, klass) ?: continue
         instances += instance
     }
 
@@ -79,7 +79,7 @@ private fun finalizeInstances(provider: Provider, instances: List<Any>) {
     }
 }
 
-private fun scanConverter(provider: Provider, klass: KClass<*>): Any? {
+private fun scan(provider: Provider, klass: KClass<*>): Any? {
     if (klass.isFinal && klass.isSubclassOf(Converter::class)) {
         val klass = klass as KClass<Converter<Any?, Any?>>
 
@@ -98,13 +98,37 @@ private fun scanConverter(provider: Provider, klass: KClass<*>): Any? {
         return instance
     }
 
+    for (annotation in klass.annotations) {
+        when (annotation) {
+            is Context -> {
+                val instance = createInstance(provider, klass)
+
+                provider[klass] = instance
+                return instance
+            }
+        }
+    }
+
     return null
 }
 
 private fun scan(server: Server, klass: KClass<*>): Any? {
-    when (val converter = scanConverter(server.provider, klass)) {
-        null -> {}
-        else -> return converter
+    if (klass.isFinal && klass.isSubclassOf(Converter::class)) {
+        val klass = klass as KClass<Converter<Any?, Any?>>
+
+        val superclass = klass
+            .allSupertypes
+            .first { it.classifier == Converter::class }
+
+        val (fst, snd) = superclass.arguments
+
+        val src = fst.type ?: typeOf<Any?>()
+        val dst = snd.type ?: typeOf<Any?>()
+
+        val instance = createInstance(server.provider, klass)
+
+        server.provider[getType(src) to getType(dst)] = { instance.invoke(it) }
+        return instance
     }
 
     for (annotation in klass.annotations) {
