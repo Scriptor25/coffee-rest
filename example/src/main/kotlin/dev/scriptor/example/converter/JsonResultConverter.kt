@@ -6,6 +6,7 @@ import dev.scriptor.server.result.Result
 import dev.scriptor.server.result.StringResult
 import org.json.JSONObject
 
+@Suppress("unused")
 class JsonResultConverter : Converter<JSONObject, Result> {
 
     context(provider: Provider)

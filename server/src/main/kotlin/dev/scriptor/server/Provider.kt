@@ -18,25 +18,11 @@ class Provider {
     private val contexts = mutableMapOf<Type, Any>()
     private val named = mutableMapOf<String, Any?>()
 
-    fun register(src: Type, dst: Type, converter: AnyConverterFn) {
-        converters[src to dst] = converter
+    private fun hasConversion(key: Pair<Type, Type>): Boolean {
+        return getConversion(key) != null
     }
 
-    fun register(type: Type, value: Any) {
-        contexts[type] = value
-    }
-
-    fun register(name: String, value: Any?) {
-        named[name] = value
-    }
-
-    fun hasConversion(src: Type, dst: Type): Boolean {
-        return getConversion(src, dst) != null
-    }
-
-    fun getConversion(src: Type, dst: Type): AnyConverterFn? {
-        val key = src to dst
-
+    private fun getConversion(key: Pair<Type, Type>): AnyConverterFn? {
         if (key in conversions) {
             val convert = conversions[key]!!
             return { convert(it) }
@@ -81,129 +67,97 @@ class Provider {
         return null
     }
 
-    fun hasContext(type: Type): Boolean {
-        return contexts.any { isAssignable(type, it.key) }
-    }
-
-    fun getContext(type: Type): Any? {
-        return contexts
-            .filter { isAssignable(type, it.key) }
-            .values
-            .firstOrNull()
-    }
-
-    fun hasNamed(name: String): Boolean {
-        return name in named
-    }
-
-    fun getNamed(name: String): Any? {
-        return named[name]
-    }
-
     operator fun set(key: Pair<Type, Type>, value: AnyConverterFn) {
-        register(key.first, key.second, value)
+        converters[key] = value
     }
 
     operator fun set(key: Type, value: Any) {
-        register(key, value)
+        contexts[key] = value
     }
 
     operator fun set(key: KType, value: Any) {
         val type = getType(key)
 
-        register(type, value)
+        set(type, value)
     }
 
     operator fun set(key: KClass<*>, value: Any) {
         val type = getClass(key).createType()
 
-        register(type, value)
+        set(type, value)
     }
 
     operator fun set(key: String, value: Any?) {
-        register(key, value)
+        named[key] = value
     }
 
     operator fun contains(key: Pair<Type, Type>): Boolean {
-        return hasConversion(key.first, key.second)
+        return hasConversion(key)
     }
 
     operator fun contains(key: Type): Boolean {
-        return hasContext(key)
+        return contexts.any { isAssignable(key, it.key) }
     }
 
     operator fun contains(key: String): Boolean {
-        return hasNamed(key)
+        return key in named
     }
 
     operator fun get(key: Pair<Type, Type>): AnyConverterFn? {
-        return getConversion(key.first, key.second)
+        return getConversion(key)
     }
 
     operator fun get(key: Type): Any? {
-        return getContext(key)
+        return contexts
+            .filter { isAssignable(key, it.key) }
+            .values
+            .firstOrNull()
     }
 
     operator fun get(key: KType): Any? {
-        val type = getType(key)
+        val key = getType(key)
 
-        return getContext(type)
+        return get(key)
     }
 
     operator fun get(key: String): Any? {
-        return getNamed(key)
+        return named[key]
     }
 
-    inline fun <reified S, reified D> registerT(noinline value: ConverterFn<S, D>) {
+    inline fun <reified S, reified D> setT(noinline value: ConverterFn<S, D>) {
         val src = getType<S>()
         val dst = getType<D>()
 
-        register(src, dst, value as AnyConverterFn)
+        set(src to dst, value as AnyConverterFn)
     }
 
-    inline fun <reified T : Any> registerT(value: T) {
+    inline fun <reified T : Any> setT(value: T) {
         val type = getType<T>()
 
-        register(type, value)
+        set(type, value)
     }
 
-    inline fun <reified S, reified D> hasConversionT(): Boolean {
-        val src = getType<S>()
-        val dst = getType<D>()
-
-        return hasConversion(src, dst)
-    }
-
-    inline fun <reified T> hasContextT(): Boolean {
+    inline fun <reified T> containsT(): Boolean {
         val type = getType<T>()
 
-        return hasContext(type)
+        return contains(type)
     }
 
-    inline fun <reified S, reified D> getConversionT(): ConverterFn<S, D>? {
-        val src = getType<S>()
-        val dst = getType<D>()
+    inline fun <reified T> getT(): T? {
+        val key = getType<T>()
 
-        val convert = getConversion(src, dst) ?: return null
-
-        return { convert(it) as D }
+        return get(key) as? T
     }
 
-    inline fun <reified T> getContextT(): T? {
-        val type = getType<T>()
-
-        return getContext(type) as? T
-    }
-
-    inline fun <reified T> getNamedT(key: String): T? {
-        return getNamed(key) as? T
+    inline fun <reified T> getT(key: String): T? {
+        return get(key) as? T
     }
 
     inline operator fun <reified S, reified D> invoke(value: S): D {
         val src = getType<S>()
         val dst = getType<D>()
 
-        val convert = getConversion(src, dst)
+        val convert = get(src to dst)
             ?: error("no conversion path from $src to $dst")
 
         return convert(value) as D

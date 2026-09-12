@@ -4,6 +4,7 @@ import dev.scriptor.server.Provider
 import dev.scriptor.server.converter.Converter
 import org.json.JSONArray
 
+@Suppress("unused")
 class ArrayJsonConverter : Converter<Array<*>, JSONArray> {
 
     context(provider: Provider)

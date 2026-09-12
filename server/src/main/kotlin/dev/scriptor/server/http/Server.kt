@@ -123,9 +123,97 @@ class Server : AutoCloseable {
     fun check() {
         for ((_, entries) in routes) {
             for (entry in entries) {
+                for (parameter in entry.parameters) {
+                    val hasValue = when (parameter.kind) {
+                        ParameterKind.CONTEXT -> when (parameter.type) {
+                            is ClassReference -> when (parameter.type.id) {
+                                getClassId<Logger>() -> true
+                                getClassId<Provider>() -> true
+                                getClassId<ConverterFn<*, *>>() -> {
+                                    val src = parameter.type.arguments[0]
+                                    val dst = parameter.type.arguments[1]
+
+                                    val srcType =
+                                        if (src is TypeProjection) src.type
+                                        else error("converting star projection not supported (at $parameter)")
+                                    val dstType =
+                                        if (dst is TypeProjection) dst.type
+                                        else error("converting star projection not supported (at $parameter)")
+
+                                    (srcType to dstType) in provider
+                                }
+
+                                else -> parameter.type in provider
+                            }
+
+                            else -> parameter.type in provider
+                        }
+
+                        ParameterKind.VALUE -> {
+                            val hasValue: Boolean
+                            val type: Type
+
+                            when (val annotation = parameter.annotation) {
+                                is ParameterAnnotation.Path -> {
+                                    val name = annotation.name ?: parameter.name
+                                    val collecting = entry.pathname.collecting(name)
+
+                                    hasValue = name in entry.pathname
+                                    type =
+                                        if (collecting) getType<Array<String>>()
+                                        else getType<String>()
+                                }
+
+                                is ParameterAnnotation.Query -> {
+                                    val collecting =
+                                        parameter.type is ClassReference && parameter.type.id == getClassId<Array<*>>()
+
+                                    hasValue = true
+                                    type =
+                                        if (collecting) getType<Array<String>>()
+                                        else getType<String>()
+                                }
+
+                                is ParameterAnnotation.Header -> {
+                                    val collecting =
+                                        parameter.type is ClassReference && parameter.type.id == getClassId<Array<*>>()
+
+                                    hasValue = true
+                                    type =
+                                        if (collecting) getType<Array<String>>()
+                                        else getType<String>()
+                                }
+
+                                is ParameterAnnotation.Body -> {
+                                    hasValue = true
+                                    type = getType<MessageBody>()
+                                }
+
+                                is ParameterAnnotation.None -> error("$parameter is missing annotation")
+                            }
+
+                            if (hasValue) {
+                                checkConvertible(
+                                    type,
+                                    parameter.type,
+                                    "at $entry -> parameter $parameter",
+                                )
+                            }
+
+                            hasValue
+                        }
+                    }
+
+                    if (!hasValue) {
+                        if (parameter.optional) continue
+                        error("no value for non-optional parameter $parameter")
+                    }
+                }
+
                 checkConvertible(
                     entry.returns,
                     getType<Result>(),
+                    "at $entry -> return type"
                 )
             }
         }
@@ -176,15 +264,15 @@ class Server : AutoCloseable {
         running = false
     }
 
-    private fun checkConvertible(src: Type, dst: Type) {
-        if (src to dst in provider) return
+    private fun checkConvertible(src: Type, dst: Type, where: String) {
+        if ((src to dst) in provider) return
 
-        error("unsupported conversion from $src to $dst")
+        error("no conversion path from $src to $dst ($where)")
     }
 
     private fun convert(value: Any?, src: Type, dst: Type): Any? {
         val convert = provider[src to dst]
-            ?: error("unsupported conversion from $src to $dst")
+            ?: error("no conversion path from $src to $dst")
 
         return context(provider) { convert(value) }
     }
@@ -219,7 +307,7 @@ class Server : AutoCloseable {
 
         val methods = when (val target = request.target) {
             is OriginRequestTarget -> routes
-                .filterValues { values -> values.any { target.path in it.pathname } }
+                .filterValues { values -> values.any { it.pathname.matches(target.path) } }
                 .map { it.key }
                 .toSet()
 
@@ -246,7 +334,7 @@ class Server : AutoCloseable {
             .computeIfAbsent(Method.GET) { mutableListOf() }
             .filter {
                 when (val target = request.target) {
-                    is OriginRequestTarget -> target.path in it.pathname
+                    is OriginRequestTarget -> it.pathname.matches(target.path)
                     else -> false
                 }
             }
@@ -267,6 +355,128 @@ class Server : AutoCloseable {
         return NoContentSignal(headers).generate()
     }
 
+    private fun getContextArgument(parameter: Parameter): Pair<Boolean, Any?> {
+        return when (parameter.type) {
+            is ClassReference -> when (parameter.type.id) {
+                getClassId<Logger>() -> true to log
+                getClassId<Provider>() -> true to provider
+                getClassId<ConverterFn<*, *>>() -> {
+                    val src = parameter.type.arguments[0]
+                    val dst = parameter.type.arguments[1]
+
+                    val srcType =
+                        if (src is TypeProjection) src.type
+                        else error("converting star projection not supported (at $parameter)")
+                    val dstType =
+                        if (dst is TypeProjection) dst.type
+                        else error("converting star projection not supported (at $parameter)")
+
+                    val key = srcType to dstType
+
+                    (key in provider) to (provider[key])
+                }
+
+                else -> (parameter.type in provider) to (provider[parameter.type])
+            }
+
+            else -> (parameter.type in provider) to (provider[parameter.type])
+        }
+    }
+
+    private fun getValueParameter(
+        request: Request,
+        path: String,
+        route: RouteMetadata,
+        parameter: Parameter,
+    ): Pair<Boolean, Any?> {
+        val type: Type
+        val hasValueOrNull: Boolean
+        val value: Any?
+
+        when (val annotation = parameter.annotation) {
+            is ParameterAnnotation.Path -> {
+                val name = annotation.name ?: parameter.name
+
+                val collecting = route.pathname.collecting(name)
+                val values = route.pathname[path, name]
+
+                hasValueOrNull = name in route.pathname
+                value =
+                    if (collecting) {
+                        type = getType<Array<String>>()
+                        values.toTypedArray()
+                    } else {
+                        type = getType<String>()
+                        values.firstOrNull()
+                    }
+            }
+
+            is ParameterAnnotation.Query -> {
+                val name = annotation.name ?: parameter.name
+
+                val collecting = parameter.type is ClassReference && parameter.type.id == getClassId<Array<*>>()
+                val values = request.query.getAll(name)
+
+                hasValueOrNull = parameter.type.nullable || name in request.query
+                value =
+                    if (collecting) {
+                        type = getType<Array<String>>()
+                        values.toTypedArray()
+                    } else {
+                        type = getType<String>()
+                        values.firstOrNull()
+                    }
+            }
+
+            is ParameterAnnotation.Header -> {
+                val name = annotation.name ?: parameter.name
+
+                val collecting = parameter.type is ClassReference && parameter.type.id == getClassId<Array<*>>()
+                val values = request.headers.getAll(name)
+
+                hasValueOrNull = parameter.type.nullable || name in request.headers
+                value =
+                    if (collecting) {
+                        type = getType<Array<String>>()
+                        values.toTypedArray()
+                    } else {
+                        type = getType<String>()
+                        values.firstOrNull()
+                    }
+            }
+
+            is ParameterAnnotation.Body -> {
+                type = getType<MessageBody>()
+                hasValueOrNull = true
+                value = request.body
+            }
+
+            is ParameterAnnotation.None -> error("$parameter is missing annotation")
+        }
+
+        if (!hasValueOrNull) {
+            return false to null
+        }
+
+        if (value == null) {
+            return true to null
+        }
+
+        return true to convert(value, type, parameter.type)
+    }
+
+    private fun getArgument(
+        request: Request,
+        path: String,
+        route: RouteMetadata,
+        parameter: Parameter,
+    ): Pair<Boolean, Any?> {
+        return when (parameter.kind) {
+            ParameterKind.CONTEXT -> getContextArgument(parameter)
+            ParameterKind.VALUE -> getValueParameter(request, path, route, parameter)
+        }
+    }
+
     private fun getArguments(
         request: Request,
         path: String,
@@ -275,124 +485,18 @@ class Server : AutoCloseable {
         arguments: MutableMap<Int, Any?>,
     ) {
         for (parameter in parameters) {
-            when (parameter.kind) {
-                ParameterKind.CONTEXT -> {
-                    arguments[parameter.index] = when (parameter.type) {
-                        is ClassReference -> when (parameter.type.id) {
-                            getClassId<Logger>() -> log
-                            getClassId<Provider>() -> provider
-                            getClassId<ConverterFn<*, *>>() -> {
-                                val src = parameter.type.arguments[0]
-                                val dst = parameter.type.arguments[1]
+            val (hasValue, value) = getArgument(request, path, route, parameter)
 
-                                val srcType = if (src is TypeProjection) src.type else error("star projection")
-                                val dstType = if (dst is TypeProjection) dst.type else error("star projection")
-
-                                provider[srcType to dstType]
-                            }
-
-                            else -> provider[parameter.type]
-                        }
-
-                        else -> provider[parameter.type]
-                    }
-                }
-
-                ParameterKind.VALUE -> {
-                    val typename: String
-                    val contains: Boolean
-                    val type: Type
-                    val value: Any?
-
-                    when (val annotation = parameter.annotation) {
-                        is ParameterAnnotation.Path -> {
-                            val name = annotation.name ?: parameter.name
-                            val values = route.pathname[path, name]
-
-                            typename = "path $name"
-                            value =
-                                if (parameter.type is ClassReference && parameter.type.id == getClassId<Array<*>>()) {
-                                    contains = true
-                                    type = getType<Array<String>>()
-                                    values.toTypedArray()
-                                } else {
-                                    val value = values.firstOrNull()
-
-                                    contains = parameter.type.nullable || value != null
-                                    type = getType<String>()
-                                    value
-                                }
-                        }
-
-                        is ParameterAnnotation.Query -> {
-                            val name = annotation.name ?: parameter.name
-                            val values = request.query.getAll(name)
-
-                            typename = "query $name"
-                            value =
-                                if (parameter.type is ClassReference && parameter.type.id == getClassId<Array<*>>()) {
-                                    contains = true
-                                    type = getType<Array<String>>()
-                                    values.toTypedArray()
-                                } else {
-                                    contains = parameter.type.nullable || name in request.query
-                                    type = getType<String>()
-                                    values.firstOrNull()
-                                }
-                        }
-
-                        is ParameterAnnotation.Header -> {
-                            val name = annotation.name ?: parameter.name
-                            val values = request.headers.getAll(name)
-
-                            typename = "header $name"
-                            value =
-                                if (parameter.type is ClassReference && parameter.type.id == getClassId<Array<*>>()) {
-                                    contains = true
-                                    type = getType<Array<String>>()
-                                    values.toTypedArray()
-                                } else {
-                                    contains = parameter.type.nullable || name in request.headers
-                                    type = getType<String>()
-                                    values.firstOrNull()
-                                }
-                        }
-
-                        is ParameterAnnotation.Body -> {
-                            typename = "body"
-                            contains = true
-                            type = getType<MessageBody>()
-                            value = request.body
-                        }
-
-                        else -> error("$parameter is missing annotation")
-                    }
-
-                    if (!contains) {
-                        if (parameter.optional) continue
-                        throw BadRequestSignal(content = "parameter '$typename' is not optional")
-                    }
-
-                    if (value == null) {
-                        if (parameter.type.nullable) {
-                            arguments[parameter.index] = null
-                            continue
-                        }
-                        throw BadRequestSignal(content = "parameter '$typename' is not nullable")
-                    }
-
-                    try {
-                        arguments[parameter.index] = convert(
-                            value,
-                            type,
-                            parameter.type,
-                        )
-                    } catch (e: Exception) {
-                        log.severe(e.stackTraceToString())
-                        throw BadRequestSignal(content = "failed to convert parameter '$typename'")
-                    }
-                }
+            if (!hasValue) {
+                if (parameter.optional) continue
+                throw BadRequestSignal()
             }
+
+            if (value == null && !parameter.type.nullable) {
+                throw BadRequestSignal()
+            }
+
+            arguments[parameter.index] = value
         }
     }
 
@@ -402,7 +506,7 @@ class Server : AutoCloseable {
             .computeIfAbsent(request.method) { mutableListOf() }
             .filter {
                 when (val target = request.target) {
-                    is OriginRequestTarget -> target.path in it.pathname
+                    is OriginRequestTarget -> it.pathname.matches(target.path)
                     else -> false
                 }
             }

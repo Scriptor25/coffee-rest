@@ -1,12 +1,7 @@
 package dev.scriptor.example.rest
 
 import dev.scriptor.server.NotFoundSignal
-import dev.scriptor.server.jvm.annotation.Body
-import dev.scriptor.server.jvm.annotation.Controller
-import dev.scriptor.server.jvm.annotation.Get
-import dev.scriptor.server.jvm.annotation.Header
-import dev.scriptor.server.jvm.annotation.PathParameter
-import dev.scriptor.server.jvm.annotation.Post
+import dev.scriptor.server.jvm.annotation.*
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -14,6 +9,7 @@ import java.net.URI
 import java.util.logging.Logger
 
 @Controller("/my")
+@Suppress("unused")
 class MyRest {
 
     @Get("/hello", result = "text/html")

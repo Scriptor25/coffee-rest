@@ -6,6 +6,7 @@ import dev.scriptor.server.jvm.annotation.PathParameter
 import org.json.JSONObject
 
 @Controller("/blog")
+@Suppress("unused")
 class BlogRest {
 
     @Get("/", result = "text/html")

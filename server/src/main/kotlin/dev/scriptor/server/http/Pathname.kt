@@ -101,8 +101,17 @@ class Pathname(path: Path) : Comparable<Pathname> {
         index = staticFirst
     }
 
-    operator fun contains(path: String): Boolean {
+    fun matches(path: String): Boolean {
         return regex.matches(path)
+    }
+
+    operator fun contains(name: String): Boolean {
+        return name in parameters
+    }
+
+    fun collecting(name: String): Boolean {
+        val parameter = parameters[name] ?: return false
+        return parameter.collecting
     }
 
     operator fun get(path: String, name: String): List<String> {
