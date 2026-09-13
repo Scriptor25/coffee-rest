@@ -44,7 +44,7 @@ class Server : AutoCloseable {
     )
 
     private var next = 0L
-    private val nextHeap = mutableSetOf<Long>()
+    private val nextHeap = ConcurrentHashMap<Long, Unit>()
 
     private var running: Boolean = false
 
@@ -280,7 +280,7 @@ class Server : AutoCloseable {
     private fun handle(channel: SocketChannel) {
         val reader = RequestReader(BufferedReadableByteChannel(channel))
 
-        val id = when (val key = nextHeap.minOrNull()) {
+        val id = when (val key = nextHeap.keys.minOrNull()) {
             null -> next++
             else -> {
                 nextHeap.remove(key)
@@ -302,7 +302,7 @@ class Server : AutoCloseable {
         }
 
         log.fine("#$id disconnect")
-        nextHeap.add(id)
+        nextHeap[id] = Unit
     }
 
     private fun getOptions(request: Request): Result {
