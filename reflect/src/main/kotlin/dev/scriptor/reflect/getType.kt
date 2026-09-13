@@ -29,11 +29,8 @@ private fun getType(cls: ClassId, type: KTypeParameter, nullable: Boolean): Type
     return TypeParameterReference(id, cls, nullable)
 }
 
-private fun getType(type: KClass<*>, arguments: List<KTypeProjection>, nullable: Boolean): ClassReference {
-    val name = type.qualifiedName
-        ?: error("$type does not have a qualified name")
-
-    val id = ClassId(name)
+private fun getType(classifier: KClass<*>, arguments: List<KTypeProjection>, nullable: Boolean): ClassReference {
+    val id = getClassId(classifier)
 
     return ClassReference(
         id,
