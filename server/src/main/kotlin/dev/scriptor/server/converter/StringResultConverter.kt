@@ -5,6 +5,6 @@ import dev.scriptor.server.result.StringResult
 
 class StringResultConverter : Converter<String, StringResult> {
 
-    context(_: Provider?)
+    context(provider: Provider?)
     override fun convert(value: String) = StringResult(value = value)
 }

@@ -4,6 +4,6 @@ import dev.scriptor.server.Provider
 
 class BooleanStringConverter : Converter<Boolean, String> {
 
-    context(_: Provider?)
+    context(provider: Provider?)
     override fun convert(value: Boolean): String = value.toString()
 }

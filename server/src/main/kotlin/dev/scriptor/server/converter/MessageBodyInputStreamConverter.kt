@@ -8,7 +8,7 @@ import java.nio.ByteBuffer
 
 class MessageBodyInputStreamConverter : Converter<MessageBody, InputStream> {
 
-    context(_: Provider?)
+    context(provider: Provider?)
     override fun convert(value: MessageBody): InputStream = object : InputStream() {
         override fun read(): Int {
             val array = ByteArray(1)

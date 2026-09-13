@@ -6,6 +6,6 @@ import java.io.InputStream
 
 class StreamResultConverter : Converter<InputStream, StreamResult> {
 
-    context(_: Provider?)
+    context(provider: Provider?)
     override fun convert(value: InputStream) = StreamResult(value = value)
 }

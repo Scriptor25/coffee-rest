@@ -4,6 +4,6 @@ import dev.scriptor.server.Provider
 
 class StringFloatConverter : Converter<String, Float> {
 
-    context(_: Provider?)
+    context(provider: Provider?)
     override fun convert(value: String) = value.toFloat()
 }

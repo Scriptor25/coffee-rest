@@ -4,6 +4,6 @@ import dev.scriptor.server.Provider
 
 class StringLongConverter : Converter<String, Long> {
 
-    context(_: Provider?)
+    context(provider: Provider?)
     override fun convert(value: String) = value.toLong()
 }

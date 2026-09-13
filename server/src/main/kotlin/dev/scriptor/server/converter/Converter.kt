@@ -7,7 +7,7 @@ typealias AnyConverterFn = ConverterFn<Any?, Any?>
 
 interface Converter<in S, out D> {
 
-    context(_: Provider?)
+    context(provider: Provider?)
     fun convert(value: S): D
 
     context(_: Provider?)
