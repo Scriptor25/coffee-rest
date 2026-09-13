@@ -1,9 +1,10 @@
 package dev.scriptor.reflect
 
 import java.lang.Class.forName
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
-private val map = mutableMapOf<ClassId, Class>()
+private val map = ConcurrentHashMap<ClassId, Class>()
 
 fun getClass(id: ClassId): Class {
     return map.computeIfAbsent(id) {
