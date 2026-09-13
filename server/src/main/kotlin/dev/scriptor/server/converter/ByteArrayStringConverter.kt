@@ -4,6 +4,6 @@ import dev.scriptor.server.Provider
 
 class ByteArrayStringConverter : Converter<ByteArray, String> {
 
-    context(provider: Provider)
+    context(_: Provider?)
     override fun convert(value: ByteArray) = value.decodeToString()
 }

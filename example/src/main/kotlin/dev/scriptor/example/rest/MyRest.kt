@@ -9,7 +9,6 @@ import java.net.URI
 import java.util.logging.Logger
 
 @Controller("/my")
-@Suppress("unused")
 class MyRest {
 
     @Get("/hello", result = "text/html")

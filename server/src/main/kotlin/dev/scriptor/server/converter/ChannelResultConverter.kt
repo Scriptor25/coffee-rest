@@ -6,6 +6,6 @@ import java.nio.channels.ReadableByteChannel
 
 class ChannelResultConverter : Converter<ReadableByteChannel, ChannelResult> {
 
-    context(provider: Provider)
+    context(_: Provider?)
     override fun convert(value: ReadableByteChannel) = ChannelResult(value = value)
 }

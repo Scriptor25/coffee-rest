@@ -4,6 +4,6 @@ import dev.scriptor.server.Provider
 
 class ArrayListConverter : Converter<Array<*>, List<*>> {
 
-    context(provider: Provider)
+    context(_: Provider?)
     override fun convert(value: Array<*>): List<*> = value.asList()
 }

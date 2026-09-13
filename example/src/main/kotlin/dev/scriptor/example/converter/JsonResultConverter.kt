@@ -6,10 +6,9 @@ import dev.scriptor.server.result.Result
 import dev.scriptor.server.result.StringResult
 import org.json.JSONObject
 
-@Suppress("unused")
 class JsonResultConverter : Converter<JSONObject, Result> {
 
-    context(provider: Provider)
+    context(_: Provider?)
     override fun convert(value: JSONObject): Result =
         StringResult(contentType = "application/json", value = value.toString())
 }

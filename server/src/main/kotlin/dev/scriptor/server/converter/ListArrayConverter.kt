@@ -4,6 +4,6 @@ import dev.scriptor.server.Provider
 
 class ListArrayConverter : Converter<List<*>, Array<*>> {
 
-    context(provider: Provider)
+    context(_: Provider?)
     override fun convert(value: List<*>): Array<*> = value.toTypedArray()
 }

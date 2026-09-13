@@ -10,7 +10,6 @@ import java.io.InputStream
 import java.util.logging.Logger
 
 @Controller("/")
-@Suppress("unused")
 class RootRest {
 
     @Get("/favicon.[]", result = "image/svg+xml")

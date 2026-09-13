@@ -5,6 +5,6 @@ import dev.scriptor.server.result.UnitResult
 
 class UnitResultConverter : Converter<Unit, UnitResult> {
 
-    context(provider: Provider)
+    context(_: Provider?)
     override fun convert(value: Unit) = UnitResult()
 }

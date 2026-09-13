@@ -94,7 +94,7 @@ private fun scan(provider: Provider, klass: KClass<*>): Any? {
 
         val instance = createInstance(provider, klass)
 
-        provider[getType(src) to getType(dst)] = { instance.invoke(it) }
+        provider[getType(src) to getType(dst)] = { instance(it) }
         return instance
     }
 
@@ -127,7 +127,7 @@ private fun scan(server: Server, klass: KClass<*>): Any? {
 
         val instance = createInstance(server.provider, klass)
 
-        server.provider[getType(src) to getType(dst)] = { instance.invoke(it) }
+        server.provider[getType(src) to getType(dst)] = { instance(it) }
         return instance
     }
 

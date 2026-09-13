@@ -4,7 +4,7 @@ import dev.scriptor.server.Provider
 
 class Conversion(private val path: List<ConversionStep>) {
 
-    context(_: Provider)
+    context(_: Provider?)
     fun convert(value: Any?): Any? {
         var current: Any? = value
 
@@ -15,6 +15,6 @@ class Conversion(private val path: List<ConversionStep>) {
         return current
     }
 
-    context(_: Provider)
+    context(_: Provider?)
     operator fun invoke(value: Any?): Any? = convert(value)
 }
