@@ -1,45 +1,13 @@
 package dev.scriptor.reflect
 
+import java.lang.Class.forName
 import kotlin.reflect.KClass
 
-private val map = mutableMapOf(
-    ClassId.Any to Class.Any,
-    ClassId.Nothing to Class.Nothing,
-    ClassId.Unit to Class.Unit,
-    ClassId.Boolean to Class.Boolean,
-    ClassId.Number to Class.Number,
-    ClassId.Byte to Class.Byte,
-    ClassId.Short to Class.Short,
-    ClassId.Int to Class.Int,
-    ClassId.Long to Class.Long,
-    ClassId.Float to Class.Float,
-    ClassId.Double to Class.Double,
-    ClassId.Char to Class.Char,
-    ClassId.CharSequence to Class.CharSequence,
-    ClassId.String to Class.String,
-    ClassId.Enum to Class.Enum,
-    ClassId.Array to Class.Array,
-    ClassId.BooleanArray to Class.BooleanArray,
-    ClassId.ByteArray to Class.ByteArray,
-    ClassId.ShortArray to Class.ShortArray,
-    ClassId.IntArray to Class.IntArray,
-    ClassId.LongArray to Class.LongArray,
-    ClassId.FloatArray to Class.FloatArray,
-    ClassId.DoubleArray to Class.DoubleArray,
-    ClassId.CharArray to Class.CharArray,
-    ClassId.Iterator to Class.Iterator,
-    ClassId.Throwable to Class.Throwable,
-    ClassId.Comparable to Class.Comparable,
-    ClassId.Function to Class.Function,
-
-    ClassId.Iterable to Class.Iterable,
-    ClassId.Collection to Class.Collection,
-    ClassId.List to Class.List,
-)
+private val map = mutableMapOf<ClassId, Class>()
 
 fun getClass(id: ClassId): Class {
     return map.computeIfAbsent(id) {
-        val klass = Thread.currentThread().contextClassLoader.loadClass(id.value).kotlin
+        val klass = forName(id.value, false, Thread.currentThread().contextClassLoader).kotlin
 
         val parameters = klass.typeParameters.map { parameter ->
             val upperbounds = parameter.upperBounds

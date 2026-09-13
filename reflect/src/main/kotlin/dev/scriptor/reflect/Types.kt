@@ -144,7 +144,7 @@ private fun substitute(type: Type, mapping: Map<TypeParameterId, Projection>): T
             else when (val mapped = mapping[type.id]!!) {
                 is StarProjection -> type().upperbounds.firstOrNull()
                     ?: ClassReference(
-                        ClassId.Any,
+                        getClassId<Any>(),
                         emptyList(),
                         type.nullable,
                     )
