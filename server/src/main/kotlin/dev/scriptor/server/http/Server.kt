@@ -280,11 +280,13 @@ class Server : AutoCloseable {
     private fun handle(channel: SocketChannel) {
         val reader = RequestReader(BufferedReadableByteChannel(channel))
 
-        val id = if (nextHeap.isNotEmpty()) {
-            val key = nextHeap.min()
-            nextHeap.remove(key)
-            key
-        } else next++
+        val id = when (val key = nextHeap.minOrNull()) {
+            null -> next++
+            else -> {
+                nextHeap.remove(key)
+                key
+            }
+        }
 
         log.fine("#$id connect")
 
