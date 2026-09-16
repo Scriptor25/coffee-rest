@@ -1,14 +1,16 @@
 package dev.scriptor.ui.html.builder
 
+import dev.scriptor.ui.BuilderContext
 import dev.scriptor.ui.dom.builder.Builder
 import dev.scriptor.ui.html.HtmlElement
 
 interface HtmlBuilder<T> : Builder<T> {
 
-    fun <E : HtmlElement, B : HtmlElementBuilder<E>> element(
+    context(_: BuilderContext)
+    fun <B : HtmlElementBuilder> element(
         builder: B,
         block: B.() -> Unit,
-    ): E {
+    ): HtmlElement {
         builder.apply(block)
         val element = builder.build()
         children += element

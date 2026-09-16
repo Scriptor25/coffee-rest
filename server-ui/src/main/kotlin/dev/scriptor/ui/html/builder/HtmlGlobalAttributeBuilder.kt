@@ -63,6 +63,8 @@ enum class HtmlPopover(val value: String) {
     MANUAL("manual"),
 }
 
+enum class HtmlRole(val value: String) {}
+
 enum class HtmlSpellCheck(val value: String) {
     TRUE("true"),
     FALSE("false"),
@@ -83,7 +85,7 @@ enum class HtmlWritingSuggestions(val value: String) {
     FALSE("false"),
 }
 
-class HtmlGlobalAttributesBuilder {
+open class HtmlGlobalAttributeBuilder {
 
     var accesskey: String? = null
     var anchor: String? = null
@@ -113,7 +115,7 @@ class HtmlGlobalAttributesBuilder {
     var nonce: String? = null
     var part: String? = null
     var popover: HtmlPopover? = null
-    var role: Unit? = null
+    var role: HtmlRole? = null
     var slot: String? = null
     var spellcheck: HtmlSpellCheck? = null
     var style: String? = null
@@ -290,12 +292,11 @@ class HtmlGlobalAttributesBuilder {
         "virtualkeyboardpolicy" to string(virtualkeyboardpolicy?.value),
         "writingsuggestions" to string(writingsuggestions?.value),
     )
-        .map {
-            when (it.second) {
-                is StringAttributeValue -> Attribute(it.first, it.second.value)
+        .mapNotNull {
+            when (val value = it.second) {
+                is StringAttributeValue -> Attribute(it.first, value.value)
                 is BooleanAttributeValue -> Attribute(it.first, null)
                 else -> null
             }
         }
-        .filter { it != null }
 }

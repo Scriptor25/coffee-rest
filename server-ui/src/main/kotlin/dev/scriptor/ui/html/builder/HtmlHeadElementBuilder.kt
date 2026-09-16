@@ -1,14 +1,10 @@
 package dev.scriptor.ui.html.builder
 
-import dev.scriptor.ui.dom.Text
-import dev.scriptor.ui.html.HtmlHeadElement
-import dev.scriptor.ui.html.HtmlTitleElement
+import dev.scriptor.ui.html.HtmlElement
 
-class HtmlHeadElementBuilder : HtmlElementBuilder<HtmlHeadElement>(::HtmlHeadElement) {
+class HtmlHeadElementBuilder : HtmlElementBuilder(false, "head", listOf()) {
 
-    fun title(content: String): HtmlTitleElement {
-        val element = HtmlTitleElement(listOf(), listOf(Text(content)))
-        children += element
-        return element
+    fun title(content: String): HtmlElement {
+        return element(false, "title") { +content }
     }
 }

@@ -1,6 +1,7 @@
 package dev.scriptor.ui.html.builder
 
-import dev.scriptor.ui.html.HtmlBodyElement
+import dev.scriptor.ui.dom.Attribute
 
-class HtmlBodyElementBuilder : HtmlElementBuilder<HtmlBodyElement>(::HtmlBodyElement) {
-}
+class HtmlBodyElementBuilder(
+    attributes: List<Attribute>,
+) : HtmlGenericElementBuilder(false, "body", attributes)

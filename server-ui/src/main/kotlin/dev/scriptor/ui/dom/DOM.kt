@@ -1,7 +1,9 @@
 package dev.scriptor.ui.dom
 
+import dev.scriptor.ui.BuilderContext
 import dev.scriptor.ui.dom.builder.DocumentBuilder
 
+context(_: BuilderContext)
 fun document(type: String, block: DocumentBuilder.() -> Unit): Document {
     val builder = DocumentBuilder(type)
     builder.apply(block)
