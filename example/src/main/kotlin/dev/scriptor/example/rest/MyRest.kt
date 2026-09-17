@@ -2,6 +2,7 @@ package dev.scriptor.example.rest
 
 import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.jvm.annotation.*
+import dev.scriptor.ui.Bundle
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -71,5 +72,43 @@ class MyRest {
             b = c
         }
         return a
+    }
+
+    @Get("/test", "text/html")
+    fun getTest(): String {
+        return Bundle().html {
+            head {
+                title("Hello world!")
+            }
+
+            body {
+                h1 { +"Hello world!" }
+                p { +"Lorem ipsum dolor sit amet" }
+
+                button {
+                    +"Click me!"
+
+                    on("click") {
+                        console.log("Hello world from click listener!")
+                    }
+                }
+
+                div({ htmlClass = "split" }) {
+                    h2 { +"some split content" }
+
+                    section {
+                        h3 { +"something on the left" }
+                    }
+
+                    section {
+                        h3 { +"something on the right" }
+                    }
+                }
+
+                style {
+
+                }
+            }
+        }.toXmlString()
     }
 }

@@ -8,8 +8,7 @@ class JsFunctionBuilder(
     val async: Boolean,
     val name: String?,
     val parameters: List<JsParameter>,
-) : JsBuilder<JsFunction> {
-    override val nodes = mutableListOf<JsNode>()
+) : JsBuilder<JsFunction>() {
 
     override fun build(): JsFunction {
         return JsFunction(

@@ -1,12 +1,12 @@
 package dev.scriptor.ui.html.builder
 
-import dev.scriptor.ui.BuilderContext
+import dev.scriptor.ui.Bundle
 import dev.scriptor.ui.dom.Attribute
 import dev.scriptor.ui.dom.Node
 import dev.scriptor.ui.html.HtmlElement
-import dev.scriptor.ui.js.JsFunction
-import dev.scriptor.ui.js.JsParameter
+import dev.scriptor.ui.js.*
 import dev.scriptor.ui.js.builder.JsFunctionBuilder
+import kotlin.uuid.Uuid
 
 typealias Component = (List<Attribute>, List<Node>) -> HtmlElement
 
@@ -16,10 +16,10 @@ typealias Component = (List<Attribute>, List<Node>) -> HtmlElement
 data class HtmlEventListener(
     val type: String,
     val function: JsFunction,
-    val capture: Boolean,
-    val once: Boolean,
-    val passive: Boolean,
-    val signal: Boolean,
+    val capture: Boolean? = null,
+    val once: Boolean? = null,
+    val passive: Boolean? = null,
+    val signal: Boolean? = null,
 )
 
 open class HtmlElementBuilder(
@@ -32,12 +32,40 @@ open class HtmlElementBuilder(
 
     val listeners = mutableListOf<HtmlEventListener>()
 
-    context(context: BuilderContext)
+    context(context: Bundle)
     override fun build(): HtmlElement {
-        return HtmlElement(void, tag, attributes, children)
+        val id = Uuid.random()
+
+        val element = HtmlElement(
+            void,
+            tag,
+            attributes + Attribute("data-id", id.toHexDashString()),
+            children,
+        )
+
+        for (listener in listeners) {
+            val document = JsSymbol("document")
+            val querySelector = JsMember(document, "querySelector")
+            val element = JsCall(querySelector, listOf(JsString("[data-id='${id.toHexDashString()}']")))
+            val addEventListener = JsMember(element, "addEventListener")
+
+            context.script.call(
+                addEventListener,
+                JsString(listener.type),
+                listener.function,
+                JsObject(
+                    "capture" to (listener.capture?.let { JsBoolean(listener.capture) } ?: JsUndefined),
+                    "once" to (listener.once?.let { JsBoolean(listener.once) } ?: JsUndefined),
+                    "passive" to (listener.passive?.let { JsBoolean(listener.passive) } ?: JsUndefined),
+                    "signal" to (listener.signal?.let { JsBoolean(listener.signal) } ?: JsUndefined),
+                ),
+            )
+        }
+
+        return element
     }
 
-    context(_: BuilderContext)
+    context(_: Bundle)
     fun element(
         void: Boolean,
         tag: String,
@@ -47,7 +75,7 @@ open class HtmlElementBuilder(
         return element(void, tag, attributes.map { Attribute(it.first, it.second) }, block)
     }
 
-    context(_: BuilderContext)
+    context(_: Bundle)
     fun element(
         void: Boolean,
         tag: String,
@@ -63,10 +91,10 @@ open class HtmlElementBuilder(
 
     fun on(
         type: String,
-        capture: Boolean = false,
-        once: Boolean = false,
-        passive: Boolean = false,
-        signal: Boolean = false,
+        capture: Boolean? = null,
+        once: Boolean? = null,
+        passive: Boolean? = null,
+        signal: Boolean? = null,
         block: JsFunctionBuilder.() -> Unit,
     ) {
         val builder = JsFunctionBuilder(

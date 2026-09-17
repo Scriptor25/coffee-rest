@@ -1,13 +1,13 @@
 package dev.scriptor.ui.dom.builder
 
-import dev.scriptor.ui.BuilderContext
+import dev.scriptor.ui.Bundle
 import dev.scriptor.ui.dom.*
 
 interface Builder<T> {
 
     val children: MutableList<Node>
 
-    context(context: BuilderContext)
+    context(context: Bundle)
     fun build(): T
 
     fun text(content: String): Text {
@@ -22,7 +22,7 @@ interface Builder<T> {
         return comment
     }
 
-    context(_: BuilderContext)
+    context(_: Bundle)
     fun element(tag: String, vararg attributes: Pair<String, String?>, block: ElementBuilder.() -> Unit = {}): Element {
         val builder = ElementBuilder(tag, attributes.map { Attribute(it.first, it.second) })
         builder.apply(block)

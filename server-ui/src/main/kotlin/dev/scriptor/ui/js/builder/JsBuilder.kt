@@ -1,10 +1,30 @@
 package dev.scriptor.ui.js.builder
 
-import dev.scriptor.ui.js.JsNode
+import dev.scriptor.ui.js.*
 
-interface JsBuilder<T> {
+abstract class JsBuilder<T> {
 
-    val nodes: MutableList<JsNode>
+    val nodes = mutableListOf<JsNode>()
 
-    fun build(): T
+    val console = JsConsoleBuilder(this)
+
+    abstract fun build(): T
+
+    fun const(name: String, initializer: JsExpression): JsVariable {
+        val node = JsVariable(JsVariableKind.CONST, name, initializer)
+        nodes += node
+        return node
+    }
+
+    fun let(name: String, initializer: JsExpression? = null): JsVariable {
+        val node = JsVariable(JsVariableKind.LET, name, initializer)
+        nodes += node
+        return node
+    }
+
+    fun call(callee: JsExpression, vararg arguments: JsExpression): JsCall {
+        val node = JsCall(callee, arguments.asList())
+        nodes += node
+        return node
+    }
 }

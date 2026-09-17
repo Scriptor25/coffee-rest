@@ -1,6 +1,6 @@
 package dev.scriptor.ui.dom.builder
 
-import dev.scriptor.ui.BuilderContext
+import dev.scriptor.ui.Bundle
 import dev.scriptor.ui.dom.Attribute
 import dev.scriptor.ui.dom.Element
 import dev.scriptor.ui.dom.Node
@@ -12,7 +12,7 @@ open class ElementBuilder(
 
     override val children = mutableListOf<Node>()
 
-    context(context: BuilderContext)
+    context(context: Bundle)
     override fun build(): Element {
         return Element(
             tag,
