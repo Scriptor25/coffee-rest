@@ -49,7 +49,7 @@ open class HtmlGenericBuilder(
         val builder = JsNodesBuilder()
         builder.block()
         val script = builder.build()
-        val text = script.joinToString(";", transform = JsNode::toJsString)
+        val source = script.joinToString(";", transform = JsNode::toJsString)
 
         return htmlElement(
             false,
@@ -58,7 +58,7 @@ open class HtmlGenericBuilder(
                 attributeBlock()
                 this["type"] = "module"
             },
-        ) { +text }
+        ) { raw(source) }
     }
 
     context(_: Bundle)
@@ -68,14 +68,14 @@ open class HtmlGenericBuilder(
     ): HtmlElement {
         val builder = CssNodesBuilder()
         builder.block()
-        val style = builder.build()
-        val text = style.joinToString(" ", transform = CssNode::toCssString)
+        val styles = builder.build()
+        val source = styles.joinToString(" ", transform = CssNode::toCssString)
 
         return htmlElement(
             false,
             "style",
             attributeBlock,
-        ) { +text }
+        ) { raw(source) }
     }
 
     context(_: Bundle)
