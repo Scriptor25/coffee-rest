@@ -22,7 +22,7 @@ open class HtmlGenericBuilder(
         block: HtmlGenericBuilder.() -> Unit = {},
     ): HtmlElement {
         val builder = HtmlAttributeBuilder()
-        builder.apply(attributeBlock)
+        builder.attributeBlock()
         val attributes = builder.build()
         return htmlElement(void, tag, attributes, block)
     }
@@ -35,7 +35,7 @@ open class HtmlGenericBuilder(
         block: HtmlGenericBuilder.() -> Unit = {},
     ): HtmlElement {
         val builder = HtmlGenericBuilder(void, tag, attributes)
-        builder.apply(block)
+        builder.block()
         val element = builder.build()
         children += element
         return element
@@ -47,7 +47,7 @@ open class HtmlGenericBuilder(
         block: JsNodesBuilder.() -> Unit = {},
     ): HtmlElement {
         val builder = JsNodesBuilder()
-        builder.apply(block)
+        builder.block()
         val script = builder.build()
         val text = script.joinToString(";", transform = JsNode::toJsString)
 
@@ -67,7 +67,7 @@ open class HtmlGenericBuilder(
         block: CssNodesBuilder.() -> Unit = {},
     ): HtmlElement {
         val builder = CssNodesBuilder()
-        builder.apply(block)
+        builder.block()
         val style = builder.build()
         val text = style.joinToString(" ", transform = CssNode::toCssString)
 

@@ -25,7 +25,7 @@ interface Builder<T> {
     context(_: Bundle)
     fun element(tag: String, vararg attributes: Pair<String, String?>, block: ElementBuilder.() -> Unit = {}): Element {
         val builder = ElementBuilder(tag, attributes.map { Attribute(it.first, it.second) })
-        builder.apply(block)
+        builder.block()
         val element = builder.build()
         children += element
         return element

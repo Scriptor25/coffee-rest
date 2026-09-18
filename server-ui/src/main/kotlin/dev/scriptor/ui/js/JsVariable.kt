@@ -12,5 +12,5 @@ data class JsVariable(
 ) : JsNode {
 
     override fun toJsString(): String =
-        "$kind $name${if (initializer != null) " = $initializer" else ""}"
+        "${kind.value} $name${if (initializer != null) " = ${initializer.toJsString()}" else ""}"
 }

@@ -3,7 +3,7 @@ package dev.scriptor.ui.dom.builder
 import dev.scriptor.ui.dom.Attribute
 import kotlin.reflect.KProperty
 
-abstract class AttributeBuilder {
+open class AttributeBuilder {
 
     private sealed interface AttributeValue
 

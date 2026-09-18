@@ -6,95 +6,95 @@ abstract class JsBuilder<T> {
 
     val nodes = mutableListOf<JsNode>()
 
-    val console = JsConsoleBuilder(this)
+    val console = JsConsoleProxy
+    val window = JsWindowProxy
+    val document = JsDocumentProxy
 
     abstract fun build(): T
 
-    fun const(name: String, initializer: JsExpression): JsVariable {
-        val node = JsVariable(JsVariableKind.CONST, name, initializer)
-        nodes += node
-        return node
-    }
-
-    fun let(name: String, initializer: JsExpression? = null): JsVariable {
-        val node = JsVariable(JsVariableKind.LET, name, initializer)
+    fun <T : JsNode> emit(node: T): T {
         nodes += node
         return node
     }
 
     fun call(callee: JsExpression, vararg arguments: JsExpression): JsCall {
-        val node = JsCall(callee, arguments.asList())
-        nodes += node
-        return node
+        return emit(JsCall(callee, arguments.asList()))
+    }
+
+    fun new(constructor: JsExpression, vararg arguments: JsExpression): JsNew {
+        return emit(JsNew(constructor, arguments.asList()))
+    }
+
+    fun operator(kind: JsOperatorKind, vararg arguments: JsExpression): JsOperator {
+        return emit(JsOperator(kind, arguments.asList()))
+    }
+
+    fun const(name: String, initializer: JsExpression): JsSymbol {
+        emit(JsVariable(JsVariableKind.CONST, name, initializer))
+        return JsSymbol(name)
+    }
+
+    fun let(name: String, initializer: JsExpression? = null): JsSymbol {
+        emit(JsVariable(JsVariableKind.LET, name, initializer))
+        return JsSymbol(name)
     }
 
     fun eval(script: String): JsCall {
-        val callee = JsSymbol("eval")
-        return call(callee, JsString(script))
+        return eval(JsString(script))
     }
 
     fun eval(script: JsExpression): JsCall {
-        val callee = JsSymbol("eval")
-        return call(callee, script)
+        return JsSymbol("eval")(script)
     }
 
     fun isFinite(value: JsExpression): JsCall {
-        val callee = JsSymbol("isFinite")
-        return call(callee, value)
+        return JsSymbol("isFinite")(value)
     }
 
     fun isNaN(value: JsExpression): JsCall {
-        val callee = JsSymbol("isNaN")
-        return call(callee, value)
+        return JsSymbol("isNaN")(value)
     }
 
     fun parseFloat(string: String): JsCall {
-        val callee = JsSymbol("parseFloat")
-        return call(callee, JsString(string))
+        return parseFloat(JsString(string))
     }
 
     fun parseFloat(string: JsExpression): JsCall {
-        val callee = JsSymbol("parseFloat")
-        return call(callee, string)
+        return JsSymbol("parseFloat")(string)
     }
 
     fun parseInt(string: String, radix: Int? = null): JsCall {
-        val callee = JsSymbol("parseInt")
-        return call(callee, JsString(string), radix?.let { JsNumber(it) } ?: JsUndefined)
+        return parseInt(
+            JsString(string),
+            radix?.let { JsNumber(it) } ?: JsUndefined,
+        )
     }
 
     fun parseInt(string: JsExpression, radix: JsExpression = JsUndefined): JsCall {
-        val callee = JsSymbol("parseInt")
-        return call(callee, string, radix)
+        return JsSymbol("parseInt")(string, radix)
     }
 
     fun decodeURI(uri: JsExpression): JsCall {
-        val callee = JsSymbol("decodeURI")
-        return call(callee, uri)
+        return JsSymbol("decodeURI")(uri)
     }
 
     fun decodeURIComponent(component: JsExpression): JsCall {
-        val callee = JsSymbol("decodeURIComponent")
-        return call(callee, component)
+        return JsSymbol("decodeURIComponent")(component)
     }
 
     fun encodeURI(uri: JsExpression): JsCall {
-        val callee = JsSymbol("encodeURI")
-        return call(callee, uri)
+        return JsSymbol("encodeURI")(uri)
     }
 
     fun encodeURIComponent(component: JsExpression): JsCall {
-        val callee = JsSymbol("encodeURIComponent")
-        return call(callee, component)
+        return JsSymbol("encodeURIComponent")(component)
     }
 
     fun escape(str: JsExpression): JsCall {
-        val callee = JsSymbol("escape")
-        return call(callee, str)
+        return JsSymbol("escape")(str)
     }
 
     fun unescape(str: JsExpression): JsCall {
-        val callee = JsSymbol("unescape")
-        return call(callee, str)
+        return JsSymbol("unescape")(str)
     }
 }

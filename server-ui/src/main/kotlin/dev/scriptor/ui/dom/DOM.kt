@@ -6,7 +6,7 @@ import dev.scriptor.ui.dom.builder.DocumentBuilder
 context(_: Bundle)
 fun document(type: String, block: DocumentBuilder.() -> Unit): Document {
     val builder = DocumentBuilder(type)
-    builder.apply(block)
+    builder.block()
     return builder.build()
 }
 

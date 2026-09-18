@@ -11,7 +11,7 @@ interface HtmlBuilder<T> : Builder<T> {
         builder: B,
         block: B.() -> Unit,
     ): HtmlElement {
-        builder.apply(block)
+        builder.block()
         val element = builder.build()
         children += element
         return element

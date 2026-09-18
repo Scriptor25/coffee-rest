@@ -11,7 +11,7 @@ abstract class CssBuilder<T> {
 
     fun define(selector: String, block: CssClassBuilder.() -> Unit): CssClass {
         val builder = CssClassBuilder(selector)
-        builder.apply(block)
+        builder.block()
         val node = builder.build()
         nodes += node
         return node

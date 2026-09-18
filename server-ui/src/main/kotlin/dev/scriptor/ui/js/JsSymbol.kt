@@ -1,6 +1,6 @@
 package dev.scriptor.ui.js
 
-data class JsSymbol(
+open class JsSymbol(
     val name: String,
 ) : JsExpression {
 

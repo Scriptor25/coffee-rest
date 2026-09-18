@@ -18,6 +18,12 @@ class HtmlHeadElementBuilder : HtmlElementBuilder(false, "head", listOf()) {
         media: String? = null,
         name: String? = null,
     ): HtmlElement {
-        return element(true, "meta") {}
+        return element(true, "meta", {
+            this["charset"] = charset
+            this["content"] = content
+            this["http-equiv"] = httpEquiv
+            this["media"] = media
+            this["name"] = name
+        })
     }
 }

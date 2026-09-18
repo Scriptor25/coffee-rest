@@ -3,11 +3,10 @@ package dev.scriptor.ui.html.builder
 import dev.scriptor.ui.Bundle
 import dev.scriptor.ui.dom.Attribute
 import dev.scriptor.ui.dom.Node
+import dev.scriptor.ui.dom.builder.AttributeBuilder
 import dev.scriptor.ui.html.HtmlElement
 import dev.scriptor.ui.js.*
 import dev.scriptor.ui.js.builder.JsFunctionBuilder
-
-typealias Component = (List<Attribute>, List<Node>) -> HtmlElement
 
 /**
  * `addEventListener(type, function, { capture, once, passive, signal })`
@@ -43,29 +42,32 @@ open class HtmlElementBuilder(
         } else {
             val id = bundle.allocateId()
 
-            for (listener in listeners) {
-                val document = JsSymbol("document")
-                val querySelector = JsMember(document, "querySelector")
-                val element = JsCall(querySelector, listOf(JsString("[data-id='$id']")))
-                val addEventListener = JsMember(element, "addEventListener")
-
-                val options =
-                    if (listener.capture == null && listener.once == null && listener.passive == null && listener.signal == null)
-                        JsUndefined
-                    else
-                        JsObject(
-                            "capture" to (listener.capture?.let { JsBoolean(listener.capture) } ?: JsUndefined),
-                            "once" to (listener.once?.let { JsBoolean(listener.once) } ?: JsUndefined),
-                            "passive" to (listener.passive?.let { JsBoolean(listener.passive) } ?: JsUndefined),
-                            "signal" to (listener.signal?.let { JsBoolean(listener.signal) } ?: JsUndefined),
+            bundle.script.apply {
+                for (listener in listeners) {
+                    val options =
+                        if (
+                            listener.capture == null &&
+                            listener.once == null &&
+                            listener.passive == null &&
+                            listener.signal == null
                         )
+                            JsUndefined
+                        else
+                            JsObject(
+                                "capture" to (listener.capture?.let { JsBoolean(listener.capture) } ?: JsUndefined),
+                                "once" to (listener.once?.let { JsBoolean(listener.once) } ?: JsUndefined),
+                                "passive" to (listener.passive?.let { JsBoolean(listener.passive) } ?: JsUndefined),
+                                "signal" to (listener.signal?.let { JsBoolean(listener.signal) } ?: JsUndefined),
+                            )
 
-                bundle.script.call(
-                    addEventListener,
-                    JsString(listener.type),
-                    listener.function,
-                    options,
-                )
+                    val element = document.querySelector("[data-id='$id']")
+
+                    +element["addEventListener"](
+                        JsString(listener.type),
+                        listener.function,
+                        options,
+                    )
+                }
             }
 
             HtmlElement(
@@ -83,10 +85,11 @@ open class HtmlElementBuilder(
     fun element(
         void: Boolean,
         tag: String,
-        vararg attributes: Pair<String, String?>,
-        block: HtmlElementBuilder.() -> Unit
+        attributeBlock: AttributeBuilder.() -> Unit = {},
+        block: HtmlElementBuilder.() -> Unit = {},
     ): HtmlElement {
-        return element(void, tag, attributes.map { Attribute(it.first, it.second) }, block)
+        val attributes = AttributeBuilder().apply(attributeBlock).build()
+        return element(void, tag, attributes, block)
     }
 
     context(_: Bundle)
@@ -94,11 +97,9 @@ open class HtmlElementBuilder(
         void: Boolean,
         tag: String,
         attributes: List<Attribute>,
-        block: HtmlElementBuilder.() -> Unit
+        block: HtmlElementBuilder.() -> Unit = {},
     ): HtmlElement {
-        val builder = HtmlElementBuilder(void, tag, attributes)
-        builder.apply(block)
-        val element = builder.build()
+        val element = HtmlElementBuilder(void, tag, attributes).apply(block).build()
         children += element
         return element
     }
@@ -109,15 +110,14 @@ open class HtmlElementBuilder(
         once: Boolean? = null,
         passive: Boolean? = null,
         signal: Boolean? = null,
-        block: JsFunctionBuilder.() -> Unit,
+        block: JsFunctionBuilder.(Array<JsSymbol>) -> Unit,
     ) {
-        val builder = JsFunctionBuilder(
+        val function = JsFunctionBuilder(
             false,
             null,
             listOf(JsParameter("event", false)),
-        )
-        builder.apply(block)
-        val function = builder.build()
+        ).apply(block).build()
+
         listeners += HtmlEventListener(
             type,
             function,
