@@ -2,6 +2,8 @@ package dev.scriptor.example.rest
 
 import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.jvm.annotation.*
+import dev.scriptor.ui.Bundle
+import dev.scriptor.ui.css.builder.*
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -44,21 +46,23 @@ class MyRest {
         val author = json["author"]
         val quote = json["quote"]
 
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>${author} | Random Quote</title>
-            </head>
-            <body>
-                <blockquote>
-                    <p>${quote}</p>
-                    <p>&mdash; <cite>${author}</cite></p>
-                </blockquote>
-            </body>
-            </html>
-        """.trimIndent()
+        return Bundle().html {
+            head {
+                meta(charset = "utf-8")
+                title("$author | Random Quote")
+            }
+
+            body {
+                blockquote {
+                    p { +"$quote" }
+                    p {
+                        entity("mdash")
+                        +" "
+                        cite { +"$author" }
+                    }
+                }
+            }
+        }.toXmlString()
     }
 
     @Get("/fib([n])", result = "text/plain")
@@ -71,5 +75,49 @@ class MyRest {
             b = c
         }
         return a
+    }
+
+    @Get("/test", "text/html")
+    fun getTest(): String {
+        return Bundle().html {
+            head {
+                title("Hello world!")
+            }
+
+            body {
+                h1 { +"Hello world!" }
+                p { +"Lorem ipsum dolor sit amet" }
+
+                button {
+                    +"Click me!"
+
+                    on("click") {
+                        console.log("Hello world from click listener!")
+                    }
+                }
+
+                h2 { +"some split content" }
+
+                div({ htmlClass = "split" }) {
+                    section {
+                        h3 { +"something on the left" }
+                    }
+
+                    section {
+                        h3 { +"something on the right" }
+                    }
+                }
+
+                style {
+                    div("split") {
+                        display = CssDisplay.FLEX
+                        flexDirection = CssFlexDirection.ROW
+                        flexWrap = CssFlexWrap.NOWRAP
+                        alignItems = CssAlignItems.FLEX_START
+                        justifyContent = CssJustifyContent.SPACE_BETWEEN
+                    }
+                }
+            }
+        }.toXmlString()
     }
 }
