@@ -1,7 +1,6 @@
 package dev.scriptor.ui.css.builder
 
 import dev.scriptor.ui.css.CssClass
-import dev.scriptor.ui.css.CssNode
 
 enum class CssAlignItems(val value: String) {
     NORMAL("normal"),
@@ -316,7 +315,6 @@ class CssClassBuilder(
 ) : CssBuilder<CssClass>() {
 
     val properties = mutableMapOf<String, String?>()
-    val children = mutableListOf<CssNode>()
 
     fun <E : Enum<E>> enum(name: String, parse: (String) -> E?): E? =
         when (val value = properties[name]) {
@@ -335,7 +333,7 @@ class CssClassBuilder(
         return CssClass(
             selector,
             properties,
-            children,
+            nodes,
         )
     }
 
