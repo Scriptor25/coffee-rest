@@ -21,9 +21,7 @@ open class HtmlGenericBuilder(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
         block: HtmlGenericBuilder.() -> Unit = {},
     ): HtmlElement {
-        val builder = HtmlAttributeBuilder()
-        builder.attributeBlock()
-        val attributes = builder.build()
+        val attributes = HtmlAttributeBuilder().apply(attributeBlock).build()
         return htmlElement(void, tag, attributes, block)
     }
 
@@ -34,9 +32,7 @@ open class HtmlGenericBuilder(
         attributes: List<Attribute>,
         block: HtmlGenericBuilder.() -> Unit = {},
     ): HtmlElement {
-        val builder = HtmlGenericBuilder(void, tag, attributes)
-        builder.block()
-        val element = builder.build()
+        val element = HtmlGenericBuilder(void, tag, attributes).apply(block).build()
         children += element
         return element
     }
@@ -46,9 +42,7 @@ open class HtmlGenericBuilder(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
         block: JsNodesBuilder.() -> Unit = {},
     ): HtmlElement {
-        val builder = JsNodesBuilder()
-        builder.block()
-        val script = builder.build()
+        val script = JsNodesBuilder().apply(block).build()
         val source = script.joinToString(";", transform = JsNode::toJsString)
 
         return htmlElement(
@@ -66,9 +60,7 @@ open class HtmlGenericBuilder(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
         block: CssNodesBuilder.() -> Unit = {},
     ): HtmlElement {
-        val builder = CssNodesBuilder()
-        builder.block()
-        val styles = builder.build()
+        val styles = CssNodesBuilder().apply(block).build()
         val source = styles.joinToString(" ", transform = CssNode::toCssString)
 
         return htmlElement(
@@ -163,9 +155,7 @@ open class HtmlGenericBuilder(
         attributeBlock: HtmlButtonElementAttributeBuilder.() -> Unit = {},
         block: HtmlGenericBuilder.() -> Unit = {},
     ): HtmlElement {
-        val builder = HtmlButtonElementAttributeBuilder()
-        builder.attributeBlock()
-        val attributes = builder.build()
+        val attributes = HtmlButtonElementAttributeBuilder().apply(attributeBlock).build()
         return htmlElement(false, "button", attributes, block)
     }
 
@@ -222,18 +212,17 @@ open class HtmlGenericBuilder(
         attributeBlock: HtmlAnchorElementAttributeBuilder.() -> Unit = {},
         block: HtmlGenericBuilder.() -> Unit = {},
     ): HtmlElement {
-        val builder = HtmlAnchorElementAttributeBuilder()
-        builder.attributeBlock()
-        val attributes = builder.build()
+        val attributes = HtmlAnchorElementAttributeBuilder().apply(attributeBlock).build()
         return htmlElement(false, "a", attributes, block)
     }
 
     context(_: Bundle)
     fun form(
-        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        attributeBlock: HtmlFormElementAttributeBuilder.() -> Unit = {},
         block: HtmlGenericBuilder.() -> Unit = {},
     ): HtmlElement {
-        return htmlElement(false, "form", attributeBlock, block)
+        val attributes = HtmlFormElementAttributeBuilder().apply(attributeBlock).build()
+        return htmlElement(false, "form", attributes, block)
     }
 
     context(_: Bundle)
@@ -248,9 +237,7 @@ open class HtmlGenericBuilder(
     fun input(
         attributeBlock: HtmlInputElementAttributeBuilder.() -> Unit = {},
     ): HtmlElement {
-        val builder = HtmlInputElementAttributeBuilder()
-        builder.attributeBlock()
-        val attributes = builder.build()
+        val attributes = HtmlInputElementAttributeBuilder().apply(attributeBlock).build()
         return htmlElement(true, "input", attributes)
     }
 }
