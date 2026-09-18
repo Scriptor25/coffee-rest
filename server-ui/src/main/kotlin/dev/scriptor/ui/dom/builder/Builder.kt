@@ -43,7 +43,11 @@ interface Builder<T> {
         return node
     }
 
-    operator fun String.unaryPlus(): Text {
-        return text(this)
+    operator fun String.unaryPlus() {
+        text(this)
+    }
+
+    operator fun Node.unaryPlus() {
+        children += this
     }
 }
