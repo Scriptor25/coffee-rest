@@ -29,6 +29,24 @@ abstract class JsBuilder<T> {
         return emit(JsOperator(kind, arguments.asList()))
     }
 
+    fun function(
+        vararg parameters: String,
+        name: String? = null,
+        async: Boolean = false,
+        block: JsFunctionBuilder.(Array<JsSymbol>) -> Unit,
+    ): JsExpression {
+        val function = JsFunctionBuilder(async, name, parameters.map { JsParameter(it, false) })
+            .apply(block)
+            .build()
+
+        if (name != null) {
+            emit(function)
+            return JsSymbol(name)
+        }
+
+        return function
+    }
+
     fun const(name: String, initializer: JsExpression): JsSymbol {
         emit(JsVariable(JsVariableKind.CONST, name, initializer))
         return JsSymbol(name)
