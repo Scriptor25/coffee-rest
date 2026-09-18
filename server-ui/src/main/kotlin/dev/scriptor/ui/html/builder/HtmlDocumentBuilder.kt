@@ -12,24 +12,26 @@ class HtmlDocumentBuilder : HtmlBuilder<Document> {
     context(bundle: Bundle)
     override fun build(): Document {
         val script = bundle.script.build()
-        val text = Text(script.joinToString(";", transform = JsNode::toJsString))
+        if (script.isNotEmpty()) {
+            val source = Text(script.joinToString(";", transform = JsNode::toJsString))
 
-        val element = HtmlElement(
-            false,
-            "script",
-            listOf(Attribute("type", "module")),
-            listOf(text),
-        )
-
-        val body = children.filterIsInstance<HtmlElement>().find { it.tag == "body" }
-        if (body != null) {
-            children -= body
-            children += HtmlElement(
+            val element = HtmlElement(
                 false,
-                "body",
-                body.attributes,
-                body.children + element,
+                "script",
+                listOf(Attribute("type", "module")),
+                listOf(source),
             )
+
+            val body = children.filterIsInstance<HtmlElement>().find { it.tag == "body" }
+            if (body != null) {
+                children -= body
+                children += HtmlElement(
+                    false,
+                    "body",
+                    body.attributes,
+                    body.children + element,
+                )
+            }
         }
 
         return Document("html", children)
