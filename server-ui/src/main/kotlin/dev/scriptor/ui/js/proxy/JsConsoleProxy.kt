@@ -1,4 +1,4 @@
-package dev.scriptor.ui.js.builder
+package dev.scriptor.ui.js.proxy
 
 import dev.scriptor.ui.js.*
 
@@ -21,7 +21,7 @@ enum class JsConsoleTimeStampColor(val value: String) {
     ERROR("error"),
 }
 
-data object JsConsoleProxy : JsSymbol("console") {
+class JsConsoleProxy(value: JsExpression) : JsProxy(value) {
 
     fun assert(assertion: JsExpression, vararg values: JsExpression): JsCall {
         return this["assert"](assertion, *values)

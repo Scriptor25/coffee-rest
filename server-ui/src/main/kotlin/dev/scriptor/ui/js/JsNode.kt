@@ -10,7 +10,4 @@ interface JsNode {
     fun emit() {
         builder.emit(this)
     }
-
-    context(builder: JsBuilder<*>)
-    operator fun unaryPlus() = emit()
 }

@@ -92,7 +92,7 @@ class MyRest {
                     +"Click me!"
 
                     on("click") {
-                        +console.log("Hello world from click listener!")
+                        console.log("Hello world from click listener!").emit()
                     }
                 }
 

@@ -1,32 +1,46 @@
 package dev.scriptor.ui.js.builder
 
 import dev.scriptor.ui.js.*
+import dev.scriptor.ui.js.proxy.JsConsoleProxy
+import dev.scriptor.ui.js.proxy.JsDocumentProxy
+import dev.scriptor.ui.js.proxy.JsWindowProxy
 
 abstract class JsBuilder<T> {
 
     val nodes = mutableListOf<JsNode>()
 
-    val console = JsConsoleProxy
-    val window = JsWindowProxy
-    val document = JsDocumentProxy
+    val console = JsConsoleProxy(JsSymbol("console"))
+    val window = JsWindowProxy(JsSymbol("window"))
+    val document = JsDocumentProxy(JsSymbol("document"))
 
     abstract fun build(): T
 
-    fun <T : JsNode> emit(node: T): T {
+    fun <T : JsNode> emit(node: T) {
         nodes += node
-        return node
     }
 
     fun call(callee: JsExpression, vararg arguments: JsExpression): JsCall {
-        return emit(JsCall(callee, arguments.asList()))
+        return JsCall(callee, arguments.asList())
+    }
+
+    fun emitCall(callee: JsExpression, vararg arguments: JsExpression) {
+        emit(call(callee, *arguments))
     }
 
     fun new(constructor: JsExpression, vararg arguments: JsExpression): JsNew {
-        return emit(JsNew(constructor, arguments.asList()))
+        return JsNew(constructor, arguments.asList())
+    }
+
+    fun emitNew(constructor: JsExpression, vararg arguments: JsExpression) {
+        emit(new(constructor, *arguments))
     }
 
     fun operator(kind: JsOperatorKind, vararg arguments: JsExpression): JsOperator {
-        return emit(JsOperator(kind, arguments.asList()))
+        return JsOperator(kind, arguments.asList())
+    }
+
+    fun emitOperator(kind: JsOperatorKind, vararg arguments: JsExpression) {
+        emit(operator(kind, *arguments))
     }
 
     fun function(
@@ -34,27 +48,52 @@ abstract class JsBuilder<T> {
         name: String? = null,
         async: Boolean = false,
         block: JsFunctionBuilder.(Array<JsSymbol>) -> Unit,
-    ): JsExpression {
+    ): JsFunction {
+        return JsFunctionBuilder(async, name, parameters.map { JsParameter(it, false) })
+            .apply(block)
+            .build()
+    }
+
+    fun emitFunction(
+        vararg parameters: String,
+        name: String? = null,
+        async: Boolean = false,
+        block: JsFunctionBuilder.(Array<JsSymbol>) -> Unit,
+    ) {
         val function = JsFunctionBuilder(async, name, parameters.map { JsParameter(it, false) })
             .apply(block)
             .build()
 
-        if (name != null) {
-            emit(function)
-            return JsSymbol(name)
-        }
-
-        return function
+        emit(function)
     }
 
-    fun const(name: String, initializer: JsExpression): JsSymbol {
+    fun emitConst(name: String, initializer: JsExpression): JsSymbol {
         emit(JsVariable(JsVariableKind.CONST, name, initializer))
         return JsSymbol(name)
     }
 
-    fun let(name: String, initializer: JsExpression? = null): JsSymbol {
+    fun emitLet(name: String, initializer: JsExpression? = null): JsSymbol {
         emit(JsVariable(JsVariableKind.LET, name, initializer))
         return JsSymbol(name)
+    }
+
+    fun emitReturn(value: JsExpression = JsUndefined) {
+        emit(JsReturn(value))
+    }
+
+    fun emitThrow(value: JsExpression = JsUndefined) {
+        emit(JsThrow(value))
+    }
+
+    fun emitIf(
+        condition: JsExpression,
+        thenBlock: JsBlockBuilder.() -> Unit,
+        elseBlock: JsBlockBuilder.() -> Unit = {},
+    ) {
+        val t = JsBlockBuilder().apply(thenBlock).build()
+        val e = JsBlockBuilder().apply(elseBlock).build()
+
+        emit(JsIf(condition, t, e))
     }
 
     fun eval(script: String): JsCall {

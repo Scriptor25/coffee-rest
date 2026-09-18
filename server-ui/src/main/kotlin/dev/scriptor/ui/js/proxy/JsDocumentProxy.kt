@@ -1,11 +1,10 @@
-package dev.scriptor.ui.js.builder
+package dev.scriptor.ui.js.proxy
 
 import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsString
-import dev.scriptor.ui.js.JsSymbol
 
-data object JsDocumentProxy : JsSymbol("document") {
+class JsDocumentProxy(value: JsExpression) : JsProxy(value) {
 
     fun querySelector(selectors: String): JsCall {
         return querySelector(JsString(selectors))

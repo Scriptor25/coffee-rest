@@ -4,7 +4,7 @@ fun validateKey(key: String): Boolean {
     return """^[A-Za-z_$][A-Za-z0-9_$]*$""".toRegex().matches(key);
 }
 
-data class JsMember(
+open class JsMember(
     val value: JsExpression,
     val name: JsExpression,
 ) : JsExpression {

@@ -62,11 +62,11 @@ open class HtmlElementBuilder(
 
                     val element = document.querySelector("[data-id='$id']")
 
-                    +element["addEventListener"](
+                    element["addEventListener"](
                         JsString(listener.type),
                         listener.function,
                         options,
-                    )
+                    ).emit()
                 }
             }
 
