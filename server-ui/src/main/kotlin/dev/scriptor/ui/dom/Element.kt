@@ -8,7 +8,8 @@ open class Element(
 
     override fun toXmlString(): String =
         "<$tag${
-            attributes.joinToString(
+            if (attributes.isEmpty()) ""
+            else attributes.joinToString(
                 " ",
                 " ",
                 transform = Attribute::toXmlString,

@@ -9,4 +9,15 @@ class HtmlHeadElementBuilder : HtmlElementBuilder(false, "head", listOf()) {
     fun title(content: String): HtmlElement {
         return element(false, "title") { +content }
     }
+
+    context(_: Bundle)
+    fun meta(
+        charset: String? = null,
+        content: String? = null,
+        httpEquiv: String? = null,
+        media: String? = null,
+        name: String? = null,
+    ): HtmlElement {
+        return element(true, "meta") {}
+    }
 }

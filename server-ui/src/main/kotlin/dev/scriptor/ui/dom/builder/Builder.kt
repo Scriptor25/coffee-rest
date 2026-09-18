@@ -7,7 +7,7 @@ interface Builder<T> {
 
     val children: MutableList<Node>
 
-    context(context: Bundle)
+    context(bundle: Bundle)
     fun build(): T
 
     fun text(content: String): Text {
@@ -29,6 +29,12 @@ interface Builder<T> {
         val element = builder.build()
         children += element
         return element
+    }
+
+    fun entity(name: String): Entity {
+        val entity = Entity(name)
+        children += entity
+        return entity
     }
 
     operator fun String.unaryPlus(): Text {

@@ -15,7 +15,15 @@ open class HtmlElement(
     children,
 ) {
     override fun toXmlString(): String = when (void) {
-        true -> "<$tag${attributes.joinToString(" ", " ", transform = Attribute::toXmlString)}>"
+        true -> "<$tag${
+            if (attributes.isEmpty()) ""
+            else attributes.joinToString(
+                " ",
+                " ",
+                transform = Attribute::toXmlString,
+            )
+        }>"
+
         false -> super.toXmlString()
     }
 }

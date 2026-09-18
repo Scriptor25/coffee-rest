@@ -31,7 +31,7 @@ open class HtmlElementBuilder(
 
     val listeners = mutableListOf<HtmlEventListener>()
 
-    context(context: Bundle)
+    context(bundle: Bundle)
     override fun build(): HtmlElement {
         val element = if (listeners.isEmpty()) {
             HtmlElement(
@@ -41,7 +41,7 @@ open class HtmlElementBuilder(
                 children,
             )
         } else {
-            val id = context.allocateId()
+            val id = bundle.allocateId()
 
             for (listener in listeners) {
                 val document = JsSymbol("document")
@@ -49,16 +49,22 @@ open class HtmlElementBuilder(
                 val element = JsCall(querySelector, listOf(JsString("[data-id='$id']")))
                 val addEventListener = JsMember(element, "addEventListener")
 
-                context.script.call(
+                val options =
+                    if (listener.capture == null && listener.once == null && listener.passive == null && listener.signal == null)
+                        JsUndefined
+                    else
+                        JsObject(
+                            "capture" to (listener.capture?.let { JsBoolean(listener.capture) } ?: JsUndefined),
+                            "once" to (listener.once?.let { JsBoolean(listener.once) } ?: JsUndefined),
+                            "passive" to (listener.passive?.let { JsBoolean(listener.passive) } ?: JsUndefined),
+                            "signal" to (listener.signal?.let { JsBoolean(listener.signal) } ?: JsUndefined),
+                        )
+
+                bundle.script.call(
                     addEventListener,
                     JsString(listener.type),
                     listener.function,
-                    JsObject(
-                        "capture" to (listener.capture?.let { JsBoolean(listener.capture) } ?: JsUndefined),
-                        "once" to (listener.once?.let { JsBoolean(listener.once) } ?: JsUndefined),
-                        "passive" to (listener.passive?.let { JsBoolean(listener.passive) } ?: JsUndefined),
-                        "signal" to (listener.signal?.let { JsBoolean(listener.signal) } ?: JsUndefined),
-                    ),
+                    options,
                 )
             }
 

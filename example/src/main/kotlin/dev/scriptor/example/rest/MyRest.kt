@@ -46,21 +46,23 @@ class MyRest {
         val author = json["author"]
         val quote = json["quote"]
 
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>${author} | Random Quote</title>
-            </head>
-            <body>
-                <blockquote>
-                    <p>${quote}</p>
-                    <p>&mdash; <cite>${author}</cite></p>
-                </blockquote>
-            </body>
-            </html>
-        """.trimIndent()
+        return Bundle().html {
+            head {
+                meta(charset = "utf-8")
+                title("$author | Random Quote")
+            }
+
+            body {
+                blockquote {
+                    p { +"$quote" }
+                    p {
+                        entity("mdash")
+                        +" "
+                        cite { +"$author" }
+                    }
+                }
+            }
+        }.toXmlString()
     }
 
     @Get("/fib([n])", result = "text/plain")

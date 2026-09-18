@@ -8,7 +8,7 @@ class DocumentBuilder(val type: String) : Builder<Document> {
 
     override val children = mutableListOf<Node>()
 
-    context(context: Bundle)
+    context(bundle: Bundle)
     override fun build(): Document {
         return Document(
             type,

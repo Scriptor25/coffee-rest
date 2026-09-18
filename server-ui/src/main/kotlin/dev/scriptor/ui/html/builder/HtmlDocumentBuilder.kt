@@ -9,9 +9,9 @@ class HtmlDocumentBuilder : HtmlBuilder<Document> {
 
     override val children = mutableListOf<Node>()
 
-    context(context: Bundle)
+    context(bundle: Bundle)
     override fun build(): Document {
-        val script = context.script.build()
+        val script = bundle.script.build()
         val text = Text(script.joinToString(";", transform = JsNode::toJsString))
 
         val element = HtmlElement(

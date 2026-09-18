@@ -15,7 +15,7 @@ data class JsFunction(
                 ")",
                 transform = JsParameter::toJsString,
             )
-        } ${
+        }${
             nodes.joinToString(
                 ";",
                 "{",

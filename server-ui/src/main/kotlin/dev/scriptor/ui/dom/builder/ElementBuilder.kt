@@ -12,7 +12,7 @@ open class ElementBuilder(
 
     override val children = mutableListOf<Node>()
 
-    context(context: Bundle)
+    context(bundle: Bundle)
     override fun build(): Element {
         return Element(
             tag,

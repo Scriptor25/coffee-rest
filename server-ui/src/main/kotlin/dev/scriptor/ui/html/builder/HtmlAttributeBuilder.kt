@@ -1,6 +1,6 @@
 package dev.scriptor.ui.html.builder
 
-import dev.scriptor.ui.dom.Attribute
+import dev.scriptor.ui.dom.builder.AttributeBuilder
 
 enum class HtmlAutoCapitalize(val value: String) {
     NONE("none"),
@@ -213,259 +213,218 @@ enum class HtmlWritingSuggestions(val value: String) {
     }
 }
 
-open class HtmlGlobalAttributeBuilder {
-
-    private val values = mutableMapOf<String, AttributeValue?>()
+open class HtmlAttributeBuilder : AttributeBuilder() {
 
     var accessKey: String?
-        get() = string(values["accesskey"])
+        get() = string("accesskey")
         set(value) {
-            values["accesskey"] = string(value)
+            string("accesskey", value)
         }
     var anchor: String?
-        get() = string(values["anchor"])
+        get() = string("anchor")
         set(value) {
-            values["anchor"] = string(value)
+            string("anchor", value)
         }
     var autoCapitalize: HtmlAutoCapitalize?
-        get() = enum(values["autocapitalize"], HtmlAutoCapitalize::parse)
+        get() = enum("autocapitalize", HtmlAutoCapitalize::parse)
         set(value) {
-            values["autocapitalize"] = string(value?.value)
+            enum("autocapitalize", value, HtmlAutoCapitalize::value)
         }
     var autoCorrect: HtmlAutoCorrect?
-        get() = enum(values["autocorrect"], HtmlAutoCorrect::parse)
+        get() = enum("autocorrect", HtmlAutoCorrect::parse)
         set(value) {
-            values["autocorrect"] = string(value?.value)
+            enum("autocorrect", value, HtmlAutoCorrect::value)
         }
     var autofocus: Boolean
-        get() = boolean(values["autofocus"])
+        get() = boolean("autofocus")
         set(value) {
-            values["autofocus"] = boolean(value)
+            boolean("autofocus", value)
         }
     var htmlClass: String?
-        get() = string(values["class"])
+        get() = string("class")
         set(value) {
-            values["class"] = string(value)
+            string("class", value)
         }
     var contentEditable: HtmlContentEditable?
-        get() = enum(values["contenteditable"], HtmlContentEditable::parse)
+        get() = enum("contenteditable", HtmlContentEditable::parse)
         set(value) {
-            values["contenteditable"] = string(value?.value)
+            enum("contenteditable", value, HtmlContentEditable::value)
         }
     var dir: HtmlDir?
-        get() = enum(values["dir"], HtmlDir::parse)
+        get() = enum("dir", HtmlDir::parse)
         set(value) {
-            values["dir"] = string(value?.value)
+            enum("dir", value, HtmlDir::value)
         }
     var draggable: HtmlDraggable?
-        get() = enum(values["draggable"], HtmlDraggable::parse)
+        get() = enum("draggable", HtmlDraggable::parse)
         set(value) {
-            values["draggable"] = string(value?.value)
+            enum("draggable", value, HtmlDraggable::value)
         }
     var enterKeyHint: HtmlEnterKeyHint?
-        get() = enum(values["enterkeyhint"], HtmlEnterKeyHint::parse)
+        get() = enum("enterkeyhint", HtmlEnterKeyHint::parse)
         set(value) {
-            values["enterkeyhint"] = string(value?.value)
+            enum("enterkeyhint", value, HtmlEnterKeyHint::value)
         }
     var exportParts: String?
-        get() = string(values["exportparts"])
+        get() = string("exportparts")
         set(value) {
-            values["exportparts"] = string(value)
+            string("exportparts", value)
         }
     var headingOffset: Int?
-        get() = string(values["headingoffset"])?.toIntOrNull()
+        get() = string("headingoffset")?.toIntOrNull()
         set(value) {
-            values["headingoffset"] = string(value?.toString())
+            string("headingoffset", value?.toString())
         }
     var headingReset: Boolean
-        get() = boolean(values["headingreset"])
+        get() = boolean("headingreset")
         set(value) {
-            values["headingreset"] = boolean(value)
+            boolean("headingreset", value)
         }
     var hidden: HtmlHidden?
-        get() = enum(values["hidden"], HtmlHidden::parse)
+        get() = enum("hidden", HtmlHidden::parse)
         set(value) {
-            values["hidden"] = string(value?.value)
+            enum("hidden", value, HtmlHidden::value)
         }
     var id: String?
-        get() = string(values["id"])
+        get() = string("id")
         set(value) {
-            values["id"] = string(value)
+            string("id", value)
         }
     var inert: Boolean
-        get() = boolean(values["inert"])
+        get() = boolean("inert")
         set(value) {
-            values["inert"] = boolean(value)
+            boolean("inert", value)
         }
     var inputMode: HtmlInputMode?
-        get() = enum(values["inputmode"], HtmlInputMode::parse)
+        get() = enum("inputmode", HtmlInputMode::parse)
         set(value) {
-            values["inputmode"] = string(value?.value)
+            enum("inputmode", value, HtmlInputMode::value)
         }
     var htmlIs: String?
-        get() = string(values["is"])
+        get() = string("is")
         set(value) {
-            values["is"] = string(value)
+            string("is", value)
         }
     var itemId: String?
-        get() = string(values["itemid"])
+        get() = string("itemid")
         set(value) {
-            values["itemid"] = string(value)
+            string("itemid", value)
         }
     var itemProp: String?
-        get() = string(values["itemprop"])
+        get() = string("itemprop")
         set(value) {
-            values["itemprop"] = string(value)
+            string("itemprop", value)
         }
     var itemRef: String?
-        get() = string(values["itemref"])
+        get() = string("itemref")
         set(value) {
-            values["itemref"] = string(value)
+            string("itemref", value)
         }
     var itemScope: Boolean
-        get() = boolean(values["itemscope"])
+        get() = boolean("itemscope")
         set(value) {
-            values["itemscope"] = boolean(value)
+            boolean("itemscope", value)
         }
     var itemType: String?
-        get() = string(values["itemtype"])
+        get() = string("itemtype")
         set(value) {
-            values["itemtype"] = string(value)
+            string("itemtype", value)
         }
     var lang: String?
-        get() = string(values["lang"])
+        get() = string("lang")
         set(value) {
-            values["lang"] = string(value)
+            string("lang", value)
         }
     var nonce: String?
-        get() = string(values["nonce"])
+        get() = string("nonce")
         set(value) {
-            values["nonce"] = string(value)
+            string("nonce", value)
         }
     var part: String?
-        get() = string(values["part"])
+        get() = string("part")
         set(value) {
-            values["part"] = string(value)
+            string("part", value)
         }
     var popover: HtmlPopover?
-        get() = enum(values["popover"], HtmlPopover::parse)
+        get() = enum("popover", HtmlPopover::parse)
         set(value) {
-            values["popover"] = string(value?.value)
+            enum("popover", value, HtmlPopover::value)
         }
     var role: HtmlRole?
-        get() = enum(values["role"], HtmlRole::parse)
+        get() = enum("role", HtmlRole::parse)
         set(value) {
-            values["role"] = string(value?.value)
+            enum("role", value, HtmlRole::value)
         }
     var slot: String?
-        get() = string(values["slot"])
+        get() = string("slot")
         set(value) {
-            values["slot"] = string(value)
+            string("slot", value)
         }
     var spellcheck: HtmlSpellcheck?
-        get() = enum(values["spellcheck"], HtmlSpellcheck::parse)
+        get() = enum("spellcheck", HtmlSpellcheck::parse)
         set(value) {
-            values["spellcheck"] = string(value?.value)
+            enum("spellcheck", value, HtmlSpellcheck::value)
         }
     var style: String?
-        get() = string(values["style"])
+        get() = string("style")
         set(value) {
-            values["style"] = string(value)
+            string("style", value)
         }
     var tabIndex: Int?
-        get() = string(values["tabindex"])?.toIntOrNull()
+        get() = string("tabindex")?.toIntOrNull()
         set(value) {
-            values["tabindex"] = string(value?.toString())
+            string("tabindex", value?.toString())
         }
     var title: String?
-        get() = string(values["title"])
+        get() = string("title")
         set(value) {
-            values["title"] = string(value)
+            string("title", value)
         }
     var translate: HtmlTranslate?
-        get() = enum(values["translate"], HtmlTranslate::parse)
+        get() = enum("translate", HtmlTranslate::parse)
         set(value) {
-            values["translate"] = string(value?.value)
+            enum("translate", value, HtmlTranslate::value)
         }
     var virtualKeyboardPolicy: HtmlVirtualKeyboardPolicy?
-        get() = enum(values["virtualkeyboardpolicy"], HtmlVirtualKeyboardPolicy::parse)
+        get() = enum("virtualkeyboardpolicy", HtmlVirtualKeyboardPolicy::parse)
         set(value) {
-            values["virtualkeyboardpolicy"] = string(value?.value)
+            enum("virtualkeyboardpolicy", value, HtmlVirtualKeyboardPolicy::value)
         }
     var writingSuggestions: HtmlWritingSuggestions?
-        get() = enum(values["writingsuggestions"], HtmlWritingSuggestions::parse)
+        get() = enum("writingsuggestions", HtmlWritingSuggestions::parse)
         set(value) {
-            values["writingsuggestions"] = string(value?.value)
+            enum("writingsuggestions", value, HtmlWritingSuggestions::value)
         }
 
     fun stringData(name: String): String? {
-        return string(values["data-$name"])
+        return string("data-$name")
     }
 
     fun stringData(name: String, value: String?) {
-        values["data-$name"] = string(value)
+        string("data-$name", value)
     }
 
     fun booleanData(name: String): Boolean {
-        return boolean(values["data-$name"])
+        return boolean("data-$name")
     }
 
     fun booleanData(name: String, value: Boolean) {
-        values["data-$name"] = boolean(value)
+        boolean("data-$name", value)
     }
 
     operator fun get(name: String): String? {
-        return string(values[name])
+        return string(name)
     }
 
     operator fun contains(name: String): Boolean {
-        return boolean(values[name])
+        return boolean(name)
     }
 
     operator fun set(name: String, value: String?) {
-        values[name] = string(value)
+        string(name, value)
     }
 
     operator fun set(name: String, value: Boolean) {
-        values[name] = boolean(value)
+        boolean(name, value)
     }
-
-    private sealed interface AttributeValue
-
-    private data object BooleanAttributeValue : AttributeValue
-    private data class StringAttributeValue(val value: String) : AttributeValue
-
-    private fun boolean(value: Boolean): BooleanAttributeValue? = when (value) {
-        true -> BooleanAttributeValue
-        else -> null
-    }
-
-    private fun string(value: String?): StringAttributeValue? = when (value) {
-        null -> null
-        else -> StringAttributeValue(value)
-    }
-
-    private fun boolean(value: AttributeValue?): Boolean = when (value) {
-        is BooleanAttributeValue -> true
-        else -> false
-    }
-
-    private fun string(value: AttributeValue?): String? = when (value) {
-        is StringAttributeValue -> value.value
-        else -> null
-    }
-
-    private fun <E : Enum<E>> enum(value: AttributeValue?, transform: (String) -> E?): E? = when (value) {
-        is StringAttributeValue -> transform(value.value)
-        else -> null
-    }
-
-    fun build(): List<Attribute> = values
-        .mapNotNull {
-            when (val value = it.value) {
-                is BooleanAttributeValue -> Attribute(it.key, null)
-                is StringAttributeValue -> Attribute(it.key, value.value)
-                else -> null
-            }
-        }
 }

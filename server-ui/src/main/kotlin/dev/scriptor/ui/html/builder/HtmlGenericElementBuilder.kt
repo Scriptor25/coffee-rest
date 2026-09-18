@@ -15,31 +15,20 @@ open class HtmlGenericElementBuilder(
 ) : HtmlElementBuilder(void, tag, attributes) {
 
     context(_: Bundle)
-    fun htmlElement(
+    protected fun htmlElement(
         void: Boolean,
         tag: String,
-        vararg attributes: Pair<String, String?>,
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
         block: HtmlGenericElementBuilder.() -> Unit = {},
     ): HtmlElement {
-        return htmlElement(void, tag, attributes.map { Attribute(it.first, it.second) }, block)
-    }
-
-    context(_: Bundle)
-    fun htmlElement(
-        void: Boolean,
-        tag: String,
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        val builder = HtmlGlobalAttributeBuilder()
+        val builder = HtmlAttributeBuilder()
         builder.apply(attributeBlock)
         val attributes = builder.build()
-
         return htmlElement(void, tag, attributes, block)
     }
 
     context(_: Bundle)
-    fun htmlElement(
+    protected fun htmlElement(
         void: Boolean,
         tag: String,
         attributes: List<Attribute>,
@@ -53,104 +42,8 @@ open class HtmlGenericElementBuilder(
     }
 
     context(_: Bundle)
-    fun main(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "main", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun div(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "div", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun span(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "span", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun p(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "p", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun h1(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "h1", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun h2(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "h2", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun h3(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "h3", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun h4(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "h4", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun h5(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "h5", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun h6(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "h6", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun button(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "button", attributeBlock, block)
-    }
-
-    context(_: Bundle)
-    fun section(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericElementBuilder.() -> Unit = {},
-    ): HtmlElement {
-        return htmlElement(false, "section", attributeBlock, block)
-    }
-
-    context(_: Bundle)
     fun script(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
         block: JsNodesBuilder.() -> Unit = {},
     ): HtmlElement {
         val builder = JsNodesBuilder()
@@ -170,7 +63,7 @@ open class HtmlGenericElementBuilder(
 
     context(_: Bundle)
     fun style(
-        attributeBlock: HtmlGlobalAttributeBuilder.() -> Unit = {},
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
         block: CssNodesBuilder.() -> Unit = {},
     ): HtmlElement {
         val builder = CssNodesBuilder()
@@ -183,5 +76,152 @@ open class HtmlGenericElementBuilder(
             "style",
             attributeBlock,
         ) { +text }
+    }
+
+    context(_: Bundle)
+    fun main(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "main", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun div(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "div", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun span(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "span", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun p(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "p", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun h1(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "h1", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun h2(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "h2", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun h3(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "h3", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun h4(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "h4", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun h5(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "h5", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun h6(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "h6", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun button(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "button", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun section(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "section", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun blockquote(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "blockquote", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun cite(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "cite", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun ul(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "ul", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun ol(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "ol", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun li(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        return htmlElement(false, "li", attributeBlock, block)
+    }
+
+    context(_: Bundle)
+    fun a(
+        attributeBlock: HtmlAnchorElementAttributeBuilder.() -> Unit = {},
+        block: HtmlGenericElementBuilder.() -> Unit = {},
+    ): HtmlElement {
+        val builder = HtmlAnchorElementAttributeBuilder()
+        builder.attributeBlock()
+        val attributes = builder.build()
+        return htmlElement(false, "a", attributes, block)
     }
 }
