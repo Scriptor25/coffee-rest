@@ -4,4 +4,4 @@ import dev.scriptor.ui.dom.Attribute
 
 class HtmlBodyElementBuilder(
     attributes: List<Attribute>,
-) : HtmlGenericElementBuilder(false, "body", attributes)
+) : HtmlGenericBuilder(false, "body", attributes)
