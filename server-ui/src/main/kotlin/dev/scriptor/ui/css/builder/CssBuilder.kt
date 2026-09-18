@@ -1,5 +1,6 @@
 package dev.scriptor.ui.css.builder
 
+import dev.scriptor.ui.css.CssClass
 import dev.scriptor.ui.css.CssNode
 
 abstract class CssBuilder<T> {
@@ -7,4 +8,16 @@ abstract class CssBuilder<T> {
     val nodes = mutableListOf<CssNode>()
 
     abstract fun build(): T
+
+    fun define(selector: String, block: CssClassBuilder.() -> Unit): CssClass {
+        val builder = CssClassBuilder(selector)
+        builder.apply(block)
+        val node = builder.build()
+        nodes += node
+        return node
+    }
+
+    fun div(name: String, block: CssClassBuilder.() -> Unit): CssClass {
+        return define("div.$name", block)
+    }
 }

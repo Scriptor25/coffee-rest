@@ -7,6 +7,8 @@ import dev.scriptor.ui.js.builder.JsNodesBuilder
 
 class Bundle {
 
+    private var nextId = 0L
+
     val script = JsNodesBuilder()
 
     fun html(block: context(Bundle) HtmlDocumentBuilder.() -> Unit): Document {
@@ -19,5 +21,10 @@ class Bundle {
         val builder = DocumentBuilder(type)
         builder.block()
         return builder.build()
+    }
+
+    fun allocateId(): String {
+        val id = nextId++
+        return "$id"
     }
 }

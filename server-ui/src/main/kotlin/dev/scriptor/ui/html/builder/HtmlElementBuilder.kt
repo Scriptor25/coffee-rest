@@ -6,7 +6,6 @@ import dev.scriptor.ui.dom.Node
 import dev.scriptor.ui.html.HtmlElement
 import dev.scriptor.ui.js.*
 import dev.scriptor.ui.js.builder.JsFunctionBuilder
-import kotlin.uuid.Uuid
 
 typealias Component = (List<Attribute>, List<Node>) -> HtmlElement
 
@@ -34,31 +33,40 @@ open class HtmlElementBuilder(
 
     context(context: Bundle)
     override fun build(): HtmlElement {
-        val id = Uuid.random()
+        val element = if (listeners.isEmpty()) {
+            HtmlElement(
+                void,
+                tag,
+                attributes,
+                children,
+            )
+        } else {
+            val id = context.allocateId()
 
-        val element = HtmlElement(
-            void,
-            tag,
-            attributes + Attribute("data-id", id.toHexDashString()),
-            children,
-        )
+            for (listener in listeners) {
+                val document = JsSymbol("document")
+                val querySelector = JsMember(document, "querySelector")
+                val element = JsCall(querySelector, listOf(JsString("[data-id='$id']")))
+                val addEventListener = JsMember(element, "addEventListener")
 
-        for (listener in listeners) {
-            val document = JsSymbol("document")
-            val querySelector = JsMember(document, "querySelector")
-            val element = JsCall(querySelector, listOf(JsString("[data-id='${id.toHexDashString()}']")))
-            val addEventListener = JsMember(element, "addEventListener")
+                context.script.call(
+                    addEventListener,
+                    JsString(listener.type),
+                    listener.function,
+                    JsObject(
+                        "capture" to (listener.capture?.let { JsBoolean(listener.capture) } ?: JsUndefined),
+                        "once" to (listener.once?.let { JsBoolean(listener.once) } ?: JsUndefined),
+                        "passive" to (listener.passive?.let { JsBoolean(listener.passive) } ?: JsUndefined),
+                        "signal" to (listener.signal?.let { JsBoolean(listener.signal) } ?: JsUndefined),
+                    ),
+                )
+            }
 
-            context.script.call(
-                addEventListener,
-                JsString(listener.type),
-                listener.function,
-                JsObject(
-                    "capture" to (listener.capture?.let { JsBoolean(listener.capture) } ?: JsUndefined),
-                    "once" to (listener.once?.let { JsBoolean(listener.once) } ?: JsUndefined),
-                    "passive" to (listener.passive?.let { JsBoolean(listener.passive) } ?: JsUndefined),
-                    "signal" to (listener.signal?.let { JsBoolean(listener.signal) } ?: JsUndefined),
-                ),
+            HtmlElement(
+                void,
+                tag,
+                attributes + Attribute("data-id", id),
+                children,
             )
         }
 

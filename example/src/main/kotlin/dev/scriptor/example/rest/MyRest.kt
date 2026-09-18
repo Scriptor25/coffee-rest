@@ -3,6 +3,7 @@ package dev.scriptor.example.rest
 import dev.scriptor.server.NotFoundSignal
 import dev.scriptor.server.jvm.annotation.*
 import dev.scriptor.ui.Bundle
+import dev.scriptor.ui.css.builder.*
 import org.json.JSONObject
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -93,9 +94,9 @@ class MyRest {
                     }
                 }
 
-                div({ htmlClass = "split" }) {
-                    h2 { +"some split content" }
+                h2 { +"some split content" }
 
+                div({ htmlClass = "split" }) {
                     section {
                         h3 { +"something on the left" }
                     }
@@ -106,7 +107,13 @@ class MyRest {
                 }
 
                 style {
-
+                    div("split") {
+                        display = CssDisplay.FLEX
+                        flexDirection = CssFlexDirection.ROW
+                        flexWrap = CssFlexWrap.NOWRAP
+                        alignItems = CssAlignItems.FLEX_START
+                        justifyContent = CssJustifyContent.SPACE_BETWEEN
+                    }
                 }
             }
         }.toXmlString()
