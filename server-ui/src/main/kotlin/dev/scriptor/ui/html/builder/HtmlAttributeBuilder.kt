@@ -9,13 +9,14 @@ enum class HtmlAutoCapitalize(val value: String) {
     CHARACTERS("characters");
 
     companion object {
-        fun parse(value: String): HtmlAutoCapitalize = when (value) {
-            NONE.value -> NONE
-            SENTENCES.value -> SENTENCES
-            WORDS.value -> WORDS
-            CHARACTERS.value -> CHARACTERS
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlAutoCapitalize? =
+            when (value) {
+                NONE.value -> NONE
+                SENTENCES.value -> SENTENCES
+                WORDS.value -> WORDS
+                CHARACTERS.value -> CHARACTERS
+                else -> null
+            }
     }
 }
 
@@ -24,11 +25,12 @@ enum class HtmlAutoCorrect(val value: String) {
     OFF("off");
 
     companion object {
-        fun parse(value: String): HtmlAutoCorrect = when (value) {
-            ON.value -> ON
-            OFF.value -> OFF
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlAutoCorrect? =
+            when (value) {
+                ON.value -> ON
+                OFF.value -> OFF
+                else -> null
+            }
     }
 }
 
@@ -38,12 +40,13 @@ enum class HtmlContentEditable(val value: String) {
     PLAINTEXT_ONLY("plaintext-only");
 
     companion object {
-        fun parse(value: String): HtmlContentEditable = when (value) {
-            TRUE.value -> TRUE
-            FALSE.value -> FALSE
-            PLAINTEXT_ONLY.value -> PLAINTEXT_ONLY
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlContentEditable? =
+            when (value) {
+                TRUE.value -> TRUE
+                FALSE.value -> FALSE
+                PLAINTEXT_ONLY.value -> PLAINTEXT_ONLY
+                else -> null
+            }
     }
 }
 
@@ -53,12 +56,13 @@ enum class HtmlDir(val value: String) {
     AUTO("auto");
 
     companion object {
-        fun parse(value: String): HtmlDir = when (value) {
-            LTR.value -> LTR
-            RTL.value -> RTL
-            AUTO.value -> AUTO
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlDir? =
+            when (value) {
+                LTR.value -> LTR
+                RTL.value -> RTL
+                AUTO.value -> AUTO
+                else -> null
+            }
     }
 }
 
@@ -67,11 +71,12 @@ enum class HtmlDraggable(val value: String) {
     FALSE("false");
 
     companion object {
-        fun parse(value: String): HtmlDraggable = when (value) {
-            TRUE.value -> TRUE
-            FALSE.value -> FALSE
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlDraggable? =
+            when (value) {
+                TRUE.value -> TRUE
+                FALSE.value -> FALSE
+                else -> null
+            }
     }
 }
 
@@ -85,16 +90,17 @@ enum class HtmlEnterKeyHint(val value: String) {
     SEND("send");
 
     companion object {
-        fun parse(value: String): HtmlEnterKeyHint = when (value) {
-            ENTER.value -> ENTER
-            DONE.value -> DONE
-            GO.value -> GO
-            NEXT.value -> NEXT
-            PREVIOUS.value -> PREVIOUS
-            SEARCH.value -> SEARCH
-            SEND.value -> SEND
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlEnterKeyHint? =
+            when (value) {
+                ENTER.value -> ENTER
+                DONE.value -> DONE
+                GO.value -> GO
+                NEXT.value -> NEXT
+                PREVIOUS.value -> PREVIOUS
+                SEARCH.value -> SEARCH
+                SEND.value -> SEND
+                else -> null
+            }
     }
 }
 
@@ -103,11 +109,12 @@ enum class HtmlHidden(val value: String) {
     UNTIL_FOUND("until-found");
 
     companion object {
-        fun parse(value: String): HtmlHidden = when (value) {
-            HIDDEN.value -> HIDDEN
-            UNTIL_FOUND.value -> UNTIL_FOUND
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlHidden? =
+            when (value) {
+                HIDDEN.value -> HIDDEN
+                UNTIL_FOUND.value -> UNTIL_FOUND
+                else -> null
+            }
     }
 }
 
@@ -122,17 +129,18 @@ enum class HtmlInputMode(val value: String) {
     URL("url");
 
     companion object {
-        fun parse(value: String): HtmlInputMode = when (value) {
-            NONE.value -> NONE
-            TEXT.value -> TEXT
-            DECIMAL.value -> DECIMAL
-            NUMERIC.value -> NUMERIC
-            TEL.value -> TEL
-            SEARCH.value -> SEARCH
-            EMAIL.value -> EMAIL
-            URL.value -> URL
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlInputMode? =
+            when (value) {
+                NONE.value -> NONE
+                TEXT.value -> TEXT
+                DECIMAL.value -> DECIMAL
+                NUMERIC.value -> NUMERIC
+                TEL.value -> TEL
+                SEARCH.value -> SEARCH
+                EMAIL.value -> EMAIL
+                URL.value -> URL
+                else -> null
+            }
     }
 }
 
@@ -142,12 +150,13 @@ enum class HtmlPopover(val value: String) {
     MANUAL("manual");
 
     companion object {
-        fun parse(value: String): HtmlPopover = when (value) {
-            AUTO.value -> AUTO
-            HINT.value -> HINT
-            MANUAL.value -> MANUAL
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlPopover? =
+            when (value) {
+                AUTO.value -> AUTO
+                HINT.value -> HINT
+                MANUAL.value -> MANUAL
+                else -> null
+            }
     }
 }
 
@@ -155,9 +164,10 @@ enum class HtmlRole(val value: String) {
     ;
 
     companion object {
-        fun parse(value: String): HtmlRole = when (value) {
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlRole? =
+            when (value) {
+                else -> null
+            }
     }
 }
 
@@ -166,11 +176,12 @@ enum class HtmlSpellcheck(val value: String) {
     FALSE("false");
 
     companion object {
-        fun parse(value: String): HtmlSpellcheck = when (value) {
-            TRUE.value -> TRUE
-            FALSE.value -> FALSE
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlSpellcheck? =
+            when (value) {
+                TRUE.value -> TRUE
+                FALSE.value -> FALSE
+                else -> null
+            }
     }
 }
 
@@ -179,11 +190,12 @@ enum class HtmlTranslate(val value: String) {
     NO("no");
 
     companion object {
-        fun parse(value: String): HtmlTranslate = when (value) {
-            YES.value -> YES
-            NO.value -> NO
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlTranslate? =
+            when (value) {
+                YES.value -> YES
+                NO.value -> NO
+                else -> null
+            }
     }
 }
 
@@ -192,11 +204,12 @@ enum class HtmlVirtualKeyboardPolicy(val value: String) {
     MANUAL("manual");
 
     companion object {
-        fun parse(value: String): HtmlVirtualKeyboardPolicy = when (value) {
-            AUTO.value -> AUTO
-            MANUAL.value -> MANUAL
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlVirtualKeyboardPolicy? =
+            when (value) {
+                AUTO.value -> AUTO
+                MANUAL.value -> MANUAL
+                else -> null
+            }
     }
 }
 
@@ -205,226 +218,131 @@ enum class HtmlWritingSuggestions(val value: String) {
     FALSE("false");
 
     companion object {
-        fun parse(value: String): HtmlWritingSuggestions = when (value) {
-            TRUE.value -> TRUE
-            FALSE.value -> FALSE
-            else -> error("unexpected value '$value'")
-        }
+        fun parse(value: String): HtmlWritingSuggestions? =
+            when (value) {
+                TRUE.value -> TRUE
+                FALSE.value -> FALSE
+                else -> null
+            }
     }
 }
 
 open class HtmlAttributeBuilder : AttributeBuilder() {
 
-    var accessKey: String?
-        get() = string("accesskey")
-        set(value) {
-            string("accesskey", value)
-        }
-    var anchor: String?
-        get() = string("anchor")
-        set(value) {
-            string("anchor", value)
-        }
-    var autoCapitalize: HtmlAutoCapitalize?
-        get() = enum("autocapitalize", HtmlAutoCapitalize::parse)
-        set(value) {
-            enum("autocapitalize", value, HtmlAutoCapitalize::value)
-        }
-    var autoCorrect: HtmlAutoCorrect?
-        get() = enum("autocorrect", HtmlAutoCorrect::parse)
-        set(value) {
-            enum("autocorrect", value, HtmlAutoCorrect::value)
-        }
-    var autofocus: Boolean
-        get() = boolean("autofocus")
-        set(value) {
-            boolean("autofocus", value)
-        }
-    var htmlClass: String?
-        get() = string("class")
-        set(value) {
-            string("class", value)
-        }
-    var contentEditable: HtmlContentEditable?
-        get() = enum("contenteditable", HtmlContentEditable::parse)
-        set(value) {
-            enum("contenteditable", value, HtmlContentEditable::value)
-        }
-    var dir: HtmlDir?
-        get() = enum("dir", HtmlDir::parse)
-        set(value) {
-            enum("dir", value, HtmlDir::value)
-        }
-    var draggable: HtmlDraggable?
-        get() = enum("draggable", HtmlDraggable::parse)
-        set(value) {
-            enum("draggable", value, HtmlDraggable::value)
-        }
-    var enterKeyHint: HtmlEnterKeyHint?
-        get() = enum("enterkeyhint", HtmlEnterKeyHint::parse)
-        set(value) {
-            enum("enterkeyhint", value, HtmlEnterKeyHint::value)
-        }
-    var exportParts: String?
-        get() = string("exportparts")
-        set(value) {
-            string("exportparts", value)
-        }
-    var headingOffset: Int?
-        get() = string("headingoffset")?.toIntOrNull()
-        set(value) {
-            string("headingoffset", value?.toString())
-        }
-    var headingReset: Boolean
-        get() = boolean("headingreset")
-        set(value) {
-            boolean("headingreset", value)
-        }
-    var hidden: HtmlHidden?
-        get() = enum("hidden", HtmlHidden::parse)
-        set(value) {
-            enum("hidden", value, HtmlHidden::value)
-        }
-    var id: String?
-        get() = string("id")
-        set(value) {
-            string("id", value)
-        }
-    var inert: Boolean
-        get() = boolean("inert")
-        set(value) {
-            boolean("inert", value)
-        }
-    var inputMode: HtmlInputMode?
-        get() = enum("inputmode", HtmlInputMode::parse)
-        set(value) {
-            enum("inputmode", value, HtmlInputMode::value)
-        }
-    var htmlIs: String?
-        get() = string("is")
-        set(value) {
-            string("is", value)
-        }
-    var itemId: String?
-        get() = string("itemid")
-        set(value) {
-            string("itemid", value)
-        }
-    var itemProp: String?
-        get() = string("itemprop")
-        set(value) {
-            string("itemprop", value)
-        }
-    var itemRef: String?
-        get() = string("itemref")
-        set(value) {
-            string("itemref", value)
-        }
-    var itemScope: Boolean
-        get() = boolean("itemscope")
-        set(value) {
-            boolean("itemscope", value)
-        }
-    var itemType: String?
-        get() = string("itemtype")
-        set(value) {
-            string("itemtype", value)
-        }
-    var lang: String?
-        get() = string("lang")
-        set(value) {
-            string("lang", value)
-        }
-    var nonce: String?
-        get() = string("nonce")
-        set(value) {
-            string("nonce", value)
-        }
-    var part: String?
-        get() = string("part")
-        set(value) {
-            string("part", value)
-        }
-    var popover: HtmlPopover?
-        get() = enum("popover", HtmlPopover::parse)
-        set(value) {
-            enum("popover", value, HtmlPopover::value)
-        }
-    var role: HtmlRole?
-        get() = enum("role", HtmlRole::parse)
-        set(value) {
-            enum("role", value, HtmlRole::value)
-        }
-    var slot: String?
-        get() = string("slot")
-        set(value) {
-            string("slot", value)
-        }
-    var spellcheck: HtmlSpellcheck?
-        get() = enum("spellcheck", HtmlSpellcheck::parse)
-        set(value) {
-            enum("spellcheck", value, HtmlSpellcheck::value)
-        }
-    var style: String?
-        get() = string("style")
-        set(value) {
-            string("style", value)
-        }
-    var tabIndex: Int?
-        get() = string("tabindex")?.toIntOrNull()
-        set(value) {
-            string("tabindex", value?.toString())
-        }
-    var title: String?
-        get() = string("title")
-        set(value) {
-            string("title", value)
-        }
-    var translate: HtmlTranslate?
-        get() = enum("translate", HtmlTranslate::parse)
-        set(value) {
-            enum("translate", value, HtmlTranslate::value)
-        }
-    var virtualKeyboardPolicy: HtmlVirtualKeyboardPolicy?
-        get() = enum("virtualkeyboardpolicy", HtmlVirtualKeyboardPolicy::parse)
-        set(value) {
-            enum("virtualkeyboardpolicy", value, HtmlVirtualKeyboardPolicy::value)
-        }
-    var writingSuggestions: HtmlWritingSuggestions?
-        get() = enum("writingsuggestions", HtmlWritingSuggestions::parse)
-        set(value) {
-            enum("writingsuggestions", value, HtmlWritingSuggestions::value)
-        }
+    var accessKey by string("accesskey")
+    var anchor by string("anchor")
+    var autoCapitalize by enum(
+        "autocapitalize",
+        HtmlAutoCapitalize::parse,
+        HtmlAutoCapitalize::value,
+    )
+    var autoCorrect by enum(
+        "autocorrect",
+        HtmlAutoCorrect::parse,
+        HtmlAutoCorrect::value,
+    )
+    var autofocus by boolean("autofocus")
+    var htmlClass by string("class")
+    var contentEditable by enum(
+        "contenteditable",
+        HtmlContentEditable::parse,
+        HtmlContentEditable::value,
+    )
+    var dir by enum(
+        "dir",
+        HtmlDir::parse,
+        HtmlDir::value,
+    )
+    var draggable by enum(
+        "draggable",
+        HtmlDraggable::parse,
+        HtmlDraggable::value,
+    )
+    var enterKeyHint by enum(
+        "enterkeyhint",
+        HtmlEnterKeyHint::parse,
+        HtmlEnterKeyHint::value,
+    )
+    var exportParts by string("exportparts")
+    var headingOffset by other(
+        "headingoffset",
+        String::toIntOrNull,
+        Int::toString,
+    )
+    var headingReset by boolean("headingreset")
+    var hidden by enum(
+        "hidden",
+        HtmlHidden::parse,
+        HtmlHidden::value,
+    )
+    var id by string("id")
+    var inert by boolean("inert")
+    var inputMode by enum(
+        "inputmode",
+        HtmlInputMode::parse,
+        HtmlInputMode::value,
+    )
+    var htmlIs by string("is")
+    var itemId by string("itemid")
+    var itemProp by string("itemprop")
+    var itemRef by string("itemref")
+    var itemScope by boolean("itemscope")
+    var itemType by string("itemtype")
+    var lang by string("lang")
+    var nonce by string("nonce")
+    var part by string("part")
+    var popover by enum(
+        "popover",
+        HtmlPopover::parse,
+        HtmlPopover::value,
+    )
+    var role by enum(
+        "role",
+        HtmlRole::parse,
+        HtmlRole::value,
+    )
+    var slot by string("slot")
+    var spellcheck by enum(
+        "spellcheck",
+        HtmlSpellcheck::parse,
+        HtmlSpellcheck::value,
+    )
+    var style by string("style")
+    var tabIndex by other(
+        "tabindex",
+        String::toIntOrNull,
+        Int::toString,
+    )
+    var title by string("title")
+    var translate by enum(
+        "translate",
+        HtmlTranslate::parse,
+        HtmlTranslate::value,
+    )
+    var virtualKeyboardPolicy by enum(
+        "virtualkeyboardpolicy",
+        HtmlVirtualKeyboardPolicy::parse,
+        HtmlVirtualKeyboardPolicy::value
+    )
+    var writingSuggestions by enum(
+        "writingsuggestions",
+        HtmlWritingSuggestions::parse,
+        HtmlWritingSuggestions::value
+    )
 
     fun stringData(name: String): String? {
-        return string("data-$name")
+        return getString("data-$name")
     }
 
     fun stringData(name: String, value: String?) {
-        string("data-$name", value)
+        setString("data-$name", value)
     }
 
     fun booleanData(name: String): Boolean {
-        return boolean("data-$name")
+        return getBoolean("data-$name")
     }
 
     fun booleanData(name: String, value: Boolean) {
-        boolean("data-$name", value)
-    }
-
-    operator fun get(name: String): String? {
-        return string(name)
-    }
-
-    operator fun contains(name: String): Boolean {
-        return boolean(name)
-    }
-
-    operator fun set(name: String, value: String?) {
-        string(name, value)
-    }
-
-    operator fun set(name: String, value: Boolean) {
-        boolean(name, value)
+        setBoolean("data-$name", value)
     }
 }
