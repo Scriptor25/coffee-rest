@@ -2,12 +2,14 @@ package dev.scriptor.server.http
 
 import dev.scriptor.reflect.Type
 import dev.scriptor.server.Parameter
+import dev.scriptor.server.security.SecurityPolicy
 
 data class RouteMetadata(
     val method: Method,
     val pathname: Pathname,
     val accept: String?,
     val result: String?,
+    val security: SecurityPolicy,
     val parameters: List<Parameter>,
     val returns: Type,
     val callee: (Map<Int, Any?>) -> Any?,

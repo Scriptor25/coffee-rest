@@ -1,5 +1,6 @@
-package dev.scriptor.server.http
+package dev.scriptor.server.response
 
+import dev.scriptor.server.http.Version
 import java.nio.channels.Channels
 import java.nio.channels.WritableByteChannel
 

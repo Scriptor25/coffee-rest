@@ -1,4 +1,4 @@
-package dev.scriptor.server.http
+package dev.scriptor.server.request
 
 sealed interface RequestTarget
 

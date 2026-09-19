@@ -10,6 +10,8 @@ import dev.scriptor.server.http.Method
 import dev.scriptor.server.http.Server
 import dev.scriptor.server.jvm.annotation.*
 import dev.scriptor.server.jvm.scanner.Scanner
+import dev.scriptor.server.security.SecurityPolicy
+import dev.scriptor.server.security.SecurityRequirement
 import kotlin.io.path.Path
 import kotlin.reflect.*
 import kotlin.reflect.KParameter.Kind.*
@@ -131,6 +133,27 @@ private fun scan(server: Server, klass: KClass<*>): Any? {
         return instance
     }
 
+    val public = klass.hasAnnotation<Public>()
+
+    val requirements = if (public) {
+        emptySet()
+    } else {
+        val requireAuth = klass.hasAnnotation<RequireAuth>()
+        val requireRole = klass.findAnnotations<RequireRole>()
+
+        buildSet {
+            if (requireAuth) {
+                add(SecurityRequirement.Authenticated)
+            }
+
+            for (requirement in requireRole) {
+                for (role in requirement.value) {
+                    add(SecurityRequirement.Role(role))
+                }
+            }
+        }
+    }
+
     for (annotation in klass.annotations) {
         when (annotation) {
             is Context -> {
@@ -144,8 +167,8 @@ private fun scan(server: Server, klass: KClass<*>): Any? {
                 val base = annotation.path
                 val instance = createInstance(server.provider, klass)
 
-                for (function in klass.memberFunctions) {
-                    scan(server, base, instance, function)
+                for (callee in klass.memberFunctions) {
+                    scan(server, base, requirements, instance, callee)
                 }
 
                 return instance
@@ -153,8 +176,8 @@ private fun scan(server: Server, klass: KClass<*>): Any? {
         }
     }
 
-    for (function in klass.staticFunctions) {
-        scan(server, "/", null, function)
+    for (callee in klass.staticFunctions) {
+        scan(server, "/", setOf(), null, callee)
     }
 
     return null
@@ -210,9 +233,38 @@ private fun <T : Any> createInstance(provider: Provider, klass: KClass<T>): T {
     }
 }
 
-private fun scan(server: Server, base: String, instance: Any?, function: KFunction<*>) {
+private fun scan(
+    server: Server,
+    basePath: String,
+    baseRequirements: Set<SecurityRequirement>,
+    instance: Any?,
+    callee: KCallable<*>,
+) {
+    val public = callee.hasAnnotation<Public>()
+
+    val requirements = if (public) {
+        emptySet()
+    } else {
+        val requireAuth = callee.hasAnnotation<RequireAuth>()
+        val requireRole = callee.findAnnotations<RequireRole>()
+
+        buildSet {
+            addAll(baseRequirements)
+
+            if (requireAuth) {
+                add(SecurityRequirement.Authenticated)
+            }
+
+            for (requirement in requireRole) {
+                for (role in requirement.value) {
+                    add(SecurityRequirement.Role(role))
+                }
+            }
+        }
+    }
+
     var route: Route? = null
-    for (annotation in function.annotations) {
+    for (annotation in callee.annotations) {
         route = when (annotation) {
             is Route -> annotation
 
@@ -264,18 +316,20 @@ private fun scan(server: Server, base: String, instance: Any?, function: KFuncti
     }
 
     server.register(
+        basePath,
+        requirements,
         instance,
-        function,
-        base,
+        callee,
         route ?: return,
     )
 }
 
 @OptIn(ExperimentalContextParameters::class)
 private fun Server.register(
+    basePath: String,
+    baseRequirements: Set<SecurityRequirement>,
     instance: Any?,
     callee: KCallable<*>,
-    base: String,
     route: Route,
 ) {
     val returns = getType(callee.returnType)
@@ -327,9 +381,10 @@ private fun Server.register(
 
     register(
         route.method,
-        Path(base, route.path),
-        route.accept.ifEmpty { null },
-        route.result.ifEmpty { null },
+        Path(basePath, route.path),
+        route.accept.ifBlank { null },
+        route.result.ifBlank { null },
+        SecurityPolicy(baseRequirements),
         parameters,
         returns,
     ) {

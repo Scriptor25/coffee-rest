@@ -3,12 +3,17 @@ package dev.scriptor.server.http
 import dev.scriptor.reflect.*
 import dev.scriptor.server.*
 import dev.scriptor.server.converter.ConverterFn
+import dev.scriptor.server.request.AsteriskRequestTarget
+import dev.scriptor.server.request.OriginRequestTarget
+import dev.scriptor.server.request.Request
+import dev.scriptor.server.request.RequestReader
+import dev.scriptor.server.response.Response
+import dev.scriptor.server.response.ResponseWriter
 import dev.scriptor.server.result.Result
+import dev.scriptor.server.security.*
 import java.io.IOException
 import java.lang.AutoCloseable
 import java.lang.reflect.InvocationTargetException
-import java.net.InetAddress
-import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.nio.channels.SeekableByteChannel
 import java.nio.channels.ServerSocketChannel
@@ -22,10 +27,13 @@ import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.measureTime
 
-class Server : AutoCloseable {
-
-    val log: Logger
-    val provider: Provider
+class Server(
+    val log: Logger,
+    val provider: Provider,
+    val authenticator: Authenticator?,
+    val authorizer: Authorizer,
+    local: SocketAddress?,
+) : AutoCloseable {
 
     private val server = ServerSocketChannel.open()
 
@@ -48,46 +56,7 @@ class Server : AutoCloseable {
 
     private var running: Boolean = false
 
-    constructor(
-        log: Logger,
-        provider: Provider = Provider(),
-        port: Int,
-    ) : this(
-        log,
-        provider,
-        InetSocketAddress(port),
-    )
-
-    constructor(
-        log: Logger,
-        provider: Provider = Provider(),
-        addr: InetAddress?,
-        port: Int,
-    ) : this(
-        log,
-        provider,
-        InetSocketAddress(addr, port),
-    )
-
-    constructor(
-        log: Logger,
-        provider: Provider = Provider(),
-        hostname: String,
-        port: Int,
-    ) : this(
-        log,
-        provider,
-        InetSocketAddress(hostname, port),
-    )
-
-    constructor(
-        log: Logger,
-        provider: Provider = Provider(),
-        local: SocketAddress? = null,
-    ) {
-        this.log = log
-        this.provider = provider
-
+    init {
         server.bind(local)
 
         log.info("server listening on http:/${server.localAddress}")
@@ -103,6 +72,7 @@ class Server : AutoCloseable {
         path: Path,
         accept: String? = null,
         result: String? = null,
+        security: SecurityPolicy = SecurityPolicy.Public,
         parameters: List<Parameter> = emptyList(),
         returns: Type = getType<Unit>(),
         callee: (Map<Int, Any?>) -> Any?,
@@ -112,6 +82,7 @@ class Server : AutoCloseable {
             Pathname(path),
             accept,
             result,
+            security,
             parameters,
             returns,
             callee,
@@ -219,7 +190,12 @@ class Server : AutoCloseable {
         }
     }
 
-    fun register(name: String, delay: Duration, period: Duration, callee: Server.() -> Unit) {
+    fun register(
+        name: String,
+        delay: Duration,
+        period: Duration,
+        callee: Server.() -> Unit,
+    ) {
         val task = timerTask { callee() }
 
         tasks[name] = task
@@ -330,6 +306,22 @@ class Server : AutoCloseable {
         return NoContentSignal(headers).generate()
     }
 
+    private fun withPrincipal(request: Request, route: RouteMetadata, block: (Principal?) -> Result): Result {
+        val principal = authenticator?.authenticate(request)
+
+        when (authorizer.authorize(principal, route.security)) {
+            AuthorizationResult.Allowed -> Unit
+
+            AuthorizationResult.Unauthenticated ->
+                return UnauthorizedSignal().generate()
+
+            AuthorizationResult.Forbidden ->
+                return ForbiddenSignal().generate()
+        }
+
+        return block(principal)
+    }
+
     private fun getHeaders(request: Request): Result {
 
         val candidates = routes
@@ -344,24 +336,27 @@ class Server : AutoCloseable {
         val route = candidates.maxOrNull()
             ?: return NotFoundSignal().generate()
 
-        val headers = ParameterList()
+        return withPrincipal(request, route) {
+            val headers = ParameterList()
 
-        if (route.accept != null) {
-            headers["accept"] = route.accept
+            if (route.accept != null) {
+                headers["accept"] = route.accept
+            }
+
+            if (route.result != null) {
+                headers["content-type"] = route.result
+            }
+
+            NoContentSignal(headers).generate()
         }
-
-        if (route.result != null) {
-            headers["content-type"] = route.result
-        }
-
-        return NoContentSignal(headers).generate()
     }
 
-    private fun getContextArgument(parameter: Parameter): Pair<Boolean, Any?> {
+    private fun getContextArgument(parameter: Parameter, principal: Principal?): Pair<Boolean, Any?> {
         return when (parameter.type) {
             is ClassReference -> when (parameter.type.id) {
                 getClassId<Logger>() -> true to log
                 getClassId<Provider>() -> true to provider
+                getClassId<Principal>() -> true to principal
                 getClassId<ConverterFn<*, *>>() -> {
                     val src = parameter.type.arguments[0]
                     val dst = parameter.type.arguments[1]
@@ -472,9 +467,10 @@ class Server : AutoCloseable {
         path: String,
         route: RouteMetadata,
         parameter: Parameter,
+        principal: Principal?,
     ): Pair<Boolean, Any?> {
         return when (parameter.kind) {
-            ParameterKind.CONTEXT -> getContextArgument(parameter)
+            ParameterKind.CONTEXT -> getContextArgument(parameter, principal)
             ParameterKind.VALUE -> getValueParameter(request, path, route, parameter)
         }
     }
@@ -485,9 +481,10 @@ class Server : AutoCloseable {
         route: RouteMetadata,
         parameters: List<Parameter>,
         arguments: MutableMap<Int, Any?>,
+        principal: Principal?,
     ) {
         for (parameter in parameters) {
-            val (hasValue, value) = getArgument(request, path, route, parameter)
+            val (hasValue, value) = getArgument(request, path, route, parameter, principal)
 
             if (!hasValue) {
                 if (parameter.optional) continue
@@ -520,51 +517,54 @@ class Server : AutoCloseable {
         val route = candidates.maxOrNull()
             ?: return NotFoundSignal().generate()
 
-        val parameters = route.parameters
-        val arguments = mutableMapOf<Int, Any?>()
+        return withPrincipal(request, route) { principal ->
+            val parameters = route.parameters
+            val arguments = mutableMapOf<Int, Any?>()
 
-        val path = when (val target = request.target) {
-            is OriginRequestTarget -> target.path
-            else -> "/"
-        }
-
-        try {
-            getArguments(
-                request,
-                path,
-                route,
-                parameters,
-                arguments,
-            )
-
-            val value: Any?
-            val type = route.returns
-
-            try {
-                value = route.callee(arguments)
-            } catch (e: InvocationTargetException) {
-                throw e.targetException
+            val path = when (val target = request.target) {
+                is OriginRequestTarget -> target.path
+                else -> "/"
             }
 
-            val result = convert(
-                value,
-                type,
-                getType<Result>(),
-            ) as Result
+            try {
+                getArguments(
+                    request,
+                    path,
+                    route,
+                    parameters,
+                    arguments,
+                    principal,
+                )
 
-            return Result(
-                result.statusCode,
-                result.statusText,
-                result.contentLength,
-                route.result ?: result.contentType,
-                result.headers,
-                result.channel,
-            )
-        } catch (s: Signal) {
-            return s.generate()
-        } catch (t: Throwable) {
-            log.severe(t.stackTraceToString())
-            return InternalServerErrorSignal().generate()
+                val value: Any?
+                val type = route.returns
+
+                try {
+                    value = route.callee(arguments)
+                } catch (e: InvocationTargetException) {
+                    throw e.targetException
+                }
+
+                val result = convert(
+                    value,
+                    type,
+                    getType<Result>(),
+                ) as Result
+
+                Result(
+                    result.statusCode,
+                    result.statusText,
+                    result.contentLength,
+                    route.result ?: result.contentType,
+                    result.headers,
+                    result.channel,
+                )
+            } catch (s: Signal) {
+                s.generate()
+            } catch (t: Throwable) {
+                log.severe(t.stackTraceToString())
+                InternalServerErrorSignal().generate()
+            }
         }
     }
 
@@ -583,7 +583,6 @@ class Server : AutoCloseable {
         }
 
         val headers = ParameterList(result.headers)
-        val body: MessageBody?
 
         if ("date" !in headers) {
             val now = Clock.System.now()
@@ -598,7 +597,7 @@ class Server : AutoCloseable {
             headers["access-control-allow-origin"] = "*"
         }
 
-        if (result.channel != null) {
+        val body: MessageBody? = if (result.channel != null) {
             if ("content-type" !in headers) {
                 headers["content-type"] = result.contentType ?: "*/*"
             }
@@ -623,10 +622,8 @@ class Server : AutoCloseable {
                 }
             }
 
-            body = MessageBody(result.channel, chunked)
+            MessageBody(result.channel, chunked)
         } else {
-            body = null
-
             if (
                 "content-length" !in headers
                 && "transfer-encoding" !in headers
@@ -635,6 +632,8 @@ class Server : AutoCloseable {
             ) {
                 headers["content-length"] = "0"
             }
+
+            null
         }
 
         val response = Response(

@@ -1,7 +1,7 @@
 package dev.scriptor.example
 
-import dev.scriptor.server.http.Server
 import dev.scriptor.server.jvm.scan
+import dev.scriptor.server.server
 import java.net.InetAddress
 import java.util.logging.*
 
@@ -20,7 +20,9 @@ fun main() {
     log.useParentHandlers = false
     log.addHandler(handler)
 
-    val server = Server(log, addr = InetAddress.getLocalHost(), port = 8080)
+    val server = server(log) {
+        bind(InetAddress.getLocalHost(), 8080)
+    }
 
     server.use { server ->
         scan(server, "dev.scriptor")

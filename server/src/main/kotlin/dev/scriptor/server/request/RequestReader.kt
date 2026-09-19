@@ -1,8 +1,9 @@
-package dev.scriptor.server.http
+package dev.scriptor.server.request
 
 import dev.scriptor.server.BufferedReadableByteChannel
 import dev.scriptor.server.ParameterList
 import dev.scriptor.server.RangeReadableByteChannel
+import dev.scriptor.server.http.*
 import java.net.URI
 import java.nio.channels.ReadableByteChannel
 

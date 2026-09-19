@@ -1,6 +1,9 @@
-package dev.scriptor.server.http
+package dev.scriptor.server.request
 
 import dev.scriptor.server.ParameterList
+import dev.scriptor.server.http.MessageBody
+import dev.scriptor.server.http.Method
+import dev.scriptor.server.http.Version
 
 data class Request(
     val method: Method,
