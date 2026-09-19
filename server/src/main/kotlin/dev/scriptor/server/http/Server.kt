@@ -281,6 +281,22 @@ class Server(
         nextHeap[id] = Unit
     }
 
+    private fun withPrincipal(request: Request, route: RouteMetadata, block: (Principal?) -> Result): Result {
+        val principal = authenticator?.authenticate(request)
+
+        when (authorizer.authorize(principal, route.security)) {
+            AuthorizationResult.Allowed -> Unit
+
+            AuthorizationResult.Unauthenticated ->
+                return UnauthorizedSignal().generate()
+
+            AuthorizationResult.Forbidden ->
+                return ForbiddenSignal().generate()
+        }
+
+        return block(principal)
+    }
+
     private fun getOptions(request: Request): Result {
 
         val methods = when (val target = request.target) {
@@ -304,22 +320,6 @@ class Server(
         )
 
         return NoContentSignal(headers).generate()
-    }
-
-    private fun withPrincipal(request: Request, route: RouteMetadata, block: (Principal?) -> Result): Result {
-        val principal = authenticator?.authenticate(request)
-
-        when (authorizer.authorize(principal, route.security)) {
-            AuthorizationResult.Allowed -> Unit
-
-            AuthorizationResult.Unauthenticated ->
-                return UnauthorizedSignal().generate()
-
-            AuthorizationResult.Forbidden ->
-                return ForbiddenSignal().generate()
-        }
-
-        return block(principal)
     }
 
     private fun getHeaders(request: Request): Result {
