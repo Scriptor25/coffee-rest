@@ -1,5 +1,6 @@
 package dev.scriptor.server
 
+import dev.scriptor.server.request.Request
 import dev.scriptor.server.result.*
 import java.io.InputStream
 import java.nio.channels.ReadableByteChannel
@@ -10,6 +11,18 @@ sealed class Signal(
     val headers: ParameterList,
     val content: Any? = null,
 ) : Throwable("$code - $text") {
+
+    companion object {
+        fun of(result: Result): Signal = when (result.statusCode) {
+            in 100..199 -> InformationSignal.of(result)
+            in 200..299 -> SuccessSignal.of(result)
+            in 300..399 -> RedirectSignal.of(result)
+            in 400..499 -> ClientErrorSignal.of(result)
+            in 500..599 -> ServerErrorSignal.of(result)
+
+            else -> error("status code ${result.statusCode} does not describe a valid signal")
+        }
+    }
 
     fun generate(): Result {
         val headers = ParameterList(headers)
@@ -53,6 +66,11 @@ sealed class Signal(
     }
 }
 
+interface SignalHandler<in S : Signal> {
+
+    fun handle(request: Request, signal: S): Result
+}
+
 /**
  * 100 - 199
  */
@@ -60,7 +78,19 @@ sealed class InformationSignal(
     code: Int,
     text: String,
     headers: ParameterList,
-) : Signal(code, text, headers, Unit)
+) : Signal(code, text, headers, Unit) {
+
+    companion object {
+        fun of(result: Result): InformationSignal = when (result.statusCode) {
+            100 -> ContinueSignal(result.headers)
+            101 -> SwitchingProtocolsSignal(result.headers)
+            102 -> ProcessingSignal(result.headers)
+            103 -> EarlyHintsSignal(result.headers)
+
+            else -> error("status code ${result.statusCode} does not describe a valid signal")
+        }
+    }
+}
 
 /**
  * 200 - 299
@@ -70,7 +100,25 @@ sealed class SuccessSignal(
     text: String,
     headers: ParameterList,
     content: Any?,
-) : Signal(code, text, headers, content)
+) : Signal(code, text, headers, content) {
+
+    companion object {
+        fun of(result: Result): SuccessSignal = when (result.statusCode) {
+            200 -> OkSignal(result.headers, result.channel)
+            201 -> CreatedSignal(result.headers, result.channel)
+            202 -> AcceptedSignal(result.headers, result.channel)
+            203 -> NonAuthoritativeInformationSignal(result.headers, result.channel)
+            204 -> NoContentSignal(result.headers)
+            205 -> ResetContentSignal(result.headers, result.channel)
+            206 -> PartialContentSignal(result.headers, result.channel)
+            207 -> MultiStatusSignal(result.headers, result.channel)
+            208 -> AlreadyReportedSignal(result.headers, result.channel)
+            226 -> IMUsedSignal(result.headers, result.channel)
+
+            else -> error("status code ${result.statusCode} does not describe a valid signal")
+        }
+    }
+}
 
 /**
  * 300 - 399
@@ -80,7 +128,22 @@ sealed class RedirectSignal(
     text: String,
     headers: ParameterList,
     content: Any?,
-) : Signal(code, text, headers, content)
+) : Signal(code, text, headers, content) {
+
+    companion object {
+        fun of(result: Result): RedirectSignal = when (result.statusCode) {
+            300 -> MultipleChoicesSignal(result.headers, result.channel)
+            301 -> MovedPermanentlySignal(result.headers, result.channel)
+            302 -> FoundSignal(result.headers, result.channel)
+            303 -> SeeOtherSignal(result.headers, result.channel)
+            304 -> NotModifiedSignal(result.headers)
+            307 -> TemporaryRedirectSignal(result.headers, result.channel)
+            308 -> PermanentRedirectSignal(result.headers, result.channel)
+
+            else -> error("status code ${result.statusCode} does not describe a valid signal")
+        }
+    }
+}
 
 /**
  * 400 - 499
@@ -90,7 +153,44 @@ sealed class ClientErrorSignal(
     text: String,
     headers: ParameterList,
     content: Any?,
-) : Signal(code, text, headers, content)
+) : Signal(code, text, headers, content) {
+
+    companion object {
+        fun of(result: Result): ClientErrorSignal = when (result.statusCode) {
+            400 -> BadRequestSignal(result.headers, result.channel)
+            401 -> UnauthorizedSignal(result.headers, result.channel)
+            402 -> PaymentRequiredSignal(result.headers, result.channel)
+            403 -> ForbiddenSignal(result.headers, result.channel)
+            404 -> NotFoundSignal(result.headers, result.channel)
+            405 -> MethodNotAllowedSignal(result.headers, result.channel)
+            406 -> NotAcceptableSignal(result.headers, result.channel)
+            407 -> ProxyAuthenticationRequiredSignal(result.headers, result.channel)
+            408 -> RequestTimeoutSignal(result.headers, result.channel)
+            409 -> ConflictSignal(result.headers, result.channel)
+            410 -> GoneSignal(result.headers, result.channel)
+            411 -> LengthRequiredSignal(result.headers, result.channel)
+            412 -> PreconditionFailedSignal(result.headers, result.channel)
+            413 -> ContentTooLargeSignal(result.headers, result.channel)
+            414 -> URITooLongSignal(result.headers, result.channel)
+            415 -> UnsupportedMediaTypeSignal(result.headers, result.channel)
+            416 -> RangeNotSatisfiableSignal(result.headers, result.channel)
+            417 -> ExpectationFailedSignal(result.headers, result.channel)
+            418 -> ImATeapotSignal(result.headers, result.channel)
+            421 -> MisdirectedRequestSignal(result.headers, result.channel)
+            422 -> UnprocessableContentSignal(result.headers, result.channel)
+            423 -> LockedSignal(result.headers, result.channel)
+            424 -> FailedDependencySignal(result.headers, result.channel)
+            425 -> TooEarlySignal(result.headers, result.channel)
+            426 -> UpgradeRequiredSignal(result.headers, result.channel)
+            428 -> PreconditionRequiredSignal(result.headers, result.channel)
+            429 -> TooManyRequestsSignal(result.headers, result.channel)
+            431 -> RequestHeaderFieldsTooLargeSignal(result.headers, result.channel)
+            451 -> UnavailableForLegalReasonsSignal(result.headers, result.channel)
+
+            else -> error("status code ${result.statusCode} does not describe a valid signal")
+        }
+    }
+}
 
 /**
  * 500 - 599
@@ -100,7 +200,26 @@ sealed class ServerErrorSignal(
     text: String,
     headers: ParameterList,
     content: Any?,
-) : Signal(code, text, headers, content)
+) : Signal(code, text, headers, content) {
+
+    companion object {
+        fun of(result: Result): ServerErrorSignal = when (result.statusCode) {
+            500 -> InternalServerErrorSignal(result.headers, result.channel)
+            501 -> NotImplementedSignal(result.headers, result.channel)
+            502 -> BadGatewaySignal(result.headers, result.channel)
+            503 -> ServiceUnavailableSignal(result.headers, result.channel)
+            504 -> GatewayTimeoutSignal(result.headers, result.channel)
+            505 -> HTTPVersionNotSupportedSignal(result.headers, result.channel)
+            506 -> VariantAlsoNegotiatesSignal(result.headers, result.channel)
+            507 -> InsufficientStorageSignal(result.headers, result.channel)
+            508 -> LoopDetectedSignal(result.headers, result.channel)
+            510 -> NotExtendedSignal(result.headers, result.channel)
+            511 -> NetworkAuthenticationRequiredSignal(result.headers, result.channel)
+
+            else -> error("status code ${result.statusCode} does not describe a valid signal")
+        }
+    }
+}
 
 /**
  * 100 - Continue

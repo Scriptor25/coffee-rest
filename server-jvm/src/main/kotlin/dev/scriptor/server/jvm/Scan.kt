@@ -1,15 +1,14 @@
 package dev.scriptor.server.jvm
 
 import dev.scriptor.reflect.getType
-import dev.scriptor.server.Parameter
-import dev.scriptor.server.ParameterAnnotation
-import dev.scriptor.server.ParameterKind
-import dev.scriptor.server.Provider
+import dev.scriptor.server.*
 import dev.scriptor.server.converter.Converter
 import dev.scriptor.server.http.Method
 import dev.scriptor.server.http.Server
 import dev.scriptor.server.jvm.annotation.*
 import dev.scriptor.server.jvm.scanner.Scanner
+import dev.scriptor.server.request.Request
+import dev.scriptor.server.result.Result
 import dev.scriptor.server.security.SecurityPolicy
 import dev.scriptor.server.security.SecurityRequirement
 import kotlin.io.path.Path
@@ -240,6 +239,16 @@ private fun scan(
     instance: Any?,
     callee: KCallable<*>,
 ) {
+    when (val handle = callee.findAnnotation<Handle>()) {
+        null -> Unit
+        else -> {
+            val signals = setOf(*handle.value)
+
+            server.register(basePath, signals, instance, callee)
+            return
+        }
+    }
+
     val public = callee.hasAnnotation<Public>()
 
     val requirements = if (public) {
@@ -322,6 +331,88 @@ private fun scan(
         callee,
         route ?: return,
     )
+}
+
+private fun Server.register(
+    basePath: String,
+    signals: Set<KClass<out Signal>>,
+    instance: Any?,
+    callee: KCallable<*>,
+) {
+    when (val classifier = callee.returnType.classifier) {
+        is KClass<*> -> {
+            if (!classifier.isSubclassOf(Result::class)) {
+                error("invalid signal handler return type '${callee.returnType}': $classifier is not a subclass of ${Result::class}")
+            }
+
+            if (callee.returnType.isMarkedNullable) {
+                error("invalid signal handler return type '${callee.returnType}': type must not be nullable")
+            }
+        }
+
+        else -> error("invalid signal handler return type '${callee.returnType}'")
+    }
+
+    when (val count = callee.valueParameters.size) {
+        2 -> Unit
+        else -> error("invalid signal handler parameter count $count")
+    }
+
+    val ins = callee.instanceParameter
+
+    if (ins != null) {
+        if (instance == null) {
+            error("invalid signal handler instance parameter value: value must not be null")
+        }
+
+        if (ins.type.classifier != instance::class) {
+            error("invalid signal handler instance parameter value type: '${instance::class.starProjectedType}' is not assignable to ${ins.type}")
+        }
+    }
+
+    val fst = callee.valueParameters[0]
+    val snd = callee.valueParameters[1]
+
+    when (val classifier = fst.type.classifier) {
+        Request::class -> Unit
+        else -> error("invalid signal handler first parameter type '${fst.type}': $classifier is not ${Request::class}")
+    }
+
+    when (val classifier = snd.type.classifier) {
+        is KClass<*> -> {
+            val incompatible = buildSet {
+                for (signal in signals) {
+                    if (!classifier.isSuperclassOf(signal)) {
+                        add(signal)
+                    }
+                }
+            }
+
+            if (incompatible.isNotEmpty()) {
+                error("invalid signal handler second parameter type '${fst.type}': $classifier is not a superclass of ${incompatible.joinToString()}")
+            }
+        }
+
+        else -> error("invalid signal handler second parameter type '${fst.type}'")
+    }
+
+    for (signal in signals) {
+        register(basePath, signal, object : SignalHandler<Signal> {
+
+            override fun handle(request: Request, signal: Signal): Result {
+                val args = buildMap {
+                    if (ins != null) {
+                        this[ins] = instance
+                    }
+
+                    this[fst] = request
+                    this[snd] = signal
+                }
+
+                return callee.callBy(args) as Result
+            }
+        })
+    }
 }
 
 @OptIn(ExperimentalContextParameters::class)

@@ -23,6 +23,9 @@ import java.util.*
 import java.util.concurrent.*
 import java.util.logging.Logger
 import kotlin.concurrent.timerTask
+import kotlin.io.path.Path
+import kotlin.io.path.absolute
+import kotlin.reflect.KClass
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.measureTime
@@ -38,6 +41,7 @@ class Server(
     private val server = ServerSocketChannel.open()
 
     private val routes = mutableMapOf<Method, MutableList<RouteMetadata>>()
+    private val handlers = mutableMapOf<KClass<out Signal>, MutableMap<Path, SignalHandler<*>>>()
 
     private val timer = Timer()
     private val tasks = mutableMapOf<String, TimerTask>()
@@ -188,6 +192,30 @@ class Server(
                 )
             }
         }
+    }
+
+    fun <S : Signal> register(signal: KClass<S>, handler: SignalHandler<S>) {
+        handlers.computeIfAbsent(signal) { mutableMapOf(Path("/") to handler) }
+    }
+
+    inline fun <reified S : Signal> register(handler: SignalHandler<S>) {
+        register(S::class, handler)
+    }
+
+    fun <S : Signal> register(base: String, signal: KClass<S>, handler: SignalHandler<S>) {
+        handlers.computeIfAbsent(signal) { mutableMapOf(Path(base) to handler) }
+    }
+
+    inline fun <reified S : Signal> register(base: String, handler: SignalHandler<S>) {
+        register(base, S::class, handler)
+    }
+
+    fun <S : Signal> register(base: Path, signal: KClass<S>, handler: SignalHandler<S>) {
+        handlers.computeIfAbsent(signal) { mutableMapOf(base to handler) }
+    }
+
+    inline fun <reified S : Signal> register(base: Path, handler: SignalHandler<S>) {
+        register(base, S::class, handler)
     }
 
     fun register(
@@ -568,6 +596,38 @@ class Server(
         }
     }
 
+    private fun handleSignal(request: Request, result: Result): Result {
+        val signal = Signal.of(result)
+        val mapping = handlers[signal::class]
+            ?: return result
+
+        when (request.target) {
+            is OriginRequestTarget -> {
+                val targetPath = Path(request.target.path).absolute()
+
+                var bestCount: Int = -1
+                var best: SignalHandler<*>? = null
+
+                for ((path, handler) in mapping) {
+                    if (targetPath.startsWith(path)) {
+                        if (path.nameCount > bestCount) {
+                            bestCount = path.nameCount
+                            best = handler
+                        }
+                    }
+                }
+
+                if (best != null) {
+                    return (best as SignalHandler<Signal>).handle(request, signal)
+                }
+            }
+
+            else -> Unit
+        }
+
+        return result
+    }
+
     private fun handle(channel: SocketChannel, request: Request): Boolean {
         val connection = request.headers["connection"]?.lowercase()
         val keepAlive = when (request.protocol) {
@@ -576,11 +636,13 @@ class Server(
             Version.HTTP_1_1 -> connection != "close"
         }
 
-        val result = when (request.method) {
+        var result = when (request.method) {
             Method.CONNECT -> MethodNotAllowedSignal().generate()
             Method.OPTIONS -> getOptions(request)
             else -> getResult(request)
         }
+
+        result = handleSignal(request, result)
 
         val headers = ParameterList(result.headers)
 
