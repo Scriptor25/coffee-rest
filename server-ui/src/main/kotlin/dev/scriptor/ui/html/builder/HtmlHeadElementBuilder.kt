@@ -26,4 +26,43 @@ class HtmlHeadElementBuilder : HtmlElementBuilder(false, "head", listOf()) {
             this["name"] = name
         })
     }
+
+    context(_: Bundle)
+    fun link(
+        httpAs: String? = null,
+        blocking: String? = null,
+        crossOrigin: String? = null,
+        disabled: Boolean = false,
+        fetchPriority: String? = null,
+        href: String? = null,
+        hrefLang: String? = null,
+        imageSizes: String? = null,
+        imageSrcSet: String? = null,
+        integrity: String? = null,
+        media: String? = null,
+        referrerPolicy: String? = null,
+        rel: String? = null,
+        sizes: String? = null,
+        title: String? = null,
+        type: String? = null,
+    ): HtmlElement {
+        return element(true, "link", {
+            this["as"] = httpAs
+            this["blocking"] = blocking
+            this["crossorigin"] = crossOrigin
+            this["disabled"] = disabled
+            this["fetchpriority"] = fetchPriority
+            this["href"] = href
+            this["hreflang"] = hrefLang
+            this["imagesizes"] = imageSizes
+            this["imagesrcset"] = imageSrcSet
+            this["integrity"] = integrity
+            this["media"] = media
+            this["referrerpolicy"] = referrerPolicy
+            this["rel"] = rel
+            this["sizes"] = sizes
+            this["title"] = title
+            this["type"] = type
+        })
+    }
 }
