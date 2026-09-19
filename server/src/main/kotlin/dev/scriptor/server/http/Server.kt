@@ -104,6 +104,7 @@ class Server(
                             is ClassReference -> when (parameter.type.id) {
                                 getClassId<Logger>() -> true
                                 getClassId<Provider>() -> true
+                                getClassId<Principal>() -> true
                                 getClassId<ConverterFn<*, *>>() -> {
                                     val src = parameter.type.arguments[0]
                                     val dst = parameter.type.arguments[1]
