@@ -12,10 +12,10 @@ import java.util.logging.Logger
 class ServerBuilder(
     val log: Logger,
     val provider: Provider,
-    val authenticator: Authenticator?,
-    val authorizer: Authorizer,
 ) {
     var local: SocketAddress? = null
+    var authenticator: Authenticator? = null
+    var authorizer: Authorizer = DefaultAuthorizer
 
     fun bind(port: Int) {
         local = InetSocketAddress(port)
@@ -43,14 +43,10 @@ class ServerBuilder(
 fun server(
     log: Logger,
     provider: Provider = Provider(),
-    authenticator: Authenticator? = null,
-    authorizer: Authorizer = DefaultAuthorizer,
     block: ServerBuilder.() -> Unit,
 ): Server {
     return ServerBuilder(
         log,
         provider,
-        authenticator,
-        authorizer,
     ).apply(block).build()
 }
