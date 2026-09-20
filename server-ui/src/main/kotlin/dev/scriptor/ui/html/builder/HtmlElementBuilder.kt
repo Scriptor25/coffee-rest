@@ -2,6 +2,7 @@ package dev.scriptor.ui.html.builder
 
 import dev.scriptor.ui.Bundle
 import dev.scriptor.ui.dom.Attribute
+import dev.scriptor.ui.dom.AttributeValue
 import dev.scriptor.ui.dom.Node
 import dev.scriptor.ui.dom.builder.AttributeBuilder
 import dev.scriptor.ui.html.HtmlElement
@@ -53,27 +54,37 @@ open class HtmlElementBuilder(
                         )
                             JsUndefined
                         else
-                            JsObject(
-                                "capture" to (listener.capture?.let { JsBoolean(listener.capture) } ?: JsUndefined),
-                                "once" to (listener.once?.let { JsBoolean(listener.once) } ?: JsUndefined),
-                                "passive" to (listener.passive?.let { JsBoolean(listener.passive) } ?: JsUndefined),
-                                "signal" to (listener.signal?.let { JsBoolean(listener.signal) } ?: JsUndefined),
-                            )
+                            jsObject {
+                                if (listener.capture != null) {
+                                    this["capture"] = JsBoolean(listener.capture)
+                                }
+                                if (listener.once != null) {
+                                    this["once"] = JsBoolean(listener.once)
+                                }
+                                if (listener.passive != null) {
+                                    this["passive"] = JsBoolean(listener.passive)
+                                }
+                                if (listener.signal != null) {
+                                    this["signal"] = JsBoolean(listener.signal)
+                                }
+                            }
 
                     val element = document.querySelector("[data-id='$id']")
 
-                    element["addEventListener"](
-                        JsString(listener.type),
-                        listener.function,
-                        options,
-                    ).emit()
+                    emit(
+                        element.addEventListener(
+                            JsString(listener.type),
+                            listener.function,
+                            options,
+                        ),
+                    )
                 }
             }
 
             HtmlElement(
                 void,
                 tag,
-                attributes + Attribute("data-id", id),
+                attributes + Attribute("data-id", AttributeValue.StringValue(id)),
                 children,
             )
         }

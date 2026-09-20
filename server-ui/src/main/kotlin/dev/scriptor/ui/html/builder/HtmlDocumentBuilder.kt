@@ -18,7 +18,7 @@ class HtmlDocumentBuilder : HtmlBuilder<Document> {
             val element = HtmlElement(
                 false,
                 "script",
-                listOf(Attribute("type", "module")),
+                listOf(Attribute("type", AttributeValue.StringValue("module"))),
                 listOf(source),
             )
 
@@ -38,12 +38,16 @@ class HtmlDocumentBuilder : HtmlBuilder<Document> {
     }
 
     context(_: Bundle)
-    fun head(block: HtmlHeadElementBuilder.() -> Unit): Element {
+    fun head(block: HtmlHeadElementBuilder.() -> Unit = {}): Element {
         return element(HtmlHeadElementBuilder(), block)
     }
 
     context(_: Bundle)
-    fun body(vararg attributes: Pair<String, String?>, block: HtmlBodyElementBuilder.() -> Unit): Element {
-        return element(HtmlBodyElementBuilder(attributes.map { Attribute(it.first, it.second) }), block)
+    fun body(
+        attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
+        block: HtmlBodyElementBuilder.() -> Unit = {},
+    ): Element {
+        val attributes = HtmlAttributeBuilder().apply(attributeBlock).build()
+        return element(HtmlBodyElementBuilder(attributes), block)
     }
 }
