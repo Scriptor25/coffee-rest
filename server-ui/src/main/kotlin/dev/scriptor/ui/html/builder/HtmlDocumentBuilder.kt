@@ -60,16 +60,16 @@ class HtmlDocumentBuilder : HtmlBuilder<Document> {
     }
 
     context(_: Bundle)
-    fun head(block: WithBundle<HtmlHeadElementBuilder> = {}): Element {
-        return element(HtmlHeadElementBuilder(), block)
+    fun head(block: WithBundle<HtmlHeadElementBuilder> = {}) {
+        element(HtmlHeadElementBuilder(), block)
     }
 
     context(_: Bundle)
     fun body(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
         block: WithBundle<HtmlBodyElementBuilder> = {},
-    ): Element {
+    ) {
         val attributes = HtmlAttributeBuilder().apply(attributeBlock).build()
-        return element(HtmlBodyElementBuilder(attributes), block)
+        element(HtmlBodyElementBuilder(attributes), block)
     }
 }

@@ -99,8 +99,8 @@ open class HtmlElementBuilder(
         tag: String,
         attributeBlock: AttributeBuilder.() -> Unit = {},
         block: WithBundle<HtmlElementBuilder> = {},
-    ): HtmlElement {
-        return element(
+    ) {
+        element(
             void,
             tag,
             AttributeBuilder().apply(attributeBlock).build(),
@@ -114,16 +114,14 @@ open class HtmlElementBuilder(
         tag: String,
         attributes: List<Attribute>,
         block: WithBundle<HtmlElementBuilder> = {},
-    ): HtmlElement {
+    ) {
         val builder = HtmlElementBuilder(
             void,
             tag,
             attributes,
         )
         builder.block()
-        val element = builder.build()
-        children += element
-        return element
+        children += builder.build()
     }
 
     fun on(

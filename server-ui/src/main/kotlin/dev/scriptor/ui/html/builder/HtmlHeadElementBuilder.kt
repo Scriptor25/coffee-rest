@@ -1,7 +1,6 @@
 package dev.scriptor.ui.html.builder
 
 import dev.scriptor.ui.Bundle
-import dev.scriptor.ui.html.HtmlElement
 
 class HtmlHeadElementBuilder : HtmlElementBuilder(
     false,
@@ -10,8 +9,8 @@ class HtmlHeadElementBuilder : HtmlElementBuilder(
 ) {
 
     context(_: Bundle)
-    fun title(content: String): HtmlElement {
-        return element(false, "title") { +content }
+    fun title(content: String) {
+        element(false, "title") { +content }
     }
 
     context(_: Bundle)
@@ -21,8 +20,8 @@ class HtmlHeadElementBuilder : HtmlElementBuilder(
         httpEquiv: String? = null,
         media: String? = null,
         name: String? = null,
-    ): HtmlElement {
-        return element(true, "meta", {
+    ) {
+        element(true, "meta", {
             this["charset"] = charset
             this["content"] = content
             this["http-equiv"] = httpEquiv
@@ -49,8 +48,8 @@ class HtmlHeadElementBuilder : HtmlElementBuilder(
         sizes: String? = null,
         title: String? = null,
         type: String? = null,
-    ): HtmlElement {
-        return element(true, "link", {
+    ) {
+        element(true, "link", {
             this["as"] = httpAs
             this["blocking"] = blocking
             this["crossorigin"] = crossOrigin
