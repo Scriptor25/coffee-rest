@@ -10,37 +10,34 @@ interface Builder<T> {
     context(bundle: Bundle)
     fun build(): T
 
-    fun raw(content: String): Raw {
-        val node = Raw(content)
+    fun <N : Node> add(node: N): N {
         children += node
         return node
+    }
+
+    fun raw(content: String): Raw {
+        return add(Raw(content))
     }
 
     fun text(content: String): Text {
-        val node = Text(content)
-        children += node
-        return node
+        return add(Text(content))
     }
 
     fun entity(name: String): Entity {
-        val node = Entity(name)
-        children += node
-        return node
+        return add(Entity(name))
     }
 
     fun comment(content: String): Comment {
-        val node = Comment(content)
-        children += node
-        return node
+        return add(Comment(content))
     }
 
     context(_: Bundle)
-    fun element(tag: String, vararg attributes: Pair<String, String?>, block: ElementBuilder.() -> Unit = {}): Element {
-        val builder = ElementBuilder(tag, attributes.map { Attribute(it.first, it.second) })
-        builder.block()
-        val node = builder.build()
-        children += node
-        return node
+    fun element(
+        tag: String,
+        vararg attributes: Pair<String, AttributeValue>,
+        block: ElementBuilder.() -> Unit = {}
+    ): Element {
+        return add(ElementBuilder(tag, attributes.map(::Attribute)).apply(block).build())
     }
 
     operator fun String.unaryPlus() {

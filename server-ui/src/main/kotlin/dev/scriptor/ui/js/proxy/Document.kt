@@ -4,13 +4,15 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsString
 
-class JsDocumentProxy(value: JsExpression) : JsProxy(value) {
+class Document(value: JsExpression) : JsProxy(value) {
+
+    val querySelector by proxy("querySelector")
 
     fun querySelector(selectors: String): JsCall {
-        return querySelector(JsString(selectors))
+        return (querySelector)(JsString(selectors))
     }
 
     fun querySelector(selectors: JsExpression): JsCall {
-        return this["querySelector"](selectors)
+        return (querySelector)(selectors)
     }
 }

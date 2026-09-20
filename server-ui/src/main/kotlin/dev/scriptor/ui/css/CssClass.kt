@@ -2,15 +2,13 @@ package dev.scriptor.ui.css
 
 data class CssClass(
     val selector: String,
-    val properties: Map<String, String?>,
+    val properties: List<CssProperty>,
     val children: List<CssNode>,
 ) : CssNode {
 
     override fun toCssString(): String = "$selector{${
-        properties.entries
-            .filter { it.value != null }
-            .joinToString("") { "${it.key}:${it.value};" }
-    }${
+        properties.joinToString(";", transform = CssProperty::toCssString)
+    }${if (properties.isNotEmpty() && children.isNotEmpty()) ";" else ""}${
         children.joinToString("", transform = CssNode::toCssString)
     }}"
 }

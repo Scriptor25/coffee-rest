@@ -1,6 +1,7 @@
 package dev.scriptor.ui.css.builder
 
 import dev.scriptor.ui.css.CssClass
+import dev.scriptor.ui.css.CssProperty
 
 enum class CssAlignItems(val value: String) {
     NORMAL("normal"),
@@ -332,7 +333,12 @@ class CssClassBuilder(
     override fun build(): CssClass {
         return CssClass(
             selector,
-            properties,
+            properties.mapNotNull { (key, value) ->
+                if (value != null)
+                    CssProperty(key, value)
+                else
+                    null
+            },
             nodes,
         )
     }

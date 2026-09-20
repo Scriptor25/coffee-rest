@@ -2,9 +2,7 @@ package dev.scriptor.ui.js.builder
 
 import dev.scriptor.ui.js.JsBlock
 
-class JsBlockBuilder : JsBuilder<JsBlock>() {
+class JsBlockBuilder : JsNodeBuilder<JsBlock>() {
 
-    override fun build(): JsBlock {
-        return JsBlock(nodes)
-    }
+    override fun build(): JsBlock = JsBlock(nodes)
 }

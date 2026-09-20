@@ -8,7 +8,7 @@ class JsFunctionBuilder(
     val async: Boolean,
     val name: String?,
     val parameters: List<JsParameter>,
-) : JsBuilder<JsFunction>() {
+) : JsNodeBuilder<JsFunction>() {
 
     override fun build(): JsFunction {
         return JsFunction(

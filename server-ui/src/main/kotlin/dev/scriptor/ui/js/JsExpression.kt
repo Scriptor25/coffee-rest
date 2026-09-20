@@ -1,6 +1,36 @@
 package dev.scriptor.ui.js
 
+import kotlin.reflect.KProperty
+
 interface JsExpression : JsNode {
+
+    data class TypedProxy<T : JsExpression>(val get: () -> T, val set: (T) -> Unit) {
+
+        operator fun getValue(self: Any?, property: KProperty<*>): T = get()
+
+        operator fun setValue(self: Any?, property: KProperty<*>, value: T) = set(value)
+    }
+
+    data class Proxy(val get: () -> JsExpression, val set: (JsExpression) -> Unit) {
+
+        operator fun getValue(self: Any?, property: KProperty<*>): JsExpression = get()
+
+        operator fun setValue(self: Any?, property: KProperty<*>, value: JsExpression) = set(value)
+    }
+
+    fun <T : JsExpression> proxy(name: String, factory: (JsExpression) -> T): TypedProxy<T> {
+        return TypedProxy(
+            get = { factory(get(name)) },
+            set = { set(name, it) }
+        )
+    }
+
+    fun proxy(name: String): Proxy {
+        return Proxy(
+            get = { get(name) },
+            set = { set(name, it) }
+        )
+    }
 
     operator fun get(name: String): JsMember {
         return get(JsString(name))
@@ -11,7 +41,7 @@ interface JsExpression : JsNode {
     }
 
     operator fun set(name: String, value: JsExpression) {
-        set(name, JsString(name))
+        set(JsString(name), value)
     }
 
     operator fun set(name: JsExpression, value: JsExpression) {

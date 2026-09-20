@@ -3,6 +3,7 @@ package dev.scriptor.ui.js
 enum class JsVariableKind(val value: String) {
     CONST("const"),
     LET("let"),
+    USING("using"),
 }
 
 data class JsVariable(

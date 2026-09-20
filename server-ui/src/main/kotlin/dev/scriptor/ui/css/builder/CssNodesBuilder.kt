@@ -4,7 +4,5 @@ import dev.scriptor.ui.css.CssNode
 
 class CssNodesBuilder : CssBuilder<List<CssNode>>() {
 
-    override fun build(): List<CssNode> {
-        return nodes
-    }
+    override fun build(): List<CssNode> = nodes
 }

@@ -4,6 +4,9 @@ open class JsSymbol(
     val name: String,
 ) : JsExpression {
 
-    // TODO: sanitize symbol name
-    override fun toJsString(): String = name
+    override fun toJsString(): String {
+        require(validateKey(name))
+
+        return name
+    }
 }

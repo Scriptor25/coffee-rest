@@ -2,7 +2,7 @@ package dev.scriptor.ui.js.proxy
 
 import dev.scriptor.ui.js.JsExpression
 
-open class JsProxy(
+abstract class JsProxy(
     val value: JsExpression,
 ) : JsExpression {
 

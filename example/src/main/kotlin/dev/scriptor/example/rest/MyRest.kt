@@ -92,7 +92,7 @@ class MyRest {
                     +"Click me!"
 
                     on("click") {
-                        console.log("Hello world from click listener!").emit()
+                        emit(console.log("Hello world from click listener!"))
                     }
                 }
 
@@ -109,7 +109,7 @@ class MyRest {
                 }
 
                 style {
-                    div("split") {
+                    define("div.split") {
                         display = CssDisplay.FLEX
                         flexDirection = CssFlexDirection.ROW
                         flexWrap = CssFlexWrap.NOWRAP

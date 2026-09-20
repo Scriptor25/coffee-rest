@@ -16,8 +16,4 @@ abstract class CssBuilder<T> {
         nodes += node
         return node
     }
-
-    fun div(name: String, block: CssClassBuilder.() -> Unit): CssClass {
-        return define("div.$name", block)
-    }
 }

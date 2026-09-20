@@ -5,10 +5,12 @@ import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsString
 import dev.scriptor.ui.js.JsUndefined
 
-class JsWindowProxy(value: JsExpression) : JsProxy(value) {
+class Window(value: JsExpression) : JsProxy(value) {
 
-    val location = JsLocationProxy(this["location"])
-    val navigator = JsNavigatorProxy(this["navigator"])
+    val fetch by proxy("fetch")
+    val location by proxy("location", ::Location)
+    val navigator by proxy("navigator", ::Navigator)
+    val open by proxy("open")
 
     fun fetch(resource: String, options: JsExpression = JsUndefined): JsCall {
         return fetch(JsString(resource), options)
