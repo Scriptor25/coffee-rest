@@ -26,13 +26,10 @@ abstract class JsNodeBuilder<T> : JsExpressionBuilder<T> {
         val thenNodes = JsNodesBuilder().apply(thenBlock).build()
         val elseNodes = JsNodesBuilder().apply(elseBlock).build()
 
-        val thenNode = if (thenNodes.size == 1) thenNodes[0] else JsBlock(thenNodes)
-        val elseNode = if (elseNodes.size == 1) elseNodes[0] else JsBlock(elseNodes)
-
         return JsIfElse(
             condition,
-            thenNode,
-            elseNode,
+            JsBlock(thenNodes),
+            JsBlock(elseNodes),
         )
     }
 
@@ -42,11 +39,9 @@ abstract class JsNodeBuilder<T> : JsExpressionBuilder<T> {
     ): JsIfElse {
         val thenNodes = JsNodesBuilder().apply(thenBlock).build()
 
-        val thenNode = if (thenNodes.size == 1) thenNodes[0] else JsBlock(thenNodes)
-
         return JsIfElse(
             condition,
-            thenNode,
+            JsBlock(thenNodes),
             null,
         )
     }
