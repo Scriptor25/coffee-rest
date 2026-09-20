@@ -1,30 +1,59 @@
 package dev.scriptor.ui
 
+import dev.scriptor.ui.css.builder.CssNodesBuilder
 import dev.scriptor.ui.dom.Document
 import dev.scriptor.ui.dom.builder.DocumentBuilder
+import dev.scriptor.ui.dom.builder.WithBundle
 import dev.scriptor.ui.html.builder.HtmlDocumentBuilder
 import dev.scriptor.ui.js.builder.JsNodesBuilder
+import kotlin.reflect.KClass
 
 class Bundle {
 
     private var nextId = 0L
 
-    val script = JsNodesBuilder()
-
-    fun html(block: context(Bundle) HtmlDocumentBuilder.() -> Unit): Document {
-        val builder = HtmlDocumentBuilder()
-        builder.block()
-        return builder.build()
+    fun allocateId(): String {
+        val id = nextId++
+        return "$id"
     }
 
-    fun document(type: String, block: context(Bundle) DocumentBuilder.() -> Unit): Document {
+    private val initialized = mutableSetOf<KClass<out Component>>()
+
+    fun initialize(component: Component) {
+        if (component::class in initialized) {
+            return
+        }
+
+        initialized.add(component::class)
+
+        style.nodes += component.style()
+        script.nodes += component.script()
+    }
+
+    val script = JsNodesBuilder()
+    val style = CssNodesBuilder()
+
+    fun script(block: JsNodesBuilder.() -> Unit) {
+        script.apply(block)
+    }
+
+    fun style(block: CssNodesBuilder.() -> Unit) {
+        style.apply(block)
+    }
+
+    fun document(type: String, block: WithBundle<DocumentBuilder>): Document {
         val builder = DocumentBuilder(type)
         builder.block()
         return builder.build()
     }
 
-    fun allocateId(): String {
-        val id = nextId++
-        return "$id"
+    fun html(block: WithBundle<HtmlDocumentBuilder>): Document {
+        val builder = HtmlDocumentBuilder()
+        builder.block()
+        return builder.build()
     }
+}
+
+fun bundle(block: Bundle.() -> Unit): Bundle {
+    return Bundle().apply(block)
 }

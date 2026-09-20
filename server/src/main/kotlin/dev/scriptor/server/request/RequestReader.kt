@@ -3,7 +3,9 @@ package dev.scriptor.server.request
 import dev.scriptor.server.BufferedReadableByteChannel
 import dev.scriptor.server.ParameterList
 import dev.scriptor.server.RangeReadableByteChannel
-import dev.scriptor.server.http.*
+import dev.scriptor.server.http.MessageBody
+import dev.scriptor.server.http.Method
+import dev.scriptor.server.http.Version
 import java.net.URI
 import java.nio.channels.ReadableByteChannel
 

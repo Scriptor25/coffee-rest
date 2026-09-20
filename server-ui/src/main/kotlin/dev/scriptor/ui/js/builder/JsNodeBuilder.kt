@@ -7,7 +7,7 @@ import dev.scriptor.ui.js.proxy.Window
 
 abstract class JsNodeBuilder<T> : JsExpressionBuilder<T> {
 
-    protected val nodes = mutableListOf<JsNode>()
+    val nodes = mutableListOf<JsNode>()
 
     val console = Console(JsSymbol("console"))
     val window = Window(JsSymbol("window"))
@@ -16,6 +16,43 @@ abstract class JsNodeBuilder<T> : JsExpressionBuilder<T> {
     fun <N : JsNode> emit(node: N): N {
         nodes += node
         return node
+    }
+
+    fun jsIfElse(
+        condition: JsExpression,
+        thenBlock: JsNodesBuilder.() -> Unit,
+        elseBlock: JsNodesBuilder.() -> Unit,
+    ): JsIfElse {
+        val thenNodes = JsNodesBuilder().apply(thenBlock).build()
+        val elseNodes = JsNodesBuilder().apply(elseBlock).build()
+
+        val thenNode = if (thenNodes.size == 1) thenNodes[0] else JsBlock(thenNodes)
+        val elseNode = if (elseNodes.size == 1) elseNodes[0] else JsBlock(elseNodes)
+
+        return JsIfElse(
+            condition,
+            thenNode,
+            elseNode,
+        )
+    }
+
+    fun jsIf(
+        condition: JsExpression,
+        thenBlock: JsNodesBuilder.() -> Unit,
+    ): JsIfElse {
+        val thenNodes = JsNodesBuilder().apply(thenBlock).build()
+
+        val thenNode = if (thenNodes.size == 1) thenNodes[0] else JsBlock(thenNodes)
+
+        return JsIfElse(
+            condition,
+            thenNode,
+            null,
+        )
+    }
+
+    fun jsReturn(value: JsExpression = JsUndefined): JsReturn {
+        return JsReturn(value)
     }
 
     fun eval(script: String): JsCall {

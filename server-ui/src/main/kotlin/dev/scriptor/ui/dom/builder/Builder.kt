@@ -3,6 +3,8 @@ package dev.scriptor.ui.dom.builder
 import dev.scriptor.ui.Bundle
 import dev.scriptor.ui.dom.*
 
+typealias WithBundle<B> = context(Bundle) B.() -> Unit
+
 interface Builder<T> {
 
     val children: MutableList<Node>
@@ -35,16 +37,25 @@ interface Builder<T> {
     fun element(
         tag: String,
         vararg attributes: Pair<String, AttributeValue>,
-        block: ElementBuilder.() -> Unit = {}
+        block: WithBundle<ElementBuilder> = {}
     ): Element {
-        return add(ElementBuilder(tag, attributes.map(::Attribute)).apply(block).build())
+        val builder = ElementBuilder(tag, attributes.map(::Attribute))
+        builder.block()
+        val element = builder.build()
+        return add(element)
     }
 
     operator fun String.unaryPlus() {
         text(this)
     }
 
-    operator fun Node.unaryPlus() {
+    operator fun Node?.unaryPlus() {
+        if (this != null) {
+            children += this
+        }
+    }
+
+    operator fun Iterable<Node>.unaryPlus() {
         children += this
     }
 }

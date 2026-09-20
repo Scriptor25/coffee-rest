@@ -4,6 +4,7 @@ import dev.scriptor.ui.Bundle
 import dev.scriptor.ui.css.CssNode
 import dev.scriptor.ui.css.builder.CssNodesBuilder
 import dev.scriptor.ui.dom.Attribute
+import dev.scriptor.ui.dom.builder.WithBundle
 import dev.scriptor.ui.html.HtmlElement
 import dev.scriptor.ui.js.JsNode
 import dev.scriptor.ui.js.builder.JsNodesBuilder
@@ -12,17 +13,25 @@ open class HtmlGenericBuilder(
     void: Boolean,
     tag: String,
     attributes: List<Attribute>,
-) : HtmlElementBuilder(void, tag, attributes) {
+) : HtmlElementBuilder(
+    void,
+    tag,
+    attributes,
+) {
 
     context(_: Bundle)
     protected fun htmlElement(
         void: Boolean,
         tag: String,
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
-        val attributes = HtmlAttributeBuilder().apply(attributeBlock).build()
-        return htmlElement(void, tag, attributes, block)
+        return htmlElement(
+            void,
+            tag,
+            HtmlAttributeBuilder().apply(attributeBlock).build(),
+            block,
+        )
     }
 
     context(_: Bundle)
@@ -30,9 +39,15 @@ open class HtmlGenericBuilder(
         void: Boolean,
         tag: String,
         attributes: List<Attribute>,
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
-        val element = HtmlGenericBuilder(void, tag, attributes).apply(block).build()
+        val builder = HtmlGenericBuilder(
+            void,
+            tag,
+            attributes,
+        )
+        builder.block()
+        val element = builder.build()
         children += element
         return element
     }
@@ -61,7 +76,7 @@ open class HtmlGenericBuilder(
         block: CssNodesBuilder.() -> Unit = {},
     ): HtmlElement {
         val styles = CssNodesBuilder().apply(block).build()
-        val source = styles.joinToString(" ", transform = CssNode::toCssString)
+        val source = styles.joinToString("", transform = CssNode::toCssString)
 
         return htmlElement(
             false,
@@ -73,7 +88,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun main(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "main", attributeBlock, block)
     }
@@ -81,7 +96,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun div(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "div", attributeBlock, block)
     }
@@ -89,7 +104,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun span(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "span", attributeBlock, block)
     }
@@ -97,7 +112,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun p(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "p", attributeBlock, block)
     }
@@ -105,7 +120,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun h1(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "h1", attributeBlock, block)
     }
@@ -113,7 +128,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun h2(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "h2", attributeBlock, block)
     }
@@ -121,7 +136,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun h3(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "h3", attributeBlock, block)
     }
@@ -129,7 +144,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun h4(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "h4", attributeBlock, block)
     }
@@ -137,7 +152,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun h5(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "h5", attributeBlock, block)
     }
@@ -145,7 +160,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun h6(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "h6", attributeBlock, block)
     }
@@ -153,7 +168,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun button(
         attributeBlock: HtmlButtonElementAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         val attributes = HtmlButtonElementAttributeBuilder().apply(attributeBlock).build()
         return htmlElement(false, "button", attributes, block)
@@ -162,7 +177,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun section(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "section", attributeBlock, block)
     }
@@ -170,7 +185,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun blockquote(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "blockquote", attributeBlock, block)
     }
@@ -178,7 +193,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun cite(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "cite", attributeBlock, block)
     }
@@ -186,7 +201,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun ul(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "ul", attributeBlock, block)
     }
@@ -194,7 +209,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun ol(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "ol", attributeBlock, block)
     }
@@ -202,7 +217,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun li(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "li", attributeBlock, block)
     }
@@ -210,7 +225,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun a(
         attributeBlock: HtmlAnchorElementAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         val attributes = HtmlAnchorElementAttributeBuilder().apply(attributeBlock).build()
         return htmlElement(false, "a", attributes, block)
@@ -219,7 +234,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun form(
         attributeBlock: HtmlFormElementAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         val attributes = HtmlFormElementAttributeBuilder().apply(attributeBlock).build()
         return htmlElement(false, "form", attributes, block)
@@ -228,7 +243,7 @@ open class HtmlGenericBuilder(
     context(_: Bundle)
     fun label(
         attributeBlock: HtmlAttributeBuilder.() -> Unit = {},
-        block: HtmlGenericBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
     ): HtmlElement {
         return htmlElement(false, "label", attributeBlock, block)
     }

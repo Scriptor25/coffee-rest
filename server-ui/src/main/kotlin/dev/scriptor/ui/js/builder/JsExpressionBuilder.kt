@@ -67,17 +67,16 @@ interface JsExpressionBuilder<T> {
     }
 
     fun jsFunction(
+        vararg parameters: String,
         async: Boolean = false,
         name: String? = null,
-        vararg parameters: String,
-        block: JsNodesBuilder.() -> Unit,
+        block: JsFunctionBuilder.(Array<JsSymbol>) -> Unit,
     ): JsFunction {
-        return JsFunction(
+        return JsFunctionBuilder(
             async,
             name,
             parameters.map { JsParameter(it, false) },
-            JsNodesBuilder().apply(block).build(),
-        )
+        ).apply(block).build()
     }
 
     fun jsMember(
@@ -144,5 +143,9 @@ interface JsExpressionBuilder<T> {
 
     fun jsObject(block: JsExpressionMapBuilder.() -> Unit): JsObject {
         return JsObject(JsExpressionMapBuilder().apply(block).build())
+    }
+
+    fun jsString(value: String): JsString {
+        return JsString(value)
     }
 }
