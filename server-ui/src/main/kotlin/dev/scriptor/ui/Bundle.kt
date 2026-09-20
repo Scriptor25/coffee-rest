@@ -1,14 +1,12 @@
 package dev.scriptor.ui
 
 import dev.scriptor.ui.css.builder.CssNodesBuilder
-import dev.scriptor.ui.dom.Document
-import dev.scriptor.ui.dom.builder.DocumentBuilder
 import dev.scriptor.ui.dom.builder.WithBundle
 import dev.scriptor.ui.html.builder.HtmlDocumentBuilder
 import dev.scriptor.ui.js.builder.JsNodesBuilder
 import kotlin.reflect.KClass
 
-class Bundle {
+class Bundle internal constructor() {
 
     private var nextId = 0L
 
@@ -30,6 +28,7 @@ class Bundle {
         script.nodes += component.script()
     }
 
+    val document = HtmlDocumentBuilder()
     val script = JsNodesBuilder()
     val style = CssNodesBuilder()
 
@@ -41,17 +40,11 @@ class Bundle {
         style.apply(block)
     }
 
-    fun document(type: String, block: WithBundle<DocumentBuilder>): Document {
-        val builder = DocumentBuilder(type)
-        builder.block()
-        return builder.build()
+    fun html(block: WithBundle<HtmlDocumentBuilder>) {
+        document.block()
     }
 
-    fun html(block: WithBundle<HtmlDocumentBuilder>): Document {
-        val builder = HtmlDocumentBuilder()
-        builder.block()
-        return builder.build()
-    }
+    override fun toString(): String = document.build().toXmlString()
 }
 
 fun bundle(block: Bundle.() -> Unit): Bundle {

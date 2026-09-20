@@ -44,20 +44,19 @@ class HtmlDocumentBuilder : HtmlBuilder<Document> {
             append += element
         }
 
-        if (append.isNotEmpty()) {
+        val next = if (append.isNotEmpty()) {
             val body = children.filterIsInstance<HtmlElement>().find { it.tag == "body" }
             if (body != null) {
-                children -= body
-                children += HtmlElement(
+                children - body + HtmlElement(
                     false,
                     "body",
                     body.attributes,
                     body.children + append,
                 )
-            }
-        }
+            } else children
+        } else children
 
-        return Document("html", children)
+        return Document("html", next)
     }
 
     context(_: Bundle)

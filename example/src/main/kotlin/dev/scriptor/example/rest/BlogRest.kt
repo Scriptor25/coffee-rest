@@ -3,54 +3,58 @@ package dev.scriptor.example.rest
 import dev.scriptor.server.jvm.annotation.Controller
 import dev.scriptor.server.jvm.annotation.Get
 import dev.scriptor.server.jvm.annotation.PathParameter
-import dev.scriptor.ui.Bundle
+import dev.scriptor.ui.bundle
 import org.json.JSONObject
 
 @Controller("/blog")
 class BlogRest {
 
     @Get("/", result = "text/html")
-    fun getList(): String = Bundle().html {
-        head {
-            meta(charset = "utf-8")
-            title("Blogs")
-        }
+    fun getList(): String = bundle {
+        html {
+            head {
+                meta(charset = "utf-8")
+                title("Blogs")
+            }
 
-        body {
-            h1 { +"Blogs" }
-            ul {
-                li {
-                    a({ href = "/blog/foo.md" }) { +"Foo" }
-                }
-                li {
-                    a({ href = "/blog/bar.md" }) { +"Bar" }
-                }
-                li {
-                    a({ href = "/blog/bar/foo.md" }) { +"Bar Foo" }
-                }
-                li {
-                    a({ href = "/blog/foo/bar.md" }) { +"Foo Bar" }
+            body {
+                h1 { +"Blogs" }
+                ul {
+                    li {
+                        a({ href = "/blog/foo.md" }) { +"Foo" }
+                    }
+                    li {
+                        a({ href = "/blog/bar.md" }) { +"Bar" }
+                    }
+                    li {
+                        a({ href = "/blog/bar/foo.md" }) { +"Bar Foo" }
+                    }
+                    li {
+                        a({ href = "/blog/foo/bar.md" }) { +"Foo Bar" }
+                    }
                 }
             }
         }
-    }.toXmlString()
+    }.toString()
 
     @Get("/[slug+]", result = "text/html")
-    fun getArticle(@PathParameter slug: Array<String>): String = Bundle().html {
-        head {
-            meta(charset = "utf-8")
-            title("${slug.last()} | Blogs")
-        }
+    fun getArticle(@PathParameter slug: Array<String>): String = bundle {
+        html {
+            head {
+                meta(charset = "utf-8")
+                title("${slug.last()} | Blogs")
+            }
 
-        body {
-            h1 { +slug.last() }
-            ul {
-                for (segment in slug) {
-                    li { +segment }
+            body {
+                h1 { +slug.last() }
+                ul {
+                    for (segment in slug) {
+                        li { +segment }
+                    }
                 }
             }
         }
-    }.toXmlString()
+    }.toString()
 
 
     @Get("/[slug+]/metadata", result = "application/json")
