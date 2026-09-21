@@ -1,5 +1,6 @@
 package dev.scriptor.ui.dom.builder
 
+import dev.scriptor.ui.Delegate
 import dev.scriptor.ui.dom.Attribute
 import dev.scriptor.ui.dom.AttributeValue
 import kotlin.reflect.KProperty
@@ -58,11 +59,6 @@ open class AttributeBuilder {
             null -> null
             else -> AttributeValue.StringValue(value.get())
         }
-    }
-
-    protected interface Delegate<T> {
-        operator fun getValue(self: Any?, property: KProperty<*>): T
-        operator fun setValue(self: Any?, property: KProperty<*>, value: T)
     }
 
     protected fun boolean(name: String): Delegate<Boolean> =
@@ -137,3 +133,4 @@ open class AttributeBuilder {
             }
         }
 }
+
