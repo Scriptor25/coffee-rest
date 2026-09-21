@@ -52,6 +52,26 @@ interface JsExpressionBuilder<T> {
         )
     }
 
+    fun jsFormat(
+        strings: List<String>,
+        values: List<JsExpression>,
+    ): JsFormat {
+        return JsFormat(
+            strings,
+            values,
+        )
+    }
+
+    fun jsFormat(
+        vararg strings: String,
+        values: List<JsExpression>,
+    ): JsFormat {
+        return JsFormat(
+            strings.asList(),
+            values,
+        )
+    }
+
     fun jsFunction(
         async: Boolean = false,
         name: String? = null,

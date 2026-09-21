@@ -4,13 +4,14 @@ fun validateKey(key: String): Boolean {
     return """^[A-Za-z_$][A-Za-z0-9_$]*$""".toRegex().matches(key);
 }
 
-fun escapeString(str: String): String = buildString {
+fun escapeString(str: String, vararg replace: Char): String = buildString {
     for (char in str) {
-        if (char != '\'') {
+        if (char !in replace) {
             append(char)
             continue
         }
 
-        append("\\'")
+        append('\\')
+        append(char)
     }
 }

@@ -4,5 +4,5 @@ class JsString(
     val value: String,
 ) : JsExpression {
 
-    override fun toJsString(): String = "'${escapeString(value)}'"
+    override fun toJsString(): String = "\"${escapeString(value, '"')}\""
 }
