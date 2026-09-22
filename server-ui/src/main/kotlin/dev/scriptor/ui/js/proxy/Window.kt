@@ -9,6 +9,7 @@ class Window(value: JsExpression) : JsProxy(value) {
 
     val fetch by proxy("fetch")
     val location by proxy("location", ::Location)
+    val navigation by proxy("navigation", ::Navigation)
     val navigator by proxy("navigator", ::Navigator)
     val open by proxy("open")
 

@@ -252,4 +252,22 @@ open class HtmlGenericBuilder(
         val attributes = HtmlInputElementAttributeBuilder().apply(attributeBlock).build()
         htmlElement(true, "input", attributes)
     }
+
+    context(_: Bundle)
+    fun select(
+        attributeBlock: HtmlFormChildAttributeBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
+    ) {
+        val attributes = HtmlFormChildAttributeBuilder().apply(attributeBlock).build()
+        htmlElement(false, "select", attributes, block)
+    }
+
+    context(_: Bundle)
+    fun option(
+        attributeBlock: HtmlOptionElementAttributeBuilder.() -> Unit = {},
+        block: WithBundle<HtmlGenericBuilder> = {},
+    ) {
+        val attributes = HtmlOptionElementAttributeBuilder().apply(attributeBlock).build()
+        htmlElement(false, "option", attributes, block)
+    }
 }
