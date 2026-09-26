@@ -7,14 +7,15 @@ enum class JsForEachKind(val value: String) {
 
 data class JsForEach(
     val kind: JsForEachKind,
+    val iteratorKind: JsVariableKind,
     val name: String,
     val value: JsExpression,
-    val body: JsNode,
+    val node: JsNode,
 ) : JsNode {
 
     override fun toJsString(): String {
         require(validateKey(name))
 
-        return "for ($name ${kind.value} ${value.toJsString()}) ${body.toJsString()}"
+        return "for (${iteratorKind.value} $name ${kind.value} ${value.toJsString()}) ${node.toJsString()}"
     }
 }

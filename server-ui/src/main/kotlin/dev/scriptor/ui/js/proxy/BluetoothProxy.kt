@@ -4,7 +4,7 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class Bluetooth(value: JsExpression) : JsProxy(value) {
+class BluetoothProxy(value: JsExpression) : JsProxy(value) {
 
     val getAvailability by proxy("getAvailability")
     val getDevices by proxy("getDevices")

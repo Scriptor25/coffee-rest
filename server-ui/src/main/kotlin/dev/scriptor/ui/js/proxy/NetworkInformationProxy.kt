@@ -2,7 +2,7 @@ package dev.scriptor.ui.js.proxy
 
 import dev.scriptor.ui.js.JsExpression
 
-class NetworkInformation(value: JsExpression) : JsProxy(value) {
+class NetworkInformationProxy(value: JsExpression) : JsProxy(value) {
 
     val downlink by proxy("downlink")
     val downlinkMax by proxy("downlinkMax")

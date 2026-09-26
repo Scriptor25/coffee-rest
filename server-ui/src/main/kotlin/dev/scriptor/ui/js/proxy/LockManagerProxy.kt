@@ -3,7 +3,7 @@ package dev.scriptor.ui.js.proxy
 import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 
-class LockManager(value: JsExpression) : JsProxy(value) {
+class LockManagerProxy(value: JsExpression) : JsProxy(value) {
 
     val query by proxy("query")
     val request by proxy("request")

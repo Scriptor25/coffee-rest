@@ -4,7 +4,7 @@ data class JsFunction(
     val async: Boolean,
     val name: String?,
     val parameters: List<JsParameter>,
-    val nodes: List<JsNode>,
+    val node: JsBlock,
 ) : JsExpression {
 
     override fun toJsString(): String =
@@ -15,12 +15,5 @@ data class JsFunction(
                 ")",
                 transform = JsParameter::toJsString,
             )
-        }${
-            nodes.joinToString(
-                ";",
-                "{",
-                "}",
-                transform = JsNode::toJsString,
-            )
-        }"
+        }${node.toJsString()}"
 }

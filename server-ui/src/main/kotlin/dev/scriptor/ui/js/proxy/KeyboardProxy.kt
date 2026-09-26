@@ -4,7 +4,7 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class Keyboard(value: JsExpression) : JsProxy(value) {
+class KeyboardProxy(value: JsExpression) : JsProxy(value) {
 
     val getLayoutMap by proxy("getLayoutMap")
     val lock by proxy("lock")

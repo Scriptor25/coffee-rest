@@ -4,11 +4,11 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class GPU(value: JsExpression) : JsProxy(value) {
+class GPUProxy(value: JsExpression) : JsProxy(value) {
 
     val getPreferredCanvasFormat by proxy("getPreferredCanvasFormat")
     val requestAdapter by proxy("requestAdapter")
-    val wgslLanguageFeatures by proxy("wgslLanguageFeatures", ::WGSLLanguageFeatures)
+    val wgslLanguageFeatures by proxy("wgslLanguageFeatures", ::WGSLLanguageFeaturesProxy)
 
     fun getPreferredCanvasFormat(): JsCall {
         return (getPreferredCanvasFormat)()

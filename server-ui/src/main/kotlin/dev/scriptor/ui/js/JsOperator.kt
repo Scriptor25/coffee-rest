@@ -5,6 +5,9 @@ enum class JsOperatorKind(
     val unaryPrefix: Boolean = false,
     val unarySuffix: Boolean = false,
 ) {
+    SPREAD("...", unaryPrefix = true),
+    INSTANCEOF(" instanceof "),
+
     ASSIGN("="),
 
     ADD("+"),
@@ -73,6 +76,6 @@ data class JsOperator(
     override fun toJsString(): String = when {
         kind.unaryPrefix -> "${kind.value}${operands[0].toJsString()}"
         kind.unarySuffix -> "${operands[0].toJsString()}${kind.value}"
-        else -> operands.joinToString(kind.value, transform = JsExpression::toJsString)
+        else -> operands.joinToString(kind.value, "(", ")", transform = JsExpression::toJsString)
     }
 }

@@ -4,7 +4,7 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class ContactsManager(value: JsExpression) : JsProxy(value) {
+class ContactsManagerProxy(value: JsExpression) : JsProxy(value) {
 
     val getProperties by proxy("getProperties")
     val select by proxy("select")

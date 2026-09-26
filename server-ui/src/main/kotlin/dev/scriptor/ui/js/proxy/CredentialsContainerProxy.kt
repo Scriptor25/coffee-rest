@@ -4,7 +4,7 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class CredentialsContainer(value: JsExpression) : JsProxy(value) {
+class CredentialsContainerProxy(value: JsExpression) : JsProxy(value) {
 
     val create by proxy("create")
     val get by proxy("get")

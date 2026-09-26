@@ -4,7 +4,7 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class Ink(value: JsExpression) : JsProxy(value) {
+class InkProxy(value: JsExpression) : JsProxy(value) {
 
     val requestPresenter by proxy("requestPresenter")
 

@@ -4,7 +4,7 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class Geolocation(value: JsExpression) : JsProxy(value) {
+class GeolocationProxy(value: JsExpression) : JsProxy(value) {
 
     val clearWatch by proxy("clearWatch")
     val getCurrentPosition by proxy("getCurrentPosition")

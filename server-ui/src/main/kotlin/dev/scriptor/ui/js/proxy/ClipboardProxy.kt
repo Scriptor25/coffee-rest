@@ -4,7 +4,7 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class Clipboard(value: JsExpression) : JsProxy(value) {
+class ClipboardProxy(value: JsExpression) : JsProxy(value) {
 
     val read by proxy("read")
     val readText by proxy("readText")

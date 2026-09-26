@@ -2,6 +2,7 @@ package dev.scriptor.ui.js.proxy
 
 import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
+import dev.scriptor.ui.js.JsString
 import dev.scriptor.ui.js.JsUndefined
 
 open class EventTargetProxy(value: JsExpression) : JsProxy(value) {
@@ -10,8 +11,16 @@ open class EventTargetProxy(value: JsExpression) : JsProxy(value) {
     val removeEventListener by proxy("removeEventListener")
     val dispatchEvent by proxy("dispatchEvent")
 
+    fun addEventListener(type: String, listener: JsExpression, options: JsExpression = JsUndefined): JsCall {
+        return (addEventListener)(JsString(type), listener, options)
+    }
+
     fun addEventListener(type: JsExpression, listener: JsExpression, options: JsExpression = JsUndefined): JsCall {
         return (addEventListener)(type, listener, options)
+    }
+
+    fun removeEventListener(type: String, listener: JsExpression, options: JsExpression = JsUndefined): JsCall {
+        return (removeEventListener)(JsString(type), listener, options)
     }
 
     fun removeEventListener(type: JsExpression, listener: JsExpression, options: JsExpression = JsUndefined): JsCall {

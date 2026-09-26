@@ -5,7 +5,7 @@ import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsString
 import dev.scriptor.ui.js.JsUndefined
 
-class Console(value: JsExpression) : JsProxy(value) {
+class ConsoleProxy(value: JsExpression) : JsProxy(value) {
 
     val assert by proxy("assert")
     val clear by proxy("clear")

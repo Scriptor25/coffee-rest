@@ -74,27 +74,25 @@ interface JsExpressionBuilder<T> {
 
     fun jsFunction(
         async: Boolean = false,
-        name: String? = null,
         parameters: List<JsParameter> = emptyList(),
         nodes: List<JsNode> = emptyList(),
     ): JsFunction {
         return JsFunction(
             async,
-            name,
+            null,
             parameters,
-            nodes,
+            JsBlock(nodes),
         )
     }
 
     fun jsFunction(
         vararg parameters: String,
         async: Boolean = false,
-        name: String? = null,
         block: JsFunctionBuilder.(Array<JsSymbol>) -> Unit,
     ): JsFunction {
         return JsFunctionBuilder(
             async,
-            name,
+            null,
             parameters.map { JsParameter(it, false) },
         ).apply(block).build()
     }
@@ -167,5 +165,76 @@ interface JsExpressionBuilder<T> {
 
     fun jsString(value: String): JsString {
         return JsString(value)
+    }
+
+    fun jsTernary(
+        condition: JsExpression,
+        thenValue: JsExpression,
+        elseValue: JsExpression,
+    ): JsExpression {
+        return JsTernary(
+            condition,
+            thenValue,
+            elseValue,
+        )
+    }
+
+    fun eval(script: String): JsCall {
+        return eval(JsString(script))
+    }
+
+    fun eval(script: JsExpression): JsCall {
+        return JsSymbol("eval")(script)
+    }
+
+    fun isFinite(value: JsExpression): JsCall {
+        return JsSymbol("isFinite")(value)
+    }
+
+    fun isNaN(value: JsExpression): JsCall {
+        return JsSymbol("isNaN")(value)
+    }
+
+    fun parseFloat(string: String): JsCall {
+        return parseFloat(JsString(string))
+    }
+
+    fun parseFloat(string: JsExpression): JsCall {
+        return JsSymbol("parseFloat")(string)
+    }
+
+    fun parseInt(string: String, radix: Int? = null): JsCall {
+        return parseInt(
+            JsString(string),
+            radix?.let { JsNumber(it) } ?: JsUndefined,
+        )
+    }
+
+    fun parseInt(string: JsExpression, radix: JsExpression = JsUndefined): JsCall {
+        return JsSymbol("parseInt")(string, radix)
+    }
+
+    fun decodeURI(uri: JsExpression): JsCall {
+        return JsSymbol("decodeURI")(uri)
+    }
+
+    fun decodeURIComponent(component: JsExpression): JsCall {
+        return JsSymbol("decodeURIComponent")(component)
+    }
+
+    fun encodeURI(uri: JsExpression): JsCall {
+        return JsSymbol("encodeURI")(uri)
+    }
+
+    fun encodeURIComponent(component: JsExpression): JsCall {
+        return JsSymbol("encodeURIComponent")(component)
+    }
+
+    fun escape(str: JsExpression): JsCall {
+        return JsSymbol("escape")(str)
+    }
+
+    fun unescape(str: JsExpression): JsCall {
+        return JsSymbol("unescape")(str)
     }
 }

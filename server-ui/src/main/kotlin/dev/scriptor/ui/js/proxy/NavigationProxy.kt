@@ -4,7 +4,7 @@ import dev.scriptor.ui.js.JsCall
 import dev.scriptor.ui.js.JsExpression
 import dev.scriptor.ui.js.JsUndefined
 
-class Navigation(value: JsExpression) : JsProxy(value) {
+class NavigationProxy(value: JsExpression) : JsProxy(value) {
 
     val activation by proxy("activation")
     val back by proxy("back")
