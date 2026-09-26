@@ -7,12 +7,12 @@ data class JsFor(
     val node: JsNode,
 ) : JsNode {
 
-    override fun toJsString(): String =
+    override fun toJsString(statement: Boolean): String =
         "for (${
-            prefix?.toJsString() ?: ""
+            prefix?.toJsString(false) ?: ""
         }; ${
-            condition?.toJsString() ?: ""
+            condition?.toJsString(false) ?: ""
         }; ${
-            suffix?.toJsString() ?: ""
-        }) ${node.toJsString()}"
+            suffix?.toJsString(false) ?: ""
+        }) ${node.toJsString(true)}"
 }

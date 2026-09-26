@@ -12,6 +12,6 @@ data class JsVariable(
     val initializer: JsExpression?,
 ) : JsNode {
 
-    override fun toJsString(): String =
-        "${kind.value} $name${if (initializer != null) " = ${initializer.toJsString()}" else ""}"
+    override fun toJsString(statement: Boolean): String =
+        "${kind.value} $name${if (initializer != null) " = ${initializer.toJsString(false)}" else ""}${if (statement) ";" else ""}"
 }

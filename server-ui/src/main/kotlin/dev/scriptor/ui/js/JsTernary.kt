@@ -6,6 +6,6 @@ data class JsTernary(
     val elseValue: JsExpression,
 ) : JsExpression {
 
-    override fun toJsString(): String =
-        "(${condition.toJsString()} ? ${thenValue.toJsString()} : ${elseValue.toJsString()})"
+    override fun toJsString(statement: Boolean): String =
+        "(${condition.toJsString(false)} ? ${thenValue.toJsString(false)} : ${elseValue.toJsString(false)})${if (statement) ";" else ""}"
 }

@@ -7,7 +7,7 @@ data class JsFunction(
     val node: JsBlock,
 ) : JsExpression {
 
-    override fun toJsString(): String =
+    override fun toJsString(statement: Boolean): String =
         "${if (async) "async " else ""}function${if (name != null) " $name" else ""}${
             parameters.joinToString(
                 ",",
@@ -15,5 +15,5 @@ data class JsFunction(
                 ")",
                 transform = JsParameter::toJsString,
             )
-        }${node.toJsString()}"
+        }${node.toJsString(true)}"
 }

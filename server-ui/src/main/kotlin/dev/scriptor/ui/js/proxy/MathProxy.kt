@@ -7,6 +7,7 @@ class MathProxy(value: JsExpression) : JsProxy(value) {
 
     val abs by proxy("abs")
     val hypot by proxy("hypot")
+    val max by proxy("max")
     val sign by proxy("sign")
 
     fun abs(x: JsExpression): JsCall {
@@ -15,6 +16,10 @@ class MathProxy(value: JsExpression) : JsProxy(value) {
 
     fun hypot(x: JsExpression, y: JsExpression): JsCall {
         return (hypot)(x, y)
+    }
+
+    fun max(vararg x: JsExpression): JsCall {
+        return (max)(*x)
     }
 
     fun sign(x: JsExpression): JsCall {

@@ -6,9 +6,9 @@ data class JsIfElse(
     val elseBlock: JsNode?,
 ) : JsNode {
 
-    override fun toJsString(): String =
+    override fun toJsString(statement: Boolean): String =
         if (elseBlock != null)
-            "if (${condition.toJsString()}) ${thenBlock.toJsString()} else ${elseBlock.toJsString()}"
+            "if (${condition.toJsString(false)}) ${thenBlock.toJsString(true)} else ${elseBlock.toJsString(false)}"
         else
-            "if (${condition.toJsString()}) ${thenBlock.toJsString()}"
+            "if (${condition.toJsString(false)}) ${thenBlock.toJsString(true)}"
 }

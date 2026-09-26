@@ -4,13 +4,10 @@ data class JsBlock(
     val nodes: List<JsNode>,
 ) : JsNode {
 
-    override fun toJsString(): String =
-        nodes.joinToString(
-            ";",
-            "{",
-            "}",
-            transform = JsNode::toJsString,
-        )
+    override fun toJsString(statement: Boolean): String =
+        nodes.joinToString("", "{", "}") {
+            it.toJsString(true)
+        }
 }
 
 fun jsBlock(nodes: List<JsNode>): JsBlock {

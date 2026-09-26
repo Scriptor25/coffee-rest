@@ -6,5 +6,5 @@ abstract class JsProxy(
     val value: JsExpression,
 ) : JsExpression {
 
-    override fun toJsString(): String = value.toJsString()
+    override fun toJsString(statement: Boolean): String = value.toJsString(statement)
 }

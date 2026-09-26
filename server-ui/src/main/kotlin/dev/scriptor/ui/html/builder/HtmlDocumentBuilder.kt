@@ -5,7 +5,6 @@ import dev.scriptor.ui.css.CssNode
 import dev.scriptor.ui.dom.*
 import dev.scriptor.ui.dom.builder.WithBundle
 import dev.scriptor.ui.html.HtmlElement
-import dev.scriptor.ui.js.JsNode
 
 class HtmlDocumentBuilder : HtmlBuilder<Document> {
 
@@ -19,7 +18,7 @@ class HtmlDocumentBuilder : HtmlBuilder<Document> {
         val append = mutableListOf<Node>()
 
         if (script.isNotEmpty()) {
-            val source = Raw(script.joinToString(";", transform = JsNode::toJsString))
+            val source = Raw(script.joinToString("") { it.toJsString(true) })
 
             val element = HtmlElement(
                 false,

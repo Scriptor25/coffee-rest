@@ -5,14 +5,11 @@ class JsNew(
     val arguments: List<JsExpression>,
 ) : JsExpression {
 
-    override fun toJsString(): String = "new ${constructor.toJsString()}${
+    override fun toJsString(statement: Boolean): String = "new ${constructor.toJsString(false)}${
         arguments
             .dropLastWhile { it is JsUndefined }
-            .joinToString(
-                ",",
-                "(",
-                ")",
-                transform = JsExpression::toJsString,
-            )
-    }"
+            .joinToString(",", "(", ")") {
+                it.toJsString(false)
+            }
+    }${if (statement) ";" else ""}"
 }

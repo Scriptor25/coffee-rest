@@ -73,9 +73,15 @@ data class JsOperator(
     val operands: List<JsExpression>,
 ) : JsExpression {
 
-    override fun toJsString(): String = when {
-        kind.unaryPrefix -> "${kind.value}${operands[0].toJsString()}"
-        kind.unarySuffix -> "${operands[0].toJsString()}${kind.value}"
-        else -> operands.joinToString(kind.value, "(", ")", transform = JsExpression::toJsString)
+    override fun toJsString(statement: Boolean): String {
+        val string = when {
+            kind.unaryPrefix -> "${kind.value}${operands[0].toJsString(false)}"
+            kind.unarySuffix -> "${operands[0].toJsString(false)}${kind.value}"
+            else -> operands.joinToString(kind.value, "(", ")") {
+                it.toJsString(false)
+            }
+        }
+
+        return "$string${if (statement) ";" else ""}"
     }
 }

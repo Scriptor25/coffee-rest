@@ -5,12 +5,12 @@ open class JsMember(
     val name: JsExpression,
 ) : JsExpression {
 
-    override fun toJsString(): String {
+    override fun toJsString(statement: Boolean): String {
         val key = when (name) {
             is JsString if validateKey(name.value) -> ".${name.value}"
-            else -> "[${name.toJsString()}]"
+            else -> "[${name.toJsString(false)}]"
         }
 
-        return "${value.toJsString()}$key"
+        return "${value.toJsString(false)}$key${if (statement) ";" else ""}"
     }
 }

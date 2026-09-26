@@ -373,7 +373,7 @@ abstract class JsNodeBuilder<T> : JsExpressionBuilder<T> {
     fun jsVariable(
         kind: JsVariableKind,
         name: String,
-        initializer: JsExpression,
+        initializer: JsExpression? = null,
     ): JsSymbol {
         emit(
             JsVariable(
@@ -480,7 +480,7 @@ abstract class JsNodeBuilder<T> : JsExpressionBuilder<T> {
 
     fun jsLet(
         name: String,
-        initializer: JsExpression = JsUndefined,
+        initializer: JsExpression? = null,
     ): JsSymbol {
         return jsVariable(
             JsVariableKind.LET,
@@ -594,5 +594,26 @@ abstract class JsNodeBuilder<T> : JsExpressionBuilder<T> {
                 node,
             )
         )
+    }
+
+    fun jsSwitch(
+        condition: JsExpression,
+        cases: List<JsCase>,
+    ) {
+        emit(
+            JsSwitch(
+                condition,
+                cases,
+            )
+        )
+    }
+
+    fun jsSwitch(
+        condition: JsExpression,
+        block: JsSwitchBuilder.() -> Unit = {},
+    ) {
+        val node = JsSwitchBuilder(condition).apply(block).build()
+
+        emit(node)
     }
 }

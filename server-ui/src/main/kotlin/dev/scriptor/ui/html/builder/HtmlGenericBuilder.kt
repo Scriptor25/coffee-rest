@@ -5,7 +5,6 @@ import dev.scriptor.ui.css.CssNode
 import dev.scriptor.ui.css.builder.CssNodesBuilder
 import dev.scriptor.ui.dom.Attribute
 import dev.scriptor.ui.dom.builder.WithBundle
-import dev.scriptor.ui.js.JsNode
 import dev.scriptor.ui.js.builder.JsNodesBuilder
 
 open class HtmlGenericBuilder(
@@ -55,7 +54,9 @@ open class HtmlGenericBuilder(
         block: JsNodesBuilder.() -> Unit = {},
     ) {
         val script = JsNodesBuilder().apply(block).build()
-        val source = script.joinToString(";", transform = JsNode::toJsString)
+        val source = script.joinToString("") {
+            it.toJsString(true)
+        }
 
         htmlElement(
             false,

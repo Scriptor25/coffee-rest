@@ -13,9 +13,9 @@ data class JsForEach(
     val node: JsNode,
 ) : JsNode {
 
-    override fun toJsString(): String {
+    override fun toJsString(statement: Boolean): String {
         require(validateKey(name))
 
-        return "for (${iteratorKind.value} $name ${kind.value} ${value.toJsString()}) ${node.toJsString()}"
+        return "for (${iteratorKind.value} $name ${kind.value} ${value.toJsString(false)}) ${node.toJsString(true)}"
     }
 }

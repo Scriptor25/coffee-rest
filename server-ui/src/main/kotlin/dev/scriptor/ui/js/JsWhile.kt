@@ -5,6 +5,6 @@ data class JsWhile(
     val node: JsNode,
 ) : JsNode {
 
-    override fun toJsString(): String =
-        "while (${condition.toJsString()}) ${node.toJsString()}"
+    override fun toJsString(statement: Boolean): String =
+        "while (${condition.toJsString(false)}) ${node.toJsString(true)}"
 }

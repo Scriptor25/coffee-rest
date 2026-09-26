@@ -4,18 +4,19 @@ class JsObject(
     val fields: Map<JsExpression, JsExpression>,
 ) : JsExpression {
 
-    override fun toJsString(): String =
-        fields.entries
+    override fun toJsString(statement: Boolean): String =
+        if (statement) ""
+        else fields.entries
             .filter { it.value !is JsUndefined }
             .joinToString(",", "{", "}") { (k, v) ->
                 val key = when (k) {
                     is JsString ->
                         if (validateKey(k.value)) k.value
-                        else k.toJsString()
+                        else k.toJsString(false)
 
-                    else -> "[${k.toJsString()}]"
+                    else -> "[${k.toJsString(false)}]"
                 }
 
-                "$key:${v.toJsString()}"
+                "$key:${v.toJsString(false)}"
             }
 }
