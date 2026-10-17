@@ -1,0 +1,12 @@
+type = "library"
+name = "coffee-rest-ui"
+
+[dependencies]
+modules = ["coffee-rest"]
+
+[sources.main]
+
+[library]
+package = "jar"
+sources = true
+include = ["main"]

@@ -1,0 +1,12 @@
+type = "library"
+name = "coffee-rest"
+
+[dependencies]
+modules = ["reflect"]
+
+[sources.main]
+
+[library]
+package = "jar"
+sources = true
+include = ["main"]

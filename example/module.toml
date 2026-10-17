@@ -1,0 +1,12 @@
+type = "application"
+name = "example"
+
+[dependencies]
+modules = ["reflect", "coffee-rest", "coffee-rest-jvm", "coffee-rest-ui"]
+maven = ["org.json:json:20260522"]
+
+[sources.main]
+
+[application]
+main = "dev.scriptor.example.MainKt"
+include = ["main"]

@@ -42,3 +42,6 @@ build/
 *.jks
 
 dependency-reduced-pom.xml
+
+/build/
+/repository/

@@ -1,0 +1,9 @@
+type = "library"
+name = "reflect"
+
+[sources.main]
+
+[library]
+package = "jar"
+sources = true
+include = ["main"]

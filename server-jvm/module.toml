@@ -1,0 +1,12 @@
+type = "library"
+name = "coffee-rest-jvm"
+
+[dependencies]
+modules = ["coffee-rest", "reflect"]
+
+[sources.main]
+
+[library]
+package = "jar"
+sources = true
+include = ["main"]
