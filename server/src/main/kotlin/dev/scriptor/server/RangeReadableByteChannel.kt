@@ -109,6 +109,13 @@ fun RangeReadableByteChannel(channel: ReadableByteChannel, range: LongRange): Ra
                     return -1L
                 }
 
+                if (target is FileChannel) {
+                    val transferred = target.transferFrom(channel, target.position(), remaining)
+                    target.position(target.position() + transferred)
+                    position += transferred
+                    return transferred
+                }
+
                 val count = minOf(remaining, Integer.MAX_VALUE.toLong()).toInt()
 
                 val buffer = ByteBuffer.allocate(count)

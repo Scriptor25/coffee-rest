@@ -15,6 +15,23 @@ data class MessageBody(
         channel.close()
     }
 
+    fun drain() {
+        write(object : WritableByteChannel {
+            override fun write(src: ByteBuffer): Int {
+                val count = src.remaining()
+                src.position(src.limit())
+                return count
+            }
+
+            override fun isOpen(): Boolean {
+                return true
+            }
+
+            override fun close() {
+            }
+        })
+    }
+
     fun write(target: WritableByteChannel) {
         val writer = Channels.newWriter(target, Charsets.UTF_8)
 

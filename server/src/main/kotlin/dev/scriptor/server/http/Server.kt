@@ -645,6 +645,8 @@ class Server(
 
         result = handleSignal(request, result)
 
+        request.body.drain()
+
         val headers = ParameterList(result.headers)
 
         if ("date" !in headers) {

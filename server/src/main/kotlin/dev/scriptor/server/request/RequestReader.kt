@@ -99,7 +99,7 @@ class RequestReader(
             source = channel
             chunked = true
         } else {
-            source = channel
+            source = RangeReadableByteChannel(channel, LongRange.EMPTY)
             chunked = false
         }
 
