@@ -293,21 +293,24 @@ class Server(
             }
         }
 
-        log.fine("#$id connect")
+        try {
+            log.fine("#$id connect")
 
-        var alive = true
-        while (alive) {
-            val request = reader.read() ?: break
+            var alive = true
+            while (alive) {
+                val request = reader.read() ?: break
 
-            log.info("#$id $request")
+                log.info("#$id $request")
 
-            val delta = measureTime { alive = handle(channel, request) }
+                val delta = measureTime { alive = handle(channel, request) }
 
-            log.fine("#$id $delta (${if (alive) "keep-alive" else "close"})")
+                log.fine("#$id $delta (${if (alive) "keep-alive" else "close"})")
+            }
+        } finally {
+            log.fine("#$id disconnect")
+
+            nextHeap[id] = Unit
         }
-
-        log.fine("#$id disconnect")
-        nextHeap[id] = Unit
     }
 
     private fun withPrincipal(request: Request, route: RouteMetadata, block: (Principal?) -> Result): Result {
