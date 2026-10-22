@@ -2,7 +2,6 @@ package dev.scriptor.example
 
 import dev.scriptor.server.jvm.scan
 import dev.scriptor.server.server
-import java.net.InetAddress
 import java.util.logging.*
 
 fun main() {
@@ -21,7 +20,7 @@ fun main() {
     log.addHandler(handler)
 
     val server = server(log) {
-        bind(InetAddress.getLocalHost(), 8080)
+        bind(8080)
     }
 
     server.use { server ->
