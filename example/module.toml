@@ -9,4 +9,3 @@ maven = ["org.json:json:20260522"]
 
 [application]
 main = "dev.scriptor.example.MainKt"
-include = ["main"]

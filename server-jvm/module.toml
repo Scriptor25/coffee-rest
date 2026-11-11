@@ -9,4 +9,3 @@ modules = ["coffee-rest", "reflect"]
 [library]
 package = "jar"
 sources = true
-include = ["main"]

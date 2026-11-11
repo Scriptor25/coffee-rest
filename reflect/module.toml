@@ -6,4 +6,3 @@ name = "reflect"
 [library]
 package = "jar"
 sources = true
-include = ["main"]
