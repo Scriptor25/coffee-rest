@@ -1,11 +1,15 @@
 type = "library"
+
+[artifact]
 name = "coffee-rest-jvm"
 
 [dependencies]
-modules = ["coffee-rest", "reflect"]
+modules = [
+    "reflect",
+    "server",
+]
 
 [sources.main]
 
 [library]
-package = "jar"
 sources = true

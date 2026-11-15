@@ -1,5 +1,3 @@
-name = "coffee-rest"
-
 [artifact]
 group = "dev.scriptor"
 name = "coffee-rest-parent"
@@ -15,10 +13,12 @@ include = [
 ]
 
 [repositories]
-maven = ["https://repo1.maven.org/maven2/"]
+maven = [
+    "https://repo1.maven.org/maven2/",
+]
 
 [dependencies]
 maven = [
-    "org.jetbrains.kotlin:kotlin-stdlib:2.4.20",
-    "org.jetbrains.kotlin:kotlin-reflect:2.4.20",
+    "org.jetbrains.kotlin:kotlin-stdlib:2.4.21",
+    "org.jetbrains.kotlin:kotlin-reflect:2.4.21",
 ]

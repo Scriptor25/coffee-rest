@@ -1,11 +1,14 @@
 type = "library"
+
+[artifact]
 name = "coffee-rest"
 
 [dependencies]
-modules = ["reflect"]
+modules = [
+    "reflect",
+]
 
 [sources.main]
 
 [library]
-package = "jar"
 sources = true

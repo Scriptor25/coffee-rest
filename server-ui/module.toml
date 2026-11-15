@@ -1,11 +1,14 @@
 type = "library"
+
+[artifact]
 name = "coffee-rest-ui"
 
 [dependencies]
-modules = ["coffee-rest"]
+modules = [
+    "server",
+]
 
 [sources.main]
 
 [library]
-package = "jar"
 sources = true

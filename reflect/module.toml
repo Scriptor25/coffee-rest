@@ -1,8 +1,9 @@
 type = "library"
+
+[artifact]
 name = "reflect"
 
 [sources.main]
 
 [library]
-package = "jar"
 sources = true
